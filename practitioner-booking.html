@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#006837"/>
+<title>Stall & Vendor Application — H.O.M.E Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:'Montserrat',sans-serif;background:#f9faf8;color:#111827;overflow-x:hidden}
+:root{
+  --dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;--ly:#f7f3d8;
+  --ink:#111827;--mid:#374151;--mut:#6b7280;--bg:#f9faf8;--border:#e5e7eb;
+  --sh:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
+  --sh2:0 8px 32px rgba(0,0,0,.12);
+  --error:#dc2626;
+}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;left:0;right:0;z-index:300;height:64px;padding:0 20px;background:rgba(0,104,55,.97);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 20px rgba(0,0,0,.2)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo img{height:36px;width:auto;filter:brightness(0) invert(1)}
+.nav-brand-name{font-size:15px;font-weight:800;color:#fff;white-space:nowrap}
+.nav-brand-sub{font-size:9px;color:rgba(255,255,255,.4);font-weight:600;text-transform:uppercase;letter-spacing:.12em}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-a{color:rgba(255,255,255,.75);text-decoration:none;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;transition:.15s;white-space:nowrap}
+.nav-a:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-cta{background:var(--or)!important;color:#fff!important;font-weight:700!important;border-radius:8px;padding:7px 14px;font-size:12px;text-decoration:none;transition:.15s}
+.nav-cta:hover{background:#d96e14!important}
+
+/* ── HERO BANNER ── */
+.page-hero{background:var(--dg);border-bottom:3px solid var(--or);padding:40px 20px 36px;text-align:center;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 70% 40%,rgba(245,130,33,.07) 0%,transparent 60%);pointer-events:none}
+.page-hero-inner{max-width:640px;margin:0 auto;position:relative;z-index:1}
+.page-hero-logo{height:64px;width:auto;margin-bottom:14px;filter:drop-shadow(0 4px 16px rgba(0,0,0,.25))}
+.page-hero-tag{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.page-hero-title{font-family:'League Spartan',sans-serif;font-size:clamp(24px,5vw,36px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:8px}
+.page-hero-title span{color:var(--or)}
+.page-hero-sub{font-size:14px;color:rgba(255,255,255,.65);line-height:1.7;margin-bottom:14px;max-width:480px;margin-left:auto;margin-right:auto}
+.home-expand{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.home-expand span{font-size:10px;font-weight:700;letter-spacing:.05em;color:rgba(255,255,255,.35);text-transform:uppercase}
+.home-expand span b{color:var(--or);font-weight:900}
+
+/* ── PROGRESS ── */
+.progress-wrap{background:#fff;border-bottom:1px solid var(--border);padding:0 20px;display:flex;justify-content:center;overflow-x:auto;box-shadow:var(--sh)}
+.step-row{display:flex;align-items:center;gap:0;min-width:fit-content}
+.step-item{display:flex;align-items:center;gap:8px;padding:14px 12px;font-size:12px;font-weight:600;color:var(--mut);white-space:nowrap;border-bottom:3px solid transparent;transition:.2s}
+.step-item.active{color:var(--dg);border-bottom-color:var(--dg)}
+.step-item.done{color:var(--lg);border-bottom-color:var(--lg)}
+.step-num{width:22px;height:22px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;transition:.2s}
+.step-item.active .step-num{background:var(--dg);color:#fff;border-color:var(--dg)}
+.step-item.done .step-num{background:var(--lg);color:#fff;border-color:var(--lg)}
+.step-sep{width:20px;height:1px;background:var(--border);flex-shrink:0}
+
+/* ── MAIN ── */
+main{max-width:680px;margin:0 auto;padding:32px 16px 80px}
+
+/* ── FORM SECTIONS ── */
+.form-section{display:none;animation:fadeIn .25s ease}
+.form-section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.sec-label{font-size:10px;font-weight:700;color:var(--lg);text-transform:uppercase;letter-spacing:.2em;margin-bottom:6px}
+.sec-title{font-family:'League Spartan',sans-serif;font-size:22px;font-weight:900;color:var(--db);margin-bottom:4px}
+.sec-sub{font-size:13px;color:var(--mut);line-height:1.7;margin-bottom:24px}
+
+/* ── FIELDS ── */
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field-row.full{grid-template-columns:1fr}
+@media(max-width:520px){.field-row{grid-template-columns:1fr}}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+.field label .req{color:var(--or);margin-left:2px}
+.field label .hint{font-weight:400;color:var(--mut);font-size:11px;display:block;margin-top:1px}
+
+input[type=text],input[type=email],input[type=tel],input[type=date],select,textarea{
+  width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:'Montserrat',sans-serif;font-size:13px;color:var(--ink);background:#fff;
+  transition:border-color .15s,box-shadow .15s;appearance:none
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--dg);box-shadow:0 0 0 3px rgba(0,104,55,.1)}
+input.err,select.err,textarea.err{border-color:var(--error)}
+textarea{resize:vertical;min-height:96px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23006837' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;cursor:pointer}
+
+.field-err{font-size:11px;color:var(--error);display:none;margin-top:2px}
+.field-err.show{display:block}
+
+/* ── EVENT BANNER ── */
+.event-banner{background:var(--dg);border-radius:14px;padding:18px 20px;margin-bottom:16px;display:none}
+.event-banner-name{font-family:'League Spartan',sans-serif;font-size:17px;font-weight:900;color:#fff;margin-bottom:4px}
+.event-banner-meta{font-size:12px;color:rgba(255,255,255,.7);margin-bottom:2px}
+.event-banner-badge{display:inline-block;background:var(--or);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-top:8px}
+
+/* ── VENDOR TYPE CARDS ── */
+.vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:6px}
+.vcard{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 10px;cursor:pointer;transition:all .15s;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.vcard:hover{border-color:var(--lg);transform:translateY(-2px);box-shadow:0 4px 14px rgba(57,181,74,.12)}
+.vcard.sel{border-color:var(--dg);border-width:2px;background:rgba(0,104,55,.04)}
+.vcard input{display:none}
+.vcard-icon{font-size:24px;margin-bottom:6px;display:block}
+.vcard-label{font-size:11px;font-weight:700;color:var(--ink);line-height:1.3}
+
+/* ── STALL OPTIONS ── */
+.stall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.soption{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;transition:all .15s}
+.soption:hover{border-color:var(--lg)}
+.soption.sel{border-color:var(--dg);border-width:2px;background:rgba(0,104,55,.04)}
+.soption input{display:none}
+.soption-icon{font-size:20px;margin-bottom:4px;display:block}
+.soption-label{font-size:11px;font-weight:700;color:var(--ink)}
+
+/* ── TABLE HIRE TOGGLE ── */
+.hire-row{display:flex;align-items:flex-start;gap:12px;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;margin-bottom:14px;transition:border-color .15s}
+.hire-row:hover{border-color:var(--lg)}
+.hire-row.sel{border-color:var(--dg);background:rgba(0,104,55,.03)}
+.hire-row input{margin-top:2px;accent-color:var(--dg);width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.hire-row-text .ht{font-weight:700;font-size:13px;color:var(--ink)}
+.hire-row-text .hd{font-size:11px;color:var(--mut);margin-top:2px}
+
+/* ── FILE UPLOAD ── */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:22px;text-align:center;background:#fff;cursor:pointer;transition:all .15s;position:relative;margin-bottom:14px}
+.upload-zone:hover{border-color:var(--dg);background:rgba(0,104,55,.02)}
+.upload-zone.has-file{border-color:var(--dg);background:rgba(0,104,55,.03)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:26px;margin-bottom:6px}
+.upload-lbl{font-size:12px;font-weight:700;color:var(--dg)}
+.upload-hint{font-size:11px;color:var(--mut);margin-top:3px}
+.upload-fname{font-size:12px;font-weight:700;color:var(--dg);margin-top:6px}
+
+/* ── TERMS BOX ── */
+.terms-box{background:var(--ly);border:1px solid #e9e3bb;border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.terms-box h4{font-size:12px;font-weight:800;color:var(--db);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.terms-box ul{padding-left:14px;font-size:12px;color:var(--mid);line-height:1.9}
+.terms-check{display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;cursor:pointer}
+.terms-check input{margin-top:3px;accent-color:var(--dg);width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.terms-check span{font-size:13px;color:var(--ink);line-height:1.5}
+.terms-check a{color:var(--dg);font-weight:700;text-decoration:underline}
+
+/* ── REVIEW CARD ── */
+.review-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px;box-shadow:var(--sh)}
+.review-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.review-row:last-child{border:none}
+.review-row .rk{color:var(--mut);font-weight:600}
+.review-row .rv{color:var(--ink);font-weight:500;text-align:right;max-width:55%}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;margin-top:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .2s;white-space:nowrap}
+.btn-or{background:var(--or);color:#fff;box-shadow:0 4px 14px rgba(245,130,33,.25);flex:1}
+.btn-or:hover{background:#d96e14;transform:translateY(-2px)}
+.btn-or:disabled{background:var(--mut);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-outline{background:#fff;color:var(--dg);border:2px solid var(--dg);min-width:90px}
+.btn-outline:hover{background:var(--dg);color:#fff}
+
+/* ── SUCCESS ── */
+.success-wrap{display:none;text-align:center;padding:48px 16px;animation:fadeIn .35s ease}
+.success-wrap.show{display:block}
+.success-icon{width:68px;height:68px;border-radius:50%;background:var(--dg);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:30px}
+.success-wrap h2{font-family:'League Spartan',sans-serif;font-size:26px;font-weight:900;color:var(--db);margin-bottom:10px}
+.success-wrap p{font-size:13px;color:var(--mut);line-height:1.7;max-width:420px;margin:0 auto 8px}
+.success-wrap a{color:var(--dg);font-weight:700}
+
+/* ── SPINNER ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── FOOTER ── */
+footer{background:var(--dg);text-align:center;padding:20px;font-size:11px;color:rgba(255,255,255,.45)}
+footer a{color:rgba(255,255,255,.65);text-decoration:none}
+footer a:hover{color:var(--or)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="https://homehub-benfleet.co.uk" class="nav-logo">
+    <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub"/>
+    <div>
+      <div class="nav-brand-name">H.O.M.E Hub</div>
+      <div class="nav-brand-sub">Benfleet · Essex</div>
+    </div>
+  </a>
+  <div class="nav-links">
+    <a href="https://homehub-benfleet.co.uk/summer-wellbeing-fun-day-wellbeing-event/" class="nav-a">Event Info</a>
+    <a href="https://homehub-benfleet.co.uk/contact-us/" class="nav-a">Contact</a>
+    <a href="https://homehub-benfleet.co.uk" class="nav-cta">← Back to site</a>
+  </div>
+</nav>
+
+<!-- HERO BANNER -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub" class="page-hero-logo"/>
+    <div class="page-hero-tag">Community Events</div>
+    <h1 class="page-hero-title">Stall &amp; <span>Vendor</span> Application</h1>
+    <p class="page-hero-sub">Join us at our next community event. Complete the form and our team will be in touch to confirm your spot.</p>
+    <div class="home-expand">
+      <span><b>H</b>elping</span><span>·</span>
+      <span><b>O</b>vercoming</span><span>·</span>
+      <span><b>M</b>otivating</span><span>·</span>
+      <span><b>E</b>xploring</span>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="step-row">
+    <div class="step-item active" id="si-1"><div class="step-num">1</div> Your Event</div>
+    <div class="step-sep"></div>
+    <div class="step-item" id="si-2"><div class="step-num">2</div> Your Details</div>
+    <div class="step-sep"></div>
+    <div class="step-item" id="si-3"><div class="step-num">3</div> Your Stall</div>
+    <div class="step-sep"></div>
+    <div class="step-item" id="si-4"><div class="step-num">4</div> Review &amp; Submit</div>
+  </div>
+</div>
+
+<main>
+
+  <!-- STEP 1 -->
+  <div class="form-section active" id="fs-1">
+    <div class="sec-label">Step 1 of 4</div>
+    <div class="sec-title">Choose your event</div>
+    <p class="sec-sub">Select the event you'd like to apply for.</p>
+
+    <div class="field-row full">
+      <div class="field">
+        <label for="event_id">Upcoming Events <span class="req">*</span></label>
+        <select id="event_id"><option value="">Loading events...</option></select>
+        <span class="field-err" id="err-event">Please select an event</span>
+      </div>
+    </div>
+
+    <div class="event-banner" id="event-banner"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-or" onclick="goTo(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="form-section" id="fs-2">
+    <div class="sec-label">Step 2 of 4</div>
+    <div class="sec-title">Your details</div>
+    <p class="sec-sub">Tell us about you and your business.</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="first_name">First Name <span class="req">*</span></label>
+        <input type="text" id="first_name" placeholder="e.g. Sarah"/>
+        <span class="field-err" id="err-first_name">Required</span>
+      </div>
+      <div class="field">
+        <label for="last_name">Last Name <span class="req">*</span></label>
+        <input type="text" id="last_name" placeholder="e.g. Mitchell"/>
+        <span class="field-err" id="err-last_name">Required</span>
+      </div>
+    </div>
+
+    <div class="field-row full">
+      <div class="field">
+        <label for="company_name">Business / Practice Name
+          <span class="hint">Leave blank if you trade under your own name</span>
+        </label>
+        <input type="text" id="company_name" placeholder="e.g. Soulful Therapies"/>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="email">Email Address <span class="req">*</span></label>
+        <input type="email" id="email" placeholder="you@example.com"/>
+        <span class="field-err" id="err-email">Please enter a valid email</span>
+      </div>
+      <div class="field">
+        <label for="mobile_phone">Mobile / WhatsApp <span class="req">*</span>
+          <span class="hint">We'll send updates here</span>
+        </label>
+        <input type="tel" id="mobile_phone" placeholder="07700 900000"/>
+        <span class="field-err" id="err-mobile_phone">Required</span>
+      </div>
+    </div>
+
+    <div class="field-row full">
+      <div class="field">
+        <label for="how_did_you_hear">How did you hear about us?</label>
+        <select id="how_did_you_hear">
+          <option value="">Please select...</option>
+          <option>Social Media (Facebook / Instagram)</option>
+          <option>Word of mouth</option>
+          <option>H.O.M.E Hub website</option>
+          <option>Email newsletter</option>
+          <option>Flyer / poster</option>
+          <option>Previous event</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goTo(1)">← Back</button>
+      <button class="btn btn-or" onclick="goTo(3)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="form-section" id="fs-3">
+    <div class="sec-label">Step 3 of 4</div>
+    <div class="sec-title">Your stall</div>
+    <p class="sec-sub">Tell us what you'll be bringing and what you need on the day.</p>
+
+    <!-- Vendor type -->
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px">Vendor Type <span class="req" style="color:var(--or)">*</span></label>
+      <div class="vendor-grid">
+        <label class="vcard" onclick="selVendor(this,'Practitioner / Therapist')">
+          <input type="radio" name="vendor_type" value="Practitioner / Therapist"/>
+          <span class="vcard-icon">🌿</span>
+          <span class="vcard-label">Practitioner / Therapist</span>
+        </label>
+        <label class="vcard" onclick="selVendor(this,'Health & Wellness')">
+          <input type="radio" name="vendor_type" value="Health & Wellness"/>
+          <span class="vcard-icon">💚</span>
+          <span class="vcard-label">Health &amp; Wellness</span>
+        </label>
+        <label class="vcard" onclick="selVendor(this,'Arts & Crafts')">
+          <input type="radio" name="vendor_type" value="Arts & Crafts"/>
+          <span class="vcard-icon">🎨</span>
+          <span class="vcard-label">Arts &amp; Crafts</span>
+        </label>
+        <label class="vcard" onclick="selVendor(this,'Entertainment / Activities')">
+          <input type="radio" name="vendor_type" value="Entertainment / Activities"/>
+          <span class="vcard-icon">🎪</span>
+          <span class="vcard-label">Entertainment / Activities</span>
+        </label>
+        <label class="vcard" onclick="selVendor(this,'Retail / Product')">
+          <input type="radio" name="vendor_type" value="Retail / Product"/>
+          <span class="vcard-icon">🛍️</span>
+          <span class="vcard-label">Retail / Product</span>
+        </label>
+        <label class="vcard" onclick="selVendor(this,'Food & Drink Vendor')">
+          <input type="radio" name="vendor_type" value="Food & Drink Vendor"/>
+          <span class="vcard-icon">🍵</span>
+          <span class="vcard-label">Food &amp; Drink Vendor</span>
+        </label>
+      </div>
+      <span class="field-err" id="err-vendor_type">Please select a vendor type</span>
+    </div>
+
+    <!-- Description -->
+    <div class="field-row full" style="margin-bottom:14px">
+      <div class="field">
+        <label for="product_service_description">Describe your products, services or activity <span class="req">*</span>
+          <span class="hint">Give us a clear picture of what you'll be offering on the day</span>
+        </label>
+        <textarea id="product_service_description" placeholder="e.g. I offer holistic massage and reiki healing sessions focused on relaxation and stress relief..."></textarea>
+        <span class="field-err" id="err-description">Please add a description</span>
+      </div>
+    </div>
+
+    <!-- Stall preference -->
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px">Stall Preference</label>
+      <div class="stall-grid">
+        <label class="soption" onclick="selStall(this,'Indoor')">
+          <input type="radio" name="stall_pref" value="Indoor"/>
+          <span class="soption-icon">🏠</span>
+          <span class="soption-label">Indoor</span>
+        </label>
+        <label class="soption" onclick="selStall(this,'Outdoor')">
+          <input type="radio" name="stall_pref" value="Outdoor"/>
+          <span class="soption-icon">⛺</span>
+          <span class="soption-label">Outdoor</span>
+        </label>
+        <label class="soption sel" onclick="selStall(this,'No preference')">
+          <input type="radio" name="stall_pref" value="No preference" checked/>
+          <span class="soption-icon">✨</span>
+          <span class="soption-label">No preference</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Table hire -->
+    <label class="hire-row" id="hire-row" onclick="toggleHire()">
+      <input type="checkbox" id="table_hire"/>
+      <div class="hire-row-text">
+        <div class="ht">I'd like to hire a table (+£5)</div>
+        <div class="hd">A standard 6ft trestle table will be set up at your stall before the event</div>
+      </div>
+    </label>
+
+    <!-- PLI Upload -->
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px">Public Liability Insurance
+        <span style="font-weight:400;color:var(--mut);font-size:11px;display:block;margin-top:1px">Required for all vendors. Upload your certificate.</span>
+      </label>
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="pli_file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFile(this)"/>
+        <div class="upload-icon">📎</div>
+        <div class="upload-lbl">Click to upload your PLI document</div>
+        <div class="upload-hint">PDF, JPG or PNG — max 5MB</div>
+        <div class="upload-fname" id="upload-fname"></div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="public_liability_expiry">PLI Expiry Date</label>
+        <input type="date" id="public_liability_expiry"/>
+      </div>
+    </div>
+
+    <!-- Special requirements -->
+    <div class="field-row full">
+      <div class="field">
+        <label for="special_requirements">Special Requirements or Accessibility Needs
+          <span class="hint">Anything we should know to support you on the day</span>
+        </label>
+        <textarea id="special_requirements" style="min-height:70px" placeholder="e.g. I require wheelchair access / I need a power outlet near my stall"></textarea>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goTo(2)">← Back</button>
+      <button class="btn btn-or" onclick="goTo(4)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="form-section" id="fs-4">
+    <div class="sec-label">Step 4 of 4</div>
+    <div class="sec-title">Review &amp; Submit</div>
+    <p class="sec-sub">Check your details before submitting your application.</p>
+
+    <div class="review-card" id="review-card"></div>
+
+    <div class="terms-box">
+      <h4>Before you submit</h4>
+      <ul>
+        <li>Your application is reviewed before your place is confirmed</li>
+        <li>Valid Public Liability Insurance is required on the day</li>
+        <li>Stall fees are due within 7 days of authorisation</li>
+        <li>All fees are non-refundable unless H.O.M.E Hub cancels the event</li>
+        <li>You must comply with our H&S guidelines in the Stallholder Brief</li>
+        <li>H.O.M.E Hub reserves the right to decline any application</li>
+      </ul>
+    </div>
+
+    <label class="terms-check">
+      <input type="checkbox" id="agreed_to_terms"/>
+      <span>I have read and agree to the
+        <a href="https://heartwood.homehub-benfleet.co.uk/stallholder-terms" target="_blank">Stallholder &amp; Vendor Terms and Conditions</a>
+        <span style="color:var(--or)">*</span>
+      </span>
+    </label>
+    <span class="field-err" id="err-terms">You must agree to the Terms and Conditions to submit</span>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goTo(3)">← Back</button>
+      <button class="btn btn-or" id="submit-btn" onclick="submitApp()">Submit Application</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success-wrap" id="success-wrap">
+    <div class="success-icon">✅</div>
+    <h2>Application Received!</h2>
+    <p>Thank you for applying. We've received your details and our team will review your application shortly.</p>
+    <p>You'll receive a <strong style="color:var(--dg)">confirmation email</strong> within the next few minutes.</p>
+    <p style="margin-top:14px;font-size:12px">Questions? <a href="mailto:info@homehub-benfleet.co.uk">info@homehub-benfleet.co.uk</a></p>
+  </div>
+
+</main>
+
+<footer>
+  &copy; 2025 H.O.M.E Hub CIC &nbsp;·&nbsp; Registered No. 16104567 &nbsp;·&nbsp;
+  <a href="https://homehub-benfleet.co.uk">homehub-benfleet.co.uk</a>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let step = 1;
+let vendorType = '';
+let stallPref = 'No preference';
+let eventId = '';
+let eventData = null;
+let pliFile = null;
+
+async function loadEvents() {
+  const { data, error } = await sb.from('public_events').select('*').eq('is_active', true).order('event_date', { ascending: true });
+  const sel = document.getElementById('event_id');
+  if (error || !data || !data.length) { sel.innerHTML = '<option value="">No upcoming events available</option>'; return; }
+  sel.innerHTML = '<option value="">Select an event...</option>';
+  data.forEach(ev => {
+    const d = new Date(ev.event_date);
+    const lbl = `${ev.name} — ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    sel.innerHTML += `<option value="${ev.id}" data-name="${ev.name}" data-date="${ev.event_date}" data-price="${ev.stall_price}" data-table="${ev.table_hire_price}">${lbl}</option>`;
+  });
+  sel.addEventListener('change', () => {
+    const o = sel.options[sel.selectedIndex];
+    if (!o.value) { document.getElementById('event-banner').style.display = 'none'; return; }
+    eventId = o.value;
+    eventData = { name: o.dataset.name, date: o.dataset.date, stallPrice: o.dataset.price, tablePrice: o.dataset.table };
+    showBanner(eventData);
+  });
+}
+
+function showBanner(ev) {
+  const d = new Date(ev.date);
+  const fmt = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const price = parseFloat(ev.stallPrice) === 0 ? 'Free stall' : `£${ev.stallPrice} per stall`;
+  const b = document.getElementById('event-banner');
+  b.style.display = 'block';
+  b.innerHTML = `<div class="event-banner-name">${ev.name}</div><div class="event-banner-meta">📅 ${fmt}</div><div class="event-banner-meta">📍 H.O.M.E Hub, 88 Brook Road, South Benfleet, SS7 5JF</div><span class="event-banner-badge">${price} · Table hire +£${ev.tablePrice}</span>`;
+}
+
+function selVendor(el, v) {
+  document.querySelectorAll('.vcard').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  vendorType = v;
+  document.getElementById('err-vendor_type').classList.remove('show');
+}
+
+function selStall(el, v) {
+  document.querySelectorAll('.soption').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  stallPref = v;
+}
+
+function toggleHire() {
+  const cb = document.getElementById('table_hire');
+  setTimeout(() => document.getElementById('hire-row').classList.toggle('sel', cb.checked), 0);
+}
+
+function handleFile(input) {
+  if (input.files && input.files[0]) {
+    pliFile = input.files[0];
+    document.getElementById('upload-fname').textContent = '✓ ' + pliFile.name;
+    document.getElementById('upload-zone').classList.add('has-file');
+  }
+}
+
+function goTo(s) {
+  if (s > step && !validate(step)) return;
+  document.getElementById(`fs-${step}`).classList.remove('active');
+  const si = document.getElementById(`si-${step}`);
+  si.classList.remove('active'); si.classList.add('done');
+  step = s;
+  document.getElementById(`fs-${step}`).classList.add('active');
+  const sn = document.getElementById(`si-${step}`);
+  sn.classList.add('active'); sn.classList.remove('done');
+  if (s === 4) buildReview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validate(s) {
+  let ok = true;
+  if (s === 1) {
+    const e = !eventId;
+    document.getElementById('err-event').classList.toggle('show', e);
+    if (e) ok = false;
+  }
+  if (s === 2) {
+    ['first_name','last_name','email','mobile_phone'].forEach(id => {
+      const el = document.getElementById(id);
+      const bad = !el.value.trim() || (id === 'email' && !el.value.includes('@'));
+      el.classList.toggle('err', bad);
+      document.getElementById(`err-${id}`).classList.toggle('show', bad);
+      if (bad) ok = false;
+    });
+  }
+  if (s === 3) {
+    if (!vendorType) { document.getElementById('err-vendor_type').classList.add('show'); ok = false; }
+    const d = document.getElementById('product_service_description');
+    const bd = !d.value.trim();
+    d.classList.toggle('err', bd);
+    document.getElementById('err-description').classList.toggle('show', bd);
+    if (bd) ok = false;
+  }
+  return ok;
+}
+
+function buildReview() {
+  const ev = eventData;
+  const d = ev ? new Date(ev.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const rows = [
+    ['Event', ev ? ev.name : '—'],
+    ['Date', d],
+    ['Name', `${document.getElementById('first_name').value} ${document.getElementById('last_name').value}`],
+    ['Business', document.getElementById('company_name').value || '—'],
+    ['Email', document.getElementById('email').value],
+    ['Mobile / WhatsApp', document.getElementById('mobile_phone').value],
+    ['Vendor Type', vendorType || '—'],
+    ['Stall Preference', stallPref],
+    ['Table Hire', document.getElementById('table_hire').checked ? 'Yes (+£5)' : 'No'],
+    ['PLI Document', pliFile ? pliFile.name : 'Not uploaded'],
+  ];
+  document.getElementById('review-card').innerHTML = rows.map(([k,v]) =>
+    `<div class="review-row"><span class="rk">${k}</span><span class="rv">${v}</span></div>`
+  ).join('');
+}
+
+async function submitApp() {
+  const terms = document.getElementById('agreed_to_terms');
+  if (!terms.checked) { document.getElementById('err-terms').classList.add('show'); return; }
+  document.getElementById('err-terms').classList.remove('show');
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Submitting...';
+  try {
+    let pliUrl = null;
+    if (pliFile) {
+      const fn = `pli/${eventId}/${Date.now()}_${pliFile.name.replace(/\s/g,'_')}`;
+      const { error: ue } = await sb.storage.from('practitioner-documents').upload(fn, pliFile, { cacheControl: '3600', upsert: false });
+      if (!ue) { const { data: ud } = sb.storage.from('practitioner-documents').getPublicUrl(fn); pliUrl = ud.publicUrl; }
+    }
+    const { error } = await sb.from('practitioner_applications').insert({
+      event_id: eventId,
+      first_name: document.getElementById('first_name').value.trim(),
+      last_name: document.getElementById('last_name').value.trim(),
+      email: document.getElementById('email').value.trim().toLowerCase(),
+      mobile_phone: document.getElementById('mobile_phone').value.trim(),
+      company_name: document.getElementById('company_name').value.trim() || null,
+      vendor_type: vendorType,
+      product_service_description: document.getElementById('product_service_description').value.trim(),
+      stall_preference: stallPref,
+      table_hire: document.getElementById('table_hire').checked,
+      public_liability_doc_url: pliUrl,
+      public_liability_expiry: document.getElementById('public_liability_expiry').value || null,
+      special_requirements: document.getElementById('special_requirements').value.trim() || null,
+      how_did_you_hear: document.getElementById('how_did_you_hear').value || null,
+      agreed_to_terms: true,
+      status: 'pending',
+      source: 'online_form'
+    });
+    if (error) throw error;
+    document.getElementById('fs-4').classList.remove('active');
+    document.getElementById('success-wrap').classList.add('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    console.error(e);
+    btn.disabled = false;
+    btn.innerHTML = 'Submit Application';
+    alert('Something went wrong — please try again or contact info@homehub-benfleet.co.uk');
+  }
+}
+
+loadEvents();
+</script>
+</body>
+</html>
