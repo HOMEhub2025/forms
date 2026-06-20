@@ -251,7 +251,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <span>I agree to H.O.M.E Hub storing my details to process this enquiry. We will never share your data with third parties. <span style="color:var(--or)">*</span></span>
   </label>
 
-  <button class="submit-btn" id="submit-btn" onclick="submitForm()">Send Enquiry</button>
+  <button class="submit-btn" id="submit-btn">Send Enquiry</button>
 </div>
 
 <!-- SUCCESS -->
@@ -401,6 +401,17 @@ async function submitForm() {
     btn.textContent = 'Send Enquiry';
   }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('submit-btn').addEventListener('touchend', function(e) {
+    e.preventDefault();
+    submitForm();
+  });
+  document.getElementById('submit-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    submitForm();
+  });
+});
 </script>
 
 </body>
