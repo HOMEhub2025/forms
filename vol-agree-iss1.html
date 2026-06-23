@@ -1117,7 +1117,7 @@
         Please scroll inside the box below to read the full agreement
       </div>
 
-      <div class="agreement-scroll" id="agreementScroll">
+      <div class="agreement-scroll" id="agreementScroll" style="-webkit-overflow-scrolling:touch">
         <div class="agreement-inner">
           
           <p class="agreement-intro-text">
@@ -1450,6 +1450,21 @@ document.addEventListener('DOMContentLoaded', function() {
       scrollPrompt.style.display = 'none';
     }
   }, 200);
+
+  // iOS fallback — if scroll detection doesn't fire, unlock after reading time
+  setTimeout(function() {
+    if (!agreementRead) {
+      agreementRead = true;
+      agreementCheckbox.disabled = false;
+      agreementAcceptBox.classList.add('enabled');
+      scrollPrompt.textContent = 'Please tick below to confirm you agree';
+      scrollPrompt.classList.add('dismissed');
+    }
+  }, 8000);
+
+  // Also fire scroll check on touch events for iOS
+  agreementScroll.addEventListener('touchmove', checkAgreementScrolled, { passive: true });
+  agreementScroll.addEventListener('touchend', checkAgreementScrolled, { passive: true });
 
   // ═══ AGE GATE ═══
   var dobInput = document.querySelector('[name="dob"]');
