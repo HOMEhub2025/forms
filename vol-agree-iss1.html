@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#006837">
 <title>H.O.M.E HUB · Volunteer Registration</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 
   :root {
@@ -790,7 +790,7 @@
   </div>
 
   <!-- ═══ FORM ═══ -->
-  <div id="volForm">
+  <form id="volForm">
 
     <!-- ─── 1. ABOUT YOU ─── -->
     <div class="card">
@@ -1344,6 +1344,8 @@
 
   </div>
 
+  </form>
+
   <div class="footer">
     <strong>H.O.M.E Hub CIC</strong> · Benfleet, Essex<br>
     Helping · Overcoming · Motivating · Exploring<br>
@@ -1372,7 +1374,6 @@
 
 var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
-var db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 var isSubmitting = false;
 
@@ -1553,55 +1554,56 @@ document.addEventListener('DOMContentLoaded', function() {
       full_name: fullName,
       email: (fd.get('email') || '').trim() || null,
       phone: (fd.get('phone') || '').trim() || null,
+      preferred_name: fd.get('preferred_name') || null,
+      dob: fd.get('dob') || null,
+      address: fd.get('address') || null,
+      postcode: (fd.get('postcode') || '').toUpperCase() || null,
+      town: fd.get('town') || null,
       role: 'Volunteer',
       form_type: 'volunteer_registration',
       agreed_terms: fd.get('agreement_accepted') === 'on',
-      notes: JSON.stringify({
-        preferred_name: fd.get('preferred_name') || null,
-        dob: fd.get('dob') || null,
-        address: fd.get('address') || null,
-        postcode: (fd.get('postcode') || '').toUpperCase() || null,
-        town: fd.get('town') || null,
-        parent_name: fd.get('parent_name') || null,
-        parent_relationship: fd.get('parent_relationship') || null,
-        parent_email: fd.get('parent_email') || null,
-        parent_phone: fd.get('parent_phone') || null,
-        emergency_name: fd.get('emergency_name') || null,
-        emergency_relationship: fd.get('emergency_relationship') || null,
-        emergency_phone: fd.get('emergency_phone') || null,
-        medical_conditions: fd.get('medical_conditions') || null,
-        allergies: fd.get('allergies') || null,
-        access_needs: fd.get('access_needs') || null,
-        why_volunteer: fd.get('why_volunteer') || null,
-        areas_of_interest: areas || null,
-        availability: availability || null,
-        skills: fd.get('skills') || null,
-        tshirt_size: fd.get('tshirt_size') || null,
-        hoodie_size: fd.get('hoodie_size') || null,
-        dbs_status: fd.get('dbs_status') || null,
-        children_comfort: fd.get('children_comfort') || null,
-        first_aid_status: fd.get('first_aid_status') || null,
-        safeguarding_training: fd.get('safeguarding_training') || null,
-        references_willing: fd.get('references_willing') === 'on',
-        declarations: fd.get('declarations') || null,
-        gdpr_consent: fd.get('gdpr_consent') === 'on',
-        safeguarding_consent: fd.get('safeguarding_consent') === 'on',
-        parent_consent: fd.get('parent_consent') === 'on',
-        photo_consent: fd.get('photo_consent') === 'on',
-        newsletter_consent: fd.get('newsletter_consent') === 'on',
-        submitted_at: new Date().toISOString()
-      }, null, 2),
-      created_at: new Date().toISOString()
+      parent_name: fd.get('parent_name') || null,
+      parent_relationship: fd.get('parent_relationship') || null,
+      parent_email: fd.get('parent_email') || null,
+      parent_phone: fd.get('parent_phone') || null,
+      emergency_name: fd.get('emergency_name') || null,
+      emergency_relationship: fd.get('emergency_relationship') || null,
+      emergency_phone: fd.get('emergency_phone') || null,
+      medical_conditions: fd.get('medical_conditions') || null,
+      allergies: fd.get('allergies') || null,
+      access_needs: fd.get('access_needs') || null,
+      why_volunteer: fd.get('why_volunteer') || null,
+      areas_of_interest: areas || null,
+      availability: availability || null,
+      skills: fd.get('skills') || null,
+      dbs_status: fd.get('dbs_status') || null,
+      children_comfort: fd.get('children_comfort') || null,
+      first_aid_status: fd.get('first_aid_status') || null,
+      safeguarding_training: fd.get('safeguarding_training') || null,
+      references_willing: fd.get('references_willing') === 'on',
+      declarations: fd.get('declarations') || null,
+      gdpr_consent: fd.get('gdpr_consent') === 'on',
+      safeguarding_consent: fd.get('safeguarding_consent') === 'on',
+      parent_consent: fd.get('parent_consent') === 'on',
+      photo_consent: fd.get('photo_consent') === 'on',
+      newsletter_consent: fd.get('newsletter_consent') === 'on',
+      submitted_at: new Date().toISOString()
     };
 
-    db.from('volunteer_agreements').insert([payload]).select().then(function(result) {
-      if (result.error) {
-        var detail = result.error.message || 'unknown error';
-        showError('Submission failed: ' + detail + ' — screenshot this and send to info@homehub-benfleet.co.uk');
-        isSubmitting = false;
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit my registration';
-        return;
+    fetch(SUPABASE_URL + '/rest/v1/volunteer_agreements', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    }).then(function(response) {
+      if (!response.ok) {
+        return response.text().then(function(text) {
+          throw new Error(text || 'Server error ' + response.status);
+        });
       }
       // Clear draft
       try { localStorage.removeItem('vol_agree_draft'); } catch(e) {}
