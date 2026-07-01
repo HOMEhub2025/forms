@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#006837">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Welcome H.O.M.E — H.O.M.E Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --dg:#006837;--dg-deep:#004d28;--lg:#39b54a;
+  --db:#0e386a;--or:#f58221;--ly:#f7f3d8;
+  --ink:#111827;--mid:#374151;--mut:#6b7280;
+  --bg:#f4f6f4;--border:#e5e7eb;
+  --sh:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
+  --sh2:0 8px 32px rgba(0,0,0,.14);
+  --red:#dc2626;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{
+  font-family:'Montserrat',sans-serif;
+  background:linear-gradient(135deg,#f4f6f4 0%,#e8efe5 100%);
+  color:var(--ink);font-size:16px;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;padding:16px 14px 80px;
+}
+.container{max-width:580px;margin:0 auto}
+
+/* ── HERO ──────────────────────────────────────────────── */
+.hero{
+  background:linear-gradient(135deg,var(--dg),var(--dg-deep));
+  border-radius:20px;padding:28px 24px 32px;
+  margin-bottom:20px;box-shadow:var(--sh2);
+  position:relative;overflow:hidden;
+}
+.hero::before{content:"";position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--lg);border-radius:50%;opacity:.15}
+.hero::after{content:"";position:absolute;bottom:-40px;left:-30px;width:130px;height:130px;background:var(--or);border-radius:50%;opacity:.1}
+.brand-row{display:flex;align-items:center;gap:14px;margin-bottom:20px;position:relative}
+.brand-logo{width:56px;height:56px;object-fit:contain;display:block;flex-shrink:0}
+.brand-text{line-height:1}
+.brand-name{font-family:'League Spartan',sans-serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:-.01em}
+.brand-sub{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ly);margin-top:4px;font-weight:700;opacity:.9}
+.hero-title{font-family:'League Spartan',sans-serif;font-size:clamp(28px,6vw,36px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:8px;letter-spacing:-.02em;position:relative}
+.hero-title span{color:var(--or)}
+.hero-lede{font-size:15px;color:rgba(255,255,255,.9);line-height:1.65;position:relative;font-weight:500}
+
+/* ── CARDS ─────────────────────────────────────────────── */
+.card{background:#fff;border-radius:16px;border:1.5px solid var(--border);box-shadow:var(--sh);padding:24px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:14px;border-bottom:1.5px solid var(--border)}
+.card-icon{width:36px;height:36px;background:var(--dg);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card-icon.orange{background:var(--or)}
+.card-icon.blue{background:var(--db)}
+.card-title{font-family:'League Spartan',sans-serif;font-size:20px;font-weight:900;color:var(--db)}
+.card-sub{font-size:12px;color:var(--mut);margin-top:3px;line-height:1.4}
+
+/* ── FIRST VISIT BANNER ────────────────────────────────── */
+.first-visit-banner{
+  display:flex;align-items:center;gap:16px;
+  background:var(--ly);border:2px solid #d4c878;
+  border-radius:14px;padding:18px 20px;
+  cursor:pointer;touch-action:manipulation;
+  margin-bottom:20px;
+  transition:background .12s;
+}
+.first-visit-banner:active{background:#ede9c0}
+.first-visit-icon{width:44px;height:44px;background:var(--or);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.first-visit-icon svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.first-visit-text{}
+.first-visit-title{font-family:'League Spartan',sans-serif;font-size:18px;font-weight:900;color:var(--db);line-height:1.1}
+.first-visit-sub{font-size:13px;color:var(--mid);margin-top:3px;font-weight:500}
+
+/* ── FIELDS ────────────────────────────────────────────── */
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field-label{display:block;font-size:13px;font-weight:700;color:var(--db);margin-bottom:6px;line-height:1.3}
+.field-label .req{color:var(--red);margin-left:2px}
+.opt{display:inline-block;font-size:10px;font-weight:700;color:var(--mut);background:var(--border);border-radius:20px;padding:2px 8px;margin-left:6px;text-transform:uppercase;letter-spacing:.05em;vertical-align:middle}
+.field-hint{font-size:13px;color:var(--mid);margin-bottom:8px;line-height:1.6;font-weight:500}
+input[type=text],input[type=email],input[type=tel],input[type=search]{
+  width:100%;padding:16px 16px;border:2px solid var(--border);border-radius:12px;
+  font-family:'Montserrat',sans-serif;font-size:17px;color:var(--ink);background:#fff;
+  transition:border-color .15s;outline:none;-webkit-appearance:none;appearance:none;font-weight:500;
+}
+input:focus{border-color:var(--dg);background:#fff}
+input::placeholder{color:#b0b7c0;font-weight:400}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.row{grid-template-columns:1fr}}
+
+/* ── VALIDATION PROMPT ─────────────────────────────────── */
+.validation-prompt{
+  display:none;
+  background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;
+  padding:14px 16px;margin-top:8px;
+}
+.validation-prompt-text{font-size:15px;color:#991b1b;font-weight:700;line-height:1.5}
+.validation-prompt-hint{font-size:13px;color:#b91c1c;font-weight:500;margin-top:4px;line-height:1.5}
+
+/* ── NAME SEARCH ───────────────────────────────────────── */
+.search-results{
+  border:2px solid var(--border);border-radius:12px;
+  overflow:hidden;margin-top:10px;display:none;
+  box-shadow:var(--sh2);background:#fff;
+}
+.search-result{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;font-size:16px;font-weight:600;
+  color:var(--ink);border-bottom:1.5px solid var(--border);
+  cursor:pointer;touch-action:manipulation;
+}
+.search-result:last-child{border-bottom:none}
+.search-result:active{background:var(--bg)}
+.search-result-meta{font-size:12px;color:var(--mut);font-weight:400;margin-top:3px}
+.search-result-arrow{width:20px;height:20px;stroke:var(--dg);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.search-no-match{
+  background:var(--bg);border:2px solid var(--border);border-radius:12px;
+  padding:20px;margin-top:10px;display:none;
+}
+.search-no-match-title{font-size:15px;font-weight:700;color:var(--mid);margin-bottom:6px}
+.search-no-match-text{font-size:13px;color:var(--mut);font-weight:500;line-height:1.6}
+
+/* ── OPTION TILES ──────────────────────────────────────── */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.tile{
+  padding:16px 14px;border:2px solid var(--border);border-radius:12px;
+  font-size:14px;font-weight:600;color:var(--mid);
+  cursor:pointer;touch-action:manipulation;
+  text-align:center;background:var(--bg);
+  line-height:1.35;transition:border-color .12s,background .12s,color .12s;
+}
+.tile:active{background:#e8efe5}
+.tile.selected{border-color:var(--dg);background:#f0fdf4;color:var(--dg)}
+.tile.full{grid-column:1/-1}
+.tile-sub-text{font-size:12px;color:var(--mut);font-weight:400;margin-top:4px}
+.tile.selected .tile-sub-text{color:var(--dg);opacity:.8}
+
+/* ── SHOW MORE SESSIONS ────────────────────────────────── */
+.show-more-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:14px;margin-top:10px;
+  background:transparent;border:2px dashed var(--border);border-radius:12px;
+  font-size:14px;font-weight:600;color:var(--mut);
+  cursor:pointer;touch-action:manipulation;
+  transition:border-color .12s,color .12s;
+}
+.show-more-btn:active{background:var(--bg)}
+.show-more-btn svg{width:18px;height:18px;stroke:var(--mut);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.all-sessions-wrap{display:none;margin-top:10px}
+.all-sessions-label{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+
+/* ── TOGGLE ROWS ───────────────────────────────────────── */
+.toggle-row{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:14px;padding:14px 16px;background:var(--bg);
+  border:1.5px solid var(--border);border-radius:12px;
+  margin-bottom:10px;cursor:pointer;touch-action:manipulation;
+}
+.toggle-row:last-child{margin-bottom:0}
+.toggle-text{flex:1}
+.toggle-label-text{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3}
+.toggle-sub-text{font-size:12px;color:var(--mut);margin-top:4px;line-height:1.5;font-weight:500}
+.toggle{width:48px;height:26px;background:#d1d5db;border-radius:100px;position:relative;flex-shrink:0;transition:background .2s;cursor:pointer;border:none;margin-top:2px}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on{background:var(--dg)}
+.toggle.on::after{transform:translateX(22px)}
+
+/* ── WELCOME BACK ──────────────────────────────────────── */
+.welcome-back{
+  background:linear-gradient(135deg,var(--dg),var(--dg-deep));
+  border-radius:16px;padding:22px 24px;margin-bottom:20px;
+  position:relative;overflow:hidden;box-shadow:var(--sh2);
+}
+.welcome-back::before{content:"";position:absolute;top:-30px;right:-30px;width:100px;height:100px;background:var(--or);border-radius:50%;opacity:.12}
+.wb-icon{width:48px;height:48px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.wb-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.wb-name{font-family:'League Spartan',sans-serif;font-size:26px;font-weight:900;color:#fff;line-height:1.1}
+.wb-sub{font-size:14px;color:rgba(255,255,255,.85);margin-top:6px;font-weight:500;line-height:1.5}
+
+/* ── PROMPT BOX ────────────────────────────────────────── */
+.prompt-box{background:var(--ly);border:2px solid #d4c878;border-radius:14px;padding:18px 20px;margin-bottom:18px}
+.prompt-box-title{font-size:14px;font-weight:700;color:#7a5c0a;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.prompt-box-title svg{width:18px;height:18px;stroke:#7a5c0a;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.prompt-box-text{font-size:14px;color:#5a4008;line-height:1.65;font-weight:500}
+
+/* ── SECTION LABEL ─────────────────────────────────────── */
+.section-label{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1.5px;background:var(--border)}
+
+/* ── BUTTONS ───────────────────────────────────────────── */
+.btn{display:block;width:100%;padding:18px;background:var(--dg);color:#fff;border:none;border-radius:14px;font-family:'League Spartan',sans-serif;font-size:21px;font-weight:900;cursor:pointer;touch-action:manipulation;-webkit-appearance:none;letter-spacing:.01em;margin-top:6px;transition:opacity .15s;text-align:center}
+.btn:active{opacity:.85}
+.btn:disabled{background:#9ca3af;cursor:not-allowed}
+.btn-ghost{display:block;width:100%;padding:14px;background:transparent;color:var(--mut);border:none;font-size:14px;font-weight:600;font-family:'Montserrat',sans-serif;cursor:pointer;touch-action:manipulation;margin-top:6px;text-align:center}
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SCREENS ───────────────────────────────────────────── */
+.screen{display:none}
+.screen.active{display:block}
+
+/* ── THANK YOU SCREENS ─────────────────────────────────── */
+.ty-wrap{background:linear-gradient(135deg,var(--dg),var(--dg-deep));border-radius:20px;padding:40px 28px;text-align:center;box-shadow:var(--sh2);position:relative;overflow:hidden;margin-bottom:20px}
+.ty-wrap::before{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:var(--or);border-radius:50%;opacity:.12}
+.ty-wrap::after{content:"";position:absolute;bottom:-40px;left:-40px;width:150px;height:150px;background:var(--lg);border-radius:50%;opacity:.15}
+.ty-icon{width:72px;height:72px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;position:relative}
+.ty-icon svg{width:38px;height:38px;stroke:#fff;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ty-headline{font-family:'League Spartan',sans-serif;font-size:clamp(30px,7vw,40px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:16px;position:relative}
+.ty-headline span{color:var(--or)}
+.ty-body{font-size:15px;color:rgba(255,255,255,.9);line-height:1.7;position:relative;max-width:340px;margin:0 auto;font-weight:500}
+.ty-divider{width:48px;height:3px;background:rgba(255,255,255,.25);border-radius:2px;margin:20px auto}
+.ty-quote{font-size:16px;font-style:italic;color:rgba(255,255,255,.92);line-height:1.7;position:relative;max-width:340px;margin:0 auto;font-weight:500}
+
+.ty2-wrap{background:linear-gradient(135deg,var(--db),#091f40);border-radius:20px;padding:40px 28px;text-align:center;box-shadow:var(--sh2);position:relative;overflow:hidden;margin-bottom:20px}
+.ty2-wrap::before{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:var(--or);border-radius:50%;opacity:.1}
+.ty2-wrap::after{content:"";position:absolute;bottom:-40px;left:-40px;width:150px;height:150px;background:var(--lg);border-radius:50%;opacity:.12}
+.ty-footer{text-align:center;padding:20px 20px 0}
+.ty-home-name{font-family:'League Spartan',sans-serif;font-size:32px;font-weight:900;color:var(--db);letter-spacing:.06em}
+.ty-home-name span{color:var(--or)}
+.ty-acronym{font-size:11px;color:var(--mut);letter-spacing:.1em;font-weight:700;margin-top:6px}
+.ty-unity{font-size:13px;color:var(--or);font-weight:800;letter-spacing:.04em;margin-top:10px;text-transform:uppercase}
+
+/* ── GDPR NOTE ─────────────────────────────────────────── */
+.gdpr-note{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--mut);line-height:1.7;margin:16px 0}
+.gdpr-note a{color:var(--dg);font-weight:700;text-decoration:none}
+
+/* ── FOOTER TAG ────────────────────────────────────────── */
+.footer-tag{text-align:center;padding:12px 0 0;font-size:12px;color:var(--mut);font-weight:600}
+.footer-tag strong{color:var(--or)}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- SVG DEFINITIONS ──────────────────────────────────────── -->
+<svg style="display:none">
+  <defs>
+    <symbol id="icon-person" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="icon-door" viewBox="0 0 24 24"><path d="M13 4H6a2 2 0 0 0-2 2v14h16v-2"/><path d="M13 4v16"/><line x1="9" y1="12" x2="11" y2="12"/></symbol>
+    <symbol id="icon-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+    <symbol id="icon-group" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="icon-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+    <symbol id="icon-quote" viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  </defs>
+</svg>
+
+<!-- ═══ SCREEN: WELCOME HOME ═══════════════════════════════ -->
+<div class="screen active" id="screen-name">
+
+  <div class="hero">
+    <div class="brand-row">
+      <img class="brand-logo"
+        src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png"
+        alt="H.O.M.E Hub logo"
+        onerror="this.style.display='none'">
+      <div class="brand-text">
+        <div class="brand-name">H.O.M.E Hub</div>
+        <div class="brand-sub">Helping&nbsp;·&nbsp;Overcoming&nbsp;·&nbsp;Motivating&nbsp;·&nbsp;Exploring</div>
+      </div>
+    </div>
+    <div class="hero-title">Welcome H.<span>O.</span>M.E</div>
+    <div style="font-family:'League Spartan',sans-serif;font-size:22px;font-weight:900;color:var(--or);margin-bottom:10px;position:relative">You are Amazing.</div>
+    <div class="hero-lede">Every person who walks through our door is choosing to show up — for themselves and for their community.</div>
+  </div>
+
+  <!-- FIRST VISIT — sits above the name search intentionally -->
+  <div class="first-visit-banner" id="btn-first-visit">
+    <div class="first-visit-icon">
+      <svg><use href="#icon-star"/></svg>
+    </div>
+    <div class="first-visit-text">
+      <div class="first-visit-title">This is my first visit</div>
+      <div class="first-visit-sub">We'd love to welcome you properly — tap here to get started</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">
+        <svg><use href="#icon-person"/></svg>
+      </div>
+      <div>
+        <div class="card-title">Who's joining us today?</div>
+        <div class="card-sub">Start typing your name — we'll find you straight away</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="name-input">Your name</label>
+      <div class="field-hint">Type at least two letters and we'll search for you</div>
+      <input type="search" id="name-input"
+        placeholder="e.g. Sarah Johnson"
+        autocomplete="off" autocorrect="off"
+        spellcheck="false" inputmode="text">
+      <div class="search-results" id="name-results"></div>
+      <div class="search-no-match" id="name-no-match">
+        <div class="search-no-match-title">We haven't met yet — how brilliant!</div>
+        <div class="search-no-match-text">If you're new, tap the gold banner above to register your first visit. If you've been before, check the spelling of your name — try a nickname or just your first name.</div>
+      </div>
+      <div class="validation-prompt" id="name-error">
+        <div class="validation-prompt-text">We'd love to know your name</div>
+        <div class="validation-prompt-hint">Please type at least two letters so we can find you — or tap "This is my first visit" above if you're new here</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-tag">Bringing <strong>Unity</strong> Back to the Community</div>
+</div>
+
+<!-- ═══ SCREEN: CO-CREATOR CHOICE ═════════════════════════ -->
+<div class="screen" id="screen-cocreator">
+  <div class="hero">
+    <div class="brand-row">
+      <img class="brand-logo" src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub logo" onerror="this.style.display='none'">
+      <div class="brand-text"><div class="brand-name">H.O.M.E Hub</div><div class="brand-sub">Helping&nbsp;·&nbsp;Overcoming&nbsp;·&nbsp;Motivating&nbsp;·&nbsp;Exploring</div></div>
+    </div>
+    <div class="hero-title" id="cc-hero-title">Welcome back!</div>
+    <div class="hero-lede">It's always wonderful when a Co-Creator walks through the door. How are you joining us today?</div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon"><svg><use href="#icon-group"/></svg></div>
+      <div><div class="card-title">How are you with us today?</div><div class="card-sub">Choose what fits this visit</div></div>
+    </div>
+    <div class="tiles">
+      <div class="tile" id="cc-tile-creator" data-choice="co_creator">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <div class="tile-label" style="display:block">Co-Creator</div>
+        <div class="tile-sub-text">Here to help make H.O.M.E Hub amazing</div>
+      </div>
+      <div class="tile" id="cc-tile-community" data-choice="community">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:6px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div class="tile-label" style="display:block">Community Member</div>
+        <div class="tile-sub-text">Here to connect and be part of something</div>
+      </div>
+    </div>
+    <div class="validation-prompt" id="cc-error" style="margin-top:12px">
+      <div class="validation-prompt-text">Please choose how you're joining us today</div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="btn" id="btn-cc-continue">Continue</div>
+      <div class="btn-ghost" id="btn-cc-back">That's not me — go back</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: RETURNING VISITOR ═════════════════════════ -->
+<div class="screen" id="screen-returning">
+
+  <div class="welcome-back" id="ret-welcome-banner">
+    <div class="wb-icon"><svg><use href="#icon-heart"/></svg></div>
+    <div class="wb-name" id="ret-name">Wonderful to see you!</div>
+    <div class="wb-sub" id="ret-sub">Great to have you back with us today</div>
+  </div>
+
+  <div class="card" id="ret-missing-card" style="display:none">
+    <div class="card-header">
+      <div class="card-icon orange">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </div>
+      <div>
+        <div class="card-title" style="color:var(--or)">One quick thing while you're here</div>
+        <div class="card-sub" id="ret-missing-sub">Would you like to share your contact details so we can keep you connected?</div>
+      </div>
+    </div>
+    <div id="ret-email-field" style="display:none" class="field">
+      <label class="field-label" for="ret-email">Email address <span class="opt">Optional</span></label>
+      <div class="field-hint">We'll only use this to share what's on and keep you in the loop — never anything spammy.</div>
+      <input type="email" id="ret-email" placeholder="your@email.com" autocomplete="email" inputmode="email">
+    </div>
+    <div id="ret-mobile-field" style="display:none" class="field">
+      <label class="field-label" for="ret-mobile">Mobile number <span class="opt">Optional</span></label>
+      <div class="field-hint">Only used if we really need to reach you about something important.</div>
+      <input type="tel" id="ret-mobile" placeholder="07700 000000" autocomplete="tel" inputmode="tel">
+    </div>
+    <div id="ret-consents" style="display:none;margin-top:10px">
+      <div class="toggle-row" id="ret-newsletter-row">
+        <div class="toggle-text"><div class="toggle-label-text">Newsletter &amp; updates</div><div class="toggle-sub-text">Stay in the loop with what's happening at H.O.M.E Hub</div></div>
+        <button class="toggle" id="ret-newsletter-toggle" aria-label="Newsletter consent"></button>
+      </div>
+      <div class="toggle-row" id="ret-whatsapp-row">
+        <div class="toggle-text"><div class="toggle-label-text">WhatsApp messages</div><div class="toggle-sub-text">Quick updates and friendly reminders via WhatsApp</div></div>
+        <button class="toggle" id="ret-whatsapp-toggle" aria-label="WhatsApp consent"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon"><svg><use href="#icon-group"/></svg></div>
+      <div><div class="card-title">What are you joining today?</div><div class="card-sub" id="ret-session-card-sub">Sessions running today are shown first</div></div>
+    </div>
+
+    <div id="ret-usual-wrap" style="display:none">
+      <div class="section-label">Your usual sessions</div>
+      <div class="tiles" id="ret-usual-tiles"></div>
+    </div>
+
+    <div id="ret-today-wrap">
+      <div class="section-label" id="ret-today-label">On today</div>
+      <div class="tiles" id="ret-today-tiles"></div>
+    </div>
+
+    <div class="show-more-btn" id="ret-show-more">
+      <svg><use href="#icon-list"/></svg>
+      Can't find your group? See all sessions
+    </div>
+    <div class="all-sessions-wrap" id="ret-all-sessions-wrap">
+      <div class="all-sessions-label">All sessions</div>
+      <div class="tiles" id="ret-all-tiles"></div>
+    </div>
+
+    <div class="validation-prompt" id="ret-session-error" style="margin-top:10px">
+      <div class="validation-prompt-text">Please choose a session to continue</div>
+      <div class="validation-prompt-hint">If your group isn't showing, tap "Can't find your group?" above to see every session we offer</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon blue"><svg><use href="#icon-heart"/></svg></div>
+      <div><div class="card-title">What brings you in today?</div><div class="card-sub">Choose the reason that feels most right</div></div>
+    </div>
+    <div class="tiles" id="ret-reason-tiles"></div>
+    <div class="validation-prompt" id="ret-reason-error" style="margin-top:10px">
+      <div class="validation-prompt-text">Please choose a reason to continue</div>
+      <div class="validation-prompt-hint">There's no wrong answer — just pick what feels closest to why you're here today</div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="btn" id="btn-ret-signin">Sign me in</div>
+      <div class="btn-ghost" id="btn-ret-back">Go back</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ SCREEN: NEW VISITOR — PERSONAL DETAILS ════════════ -->
+<div class="screen" id="screen-new">
+  <div class="hero">
+    <div class="brand-row">
+      <img class="brand-logo" src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub logo" onerror="this.style.display='none'">
+      <div class="brand-text"><div class="brand-name">H.O.M.E Hub</div><div class="brand-sub">Helping&nbsp;·&nbsp;Overcoming&nbsp;·&nbsp;Motivating&nbsp;·&nbsp;Exploring</div></div>
+    </div>
+    <div class="hero-title">You are <span>Amazing.</span></div>
+    <div class="hero-lede">It's so wonderful to have you here. Let's get you registered — it takes under a minute, and it helps us build something truly special for this community.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon"><svg><use href="#icon-person"/></svg></div>
+      <div><div class="card-title">A little about you</div><div class="card-sub">Your details, kept safe and used with care</div></div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="new-name">Your full name <span class="req">*</span></label>
+      <div class="field-hint">First name and last name — however you'd like to be known here</div>
+      <input type="text" id="new-name" placeholder="e.g. Sarah Johnson" autocomplete="name" autocapitalize="words">
+      <div class="validation-prompt" id="new-name-error">
+        <div class="validation-prompt-text">We'd love to know your name</div>
+        <div class="validation-prompt-hint">Your name helps us welcome you properly every time you come through the door</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="field-label" for="new-email">Email <span class="opt">Optional</span></label>
+        <div class="field-hint">For news and what's on — we never spam</div>
+        <input type="email" id="new-email" placeholder="your@email.com" autocomplete="email" inputmode="email">
+      </div>
+      <div class="field">
+        <label class="field-label" for="new-mobile">Mobile <span class="opt">Optional</span></label>
+        <div class="field-hint">Only if you'd like us to reach you</div>
+        <input type="tel" id="new-mobile" placeholder="07700 000000" autocomplete="tel" inputmode="tel">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="new-postcode">Postcode <span class="opt">First part only, e.g. SS7</span></label>
+      <div class="field-hint">Helps us understand the communities we serve. We never share this with anyone.</div>
+      <input type="text" id="new-postcode" placeholder="SS7" autocomplete="postal-code" maxlength="8" style="text-transform:uppercase;max-width:140px">
+    </div>
+    <div class="field">
+      <label class="field-label">Age group <span class="opt">Optional</span></label>
+      <div class="field-hint">Completely optional — helps us report back to the funders who keep H.O.M.E Hub running. Nothing personal is ever shared.</div>
+      <div class="tiles" id="age-tiles"></div>
+    </div>
+    <div class="field">
+      <label class="field-label">Gender <span class="opt">Completely optional</span></label>
+      <div class="field-hint">Only if you'd like to share — helps us show funders that H.O.M.E Hub is genuinely welcoming to everyone.</div>
+      <div class="tiles" id="gender-tiles"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon blue"><svg><use href="#icon-heart"/></svg></div>
+      <div><div class="card-title">Staying connected</div><div class="card-sub">Everything here is completely your choice</div></div>
+    </div>
+    <div class="toggle-row" id="new-newsletter-row">
+      <div class="toggle-text"><div class="toggle-label-text">Newsletter &amp; updates</div><div class="toggle-sub-text">Stay in the loop with what's on at H.O.M.E Hub — we don't spam, ever</div></div>
+      <button class="toggle" id="new-newsletter-toggle" aria-label="Newsletter consent"></button>
+    </div>
+    <div class="toggle-row" id="new-whatsapp-row">
+      <div class="toggle-text"><div class="toggle-label-text">WhatsApp messages</div><div class="toggle-sub-text">Quick updates and friendly reminders via WhatsApp</div></div>
+      <button class="toggle" id="new-whatsapp-toggle" aria-label="WhatsApp consent"></button>
+    </div>
+    <div class="toggle-row" id="new-anon-row" style="border-color:var(--dg)">
+      <div class="toggle-text"><div class="toggle-label-text">Anonymised reporting</div><div class="toggle-sub-text">Your anonymised data helps keep H.O.M.E Hub funded and free. No personal details are ever shared with funders.</div></div>
+      <button class="toggle on" id="new-anon-toggle" aria-label="Anonymised reporting consent"></button>
+    </div>
+    <div class="gdpr-note">
+      Your information is held securely under UK GDPR. You can ask us to update or remove your details any time — just speak to a team member or email <a href="mailto:info@homehub-benfleet.co.uk">info@homehub-benfleet.co.uk</a>
+    </div>
+    <div class="btn" id="btn-new-next">Continue</div>
+    <div class="btn-ghost" id="btn-new-back">Go back</div>
+  </div>
+</div>
+
+<!-- ═══ SCREEN: NEW VISITOR — SESSION ══════════════════════ -->
+<div class="screen" id="screen-session">
+  <div class="hero">
+    <div class="brand-row">
+      <img class="brand-logo" src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub logo" onerror="this.style.display='none'">
+      <div class="brand-text"><div class="brand-name">H.O.M.E Hub</div><div class="brand-sub">Helping&nbsp;·&nbsp;Overcoming&nbsp;·&nbsp;Motivating&nbsp;·&nbsp;Exploring</div></div>
+    </div>
+    <div class="hero-title">Nearly there —<br><span>you're doing brilliantly.</span></div>
+    <div class="hero-lede">Just two more taps and you'll be signed in.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon"><svg><use href="#icon-group"/></svg></div>
+      <div><div class="card-title">What are you joining today?</div><div class="card-sub">Sessions running today are shown first</div></div>
+    </div>
+    <div id="new-today-wrap">
+      <div class="section-label" id="new-today-label">On today</div>
+      <div class="tiles" id="new-today-tiles"></div>
+    </div>
+    <div class="show-more-btn" id="new-show-more">
+      <svg><use href="#icon-list"/></svg>
+      Can't find your group? See all sessions
+    </div>
+    <div class="all-sessions-wrap" id="new-all-sessions-wrap">
+      <div class="all-sessions-label">All sessions</div>
+      <div class="tiles" id="new-all-tiles"></div>
+    </div>
+    <div class="validation-prompt" id="session-error" style="margin-top:10px">
+      <div class="validation-prompt-text">Please choose a session to continue</div>
+      <div class="validation-prompt-hint">If your group isn't showing, tap "Can't find your group?" above</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon blue"><svg><use href="#icon-heart"/></svg></div>
+      <div><div class="card-title">What brings you in today?</div><div class="card-sub">Choose the reason that feels most right — there's no wrong answer</div></div>
+    </div>
+    <div class="tiles" id="reason-tiles"></div>
+    <div class="validation-prompt" id="reason-error" style="margin-top:10px">
+      <div class="validation-prompt-text">Please choose a reason to continue</div>
+      <div class="validation-prompt-hint">Just pick what feels closest to why you're here today</div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="btn" id="btn-session-signin">Sign me in</div>
+      <div class="btn-ghost" id="btn-session-back">Go back</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ THANK YOU SCREEN 1 — Quote ════════════════════════ -->
+<div class="screen" id="screen-ty1">
+  <div class="ty-wrap">
+    <div class="ty-icon">
+      <svg><use href="#icon-star"/></svg>
+    </div>
+    <div class="ty-headline">You are <span>Amazing.</span></div>
+    <div class="ty-divider"></div>
+    <div class="ty-quote" id="ty-quote">"Every community is built one connection at a time. Today, you are that connection."</div>
+  </div>
+  <div class="card" style="text-align:center;padding:22px 24px">
+    <div style="font-size:16px;color:var(--mid);line-height:1.75;font-weight:500">
+      Every time you walk through our door, you're choosing to show up.<br>For yourself. For this community.<br><strong style="color:var(--dg)">We see you. And we are so glad you're here.</strong>
+    </div>
+    <div style="margin-top:20px">
+      <div class="btn" id="btn-ty1-next">One more thing</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ THANK YOU SCREEN 2 — We Love You ══════════════════ -->
+<div class="screen" id="screen-ty2">
+  <div class="ty2-wrap">
+    <div class="ty-icon">
+      <svg><use href="#icon-heart"/></svg>
+    </div>
+    <div class="ty-headline">We Love You.<br><span>Thank You.</span></div>
+    <div class="ty-divider"></div>
+    <div class="ty-body" id="ty2-body">
+      Thank you for being part of H.O.M.E Hub today. You don't just attend — you belong here. What you bring to this community matters more than you know.
+    </div>
+  </div>
+  <div class="ty-footer">
+    <div class="ty-home-name">H.<span>O.</span>M.E</div>
+    <div class="ty-acronym">Helping&nbsp;&bull;&nbsp;Overcoming&nbsp;&bull;&nbsp;Motivating&nbsp;&bull;&nbsp;Exploring</div>
+    <div class="ty-unity">Bringing Unity Back to the Community</div>
+    <div style="margin-top:24px">
+      <div class="btn" id="btn-done">See you soon</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+const SB_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2MDgwOTYsImV4cCI6MjA1OTE4NDA5Nn0.oH3wEVz_4GWkHNFdnzq-vIBN8leFmLg3PZwLilqUGpQ';
+
+// ── STATE ────────────────────────────────────────────────────────
+var S = {
+  typedName:'', visitor:null, visitType:'community',
+  selectedSession:'', selectedReason:'',
+  selectedAge:'', selectedGender:'',
+  newName:'', newEmail:'', newMobile:'', newPostcode:'',
+  newsletterConsent:false, whatsappConsent:false, anonConsent:true,
+  sessions:[], todaySessions:[], reasons:[]
+};
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function titleCase(str) {
+  if(!str) return '';
+  return str.trim().replace(/\w+/g, function(word, offset) {
+    var lw = word.toLowerCase();
+    if(lw.startsWith('mc') && word.length > 2) return 'Mc'+word[2].toUpperCase()+word.slice(3).toLowerCase();
+    if(lw.startsWith('mac') && word.length > 3) return 'Mac'+word[3].toUpperCase()+word.slice(4).toLowerCase();
+    if(word.includes("'")) return word.split("'").map(function(p){return p.charAt(0).toUpperCase()+p.slice(1).toLowerCase();}).join("'");
+    if(['and','the','of','in','at','by'].includes(lw) && offset > 0) return lw;
+    return word.charAt(0).toUpperCase()+word.slice(1).toLowerCase();
+  });
+}
+
+function firstName(full){ return (full||'').split(' ')[0] || 'there'; }
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if(el){ el.classList.add('active'); window.scrollTo(0,0); }
+}
+
+function SB(path, opts){
+  var h = {apikey:SB_KEY, Authorization:'Bearer '+SB_KEY, 'Content-Type':'application/json'};
+  var extra = (opts && opts.headers) ? opts.headers : {};
+  return fetch(SB_URL+'/rest/v1/'+path, Object.assign({},opts,{headers:Object.assign({},h,extra)}))
+    .then(function(r){ return r.json().then(function(d){ return {data:d, ok:r.ok, status:r.status}; }); });
+}
+
+function makeTile(label, value, container, stateKey, full){
+  var d = document.createElement('div');
+  d.className = 'tile'+(full?' full':'');
+  d.textContent = label;
+  d.setAttribute('data-value', value||label);
+  d.addEventListener('click', function(){
+    container.querySelectorAll('.tile').forEach(function(c){ c.classList.remove('selected'); });
+    d.classList.add('selected');
+    S[stateKey] = value||label;
+  });
+  container.appendChild(d);
+  return d;
+}
+
+function setupToggle(btnId, stateKey, initial){
+  var btn = document.getElementById(btnId);
+  if(!btn) return;
+  S[stateKey] = !!initial;
+  btn.classList.toggle('on', S[stateKey]);
+  function toggle(e){
+    if(e) e.stopPropagation();
+    S[stateKey] = !S[stateKey];
+    btn.classList.toggle('on', S[stateKey]);
+  }
+  btn.addEventListener('click', toggle);
+  var row = btn.closest('.toggle-row');
+  if(row) row.addEventListener('click', function(e){ if(e.target !== btn) toggle(); });
+}
+
+// ── TODAY'S DAY ──────────────────────────────────────────────────
+function getTodayName(){
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+}
+
+// ── LOAD CONFIG ──────────────────────────────────────────────────
+async function loadConfig(){
+  var today = getTodayName();
+  try {
+    // sign_in_sessions now has a days_of_week column (array of day names)
+    var sr = await SB('sign_in_sessions?is_active=eq.true&order=sort_order');
+    var all = (sr.data||[]).map(function(s){ return s.name; });
+    var todayOnly = (sr.data||[]).filter(function(s){
+      if(!s.days_of_week || !s.days_of_week.length) return false;
+      return s.days_of_week.some(function(d){ return d.toLowerCase() === today.toLowerCase(); });
+    }).map(function(s){ return s.name; });
+    S.sessions = all;
+    S.todaySessions = todayOnly.length ? todayOnly : all; // fallback to all if none have days set
+    var rr = await SB('sign_in_reasons?is_active=eq.true&order=sort_order');
+    S.reasons = (rr.data||[]).map(function(r){ return r.name; });
+  } catch(e){
+    S.sessions = ['Coffee Morning','Community Drop In','T.I.M.E Men\'s Group','Pilates with Donna','Canasta Card Group','Benfleet Book Club','Connect 4 Youth Club','Ann\'s Crystal Healing','Drum Circle','Breathwork','Soul Led','Adults with Individual Needs Programme'];
+    S.todaySessions = S.sessions;
+    S.reasons = ['Social Connection','Personal Development','Mental Wellbeing','Learning a New Skill','Routine & Structure','Support During a Difficult Time','Attending a Meeting','Group Facilitator','Volunteering','Prefer Not to Say'];
+  }
+}
+
+// ── SESSION TILES BUILDER (shared logic) ─────────────────────────
+function buildSessionTiles(todayContainerId, allContainerId, showMoreId, allWrapId, todayLabelId){
+  var todayEl = document.getElementById(todayContainerId);
+  var allEl = document.getElementById(allContainerId);
+  var showMoreBtn = document.getElementById(showMoreId);
+  var allWrap = document.getElementById(allWrapId);
+  todayEl.innerHTML = ''; allEl.innerHTML = '';
+
+  if(S.todaySessions.length){
+    if(todayLabelId) document.getElementById(todayLabelId).textContent = 'On today — ' + getTodayName();
+    S.todaySessions.forEach(function(s){ makeTile(s,s,todayEl,'selectedSession'); });
+  }
+
+  var todaySeen = {};
+  S.todaySessions.forEach(function(s){ todaySeen[s]=true; });
+  S.sessions.forEach(function(s){ if(!todaySeen[s]) makeTile(s,s,allEl,'selectedSession'); });
+
+  showMoreBtn.addEventListener('click', function(){
+    var open = allWrap.style.display === 'block';
+    allWrap.style.display = open ? 'none' : 'block';
+    showMoreBtn.innerHTML = open
+      ? '<svg><use href="#icon-list"/></svg>Can\'t find your group? See all sessions'
+      : '<svg><use href="#icon-list"/></svg>Hide full list';
+  });
+}
+
+// ── SCREEN 1: NAME SEARCH ────────────────────────────────────────
+var searchTimer = null;
+document.getElementById('name-input').addEventListener('input', function(){
+  var val = this.value.trim();
+  S.typedName = val;
+  clearTimeout(searchTimer);
+  var res = document.getElementById('name-results');
+  var noMatch = document.getElementById('name-no-match');
+  res.style.display='none'; res.innerHTML='';
+  noMatch.style.display='none';
+  document.getElementById('name-error').style.display='none';
+  if(val.length < 2) return;
+  searchTimer = setTimeout(function(){ doSearch(val); }, 380);
+});
+
+async function doSearch(q){
+  var res = document.getElementById('name-results');
+  var noMatch = document.getElementById('name-no-match');
+  try {
+    var r = await SB('visitors?full_name=ilike.*'+encodeURIComponent(q)+'*&order=full_name&limit=8');
+    var matches = r.data||[];
+    res.innerHTML='';
+    if(matches.length){
+      res.style.display='block';
+      matches.forEach(function(v){
+        var d = document.createElement('div');
+        d.className = 'search-result';
+        d.innerHTML =
+          '<div><div>'+v.full_name+'</div><div class="search-result-meta">'+(v.is_co_creator?'Co-Creator &middot; ':'')+'Visited before</div></div>'+
+          '<svg class="search-result-arrow" viewBox="0 0 24 24"><use href="#icon-arrow"/></svg>';
+        d.addEventListener('click', function(){ onSelectVisitor(v); });
+        res.appendChild(d);
+      });
+    } else {
+      res.style.display='none';
+      noMatch.style.display='block';
+    }
+  } catch(e){ noMatch.style.display='block'; }
+}
+
+document.getElementById('btn-first-visit').addEventListener('click', function(){
+  S.visitor=null;
+  document.getElementById('new-name').value = titleCase(S.typedName);
+  S.newName = titleCase(S.typedName);
+  buildNewScreen();
+  showScreen('screen-new');
+});
+
+function onSelectVisitor(v){
+  S.visitor=v;
+  S.typedName=v.full_name;
+  document.getElementById('name-results').style.display='none';
+  if(v.is_co_creator){
+    document.getElementById('cc-hero-title').innerHTML = 'Welcome back, <span>'+firstName(v.full_name)+'.</span>';
+    showScreen('screen-cocreator');
+  } else {
+    buildReturningScreen(v);
+    showScreen('screen-returning');
+  }
+}
+
+// ── SCREEN 2: CO-CREATOR CHOICE ──────────────────────────────────
+['cc-tile-creator','cc-tile-community'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(){
+    document.querySelectorAll('#screen-cocreator .tile').forEach(function(t){ t.classList.remove('selected'); });
+    this.classList.add('selected');
+    S.visitType = this.getAttribute('data-choice');
+  });
+});
+document.getElementById('btn-cc-continue').addEventListener('click', function(){
+  if(!S.visitType){ document.getElementById('cc-error').style.display='block'; return; }
+  document.getElementById('cc-error').style.display='none';
+  buildReturningScreen(S.visitor);
+  showScreen('screen-returning');
+});
+document.getElementById('btn-cc-back').addEventListener('click', function(){ showScreen('screen-name'); });
+
+// ── SCREEN 3: RETURNING VISITOR ──────────────────────────────────
+async function buildReturningScreen(v){
+  var fn = firstName(v.full_name);
+  document.getElementById('ret-name').textContent = 'Great to see you, '+fn+'!';
+  document.getElementById('ret-sub').textContent = 'Wonderful to have you back with us today';
+
+  // Missing contact prompt
+  var missingCard = document.getElementById('ret-missing-card');
+  var hasMissingEmail = !v.email;
+  var hasMissingMobile = !v.mobile;
+  if(hasMissingEmail || hasMissingMobile){
+    var parts = [];
+    if(hasMissingEmail) parts.push('email address');
+    if(hasMissingMobile) parts.push('mobile number');
+    document.getElementById('ret-missing-sub').textContent = 'Would you like to share your '+parts.join(' and ')+' so we can keep you in the loop? Completely your choice — no pressure at all.';
+    if(hasMissingEmail) document.getElementById('ret-email-field').style.display='block';
+    if(hasMissingMobile) document.getElementById('ret-mobile-field').style.display='block';
+    document.getElementById('ret-consents').style.display='block';
+    missingCard.style.display='block';
+    setupToggle('ret-newsletter-toggle','newsletterConsent',false);
+    setupToggle('ret-whatsapp-toggle','whatsappConsent',false);
+  } else {
+    missingCard.style.display='none';
+  }
+
+  // Previous sessions (last 3 months)
+  S.selectedSession=''; S.selectedReason='';
+  var usualWrap = document.getElementById('ret-usual-wrap');
+  var usualTiles = document.getElementById('ret-usual-tiles');
+  usualTiles.innerHTML='';
+
+  try {
+    var threeAgo = new Date(); threeAgo.setMonth(threeAgo.getMonth()-3);
+    var pr = await SB('sign_ins?visitor_id=eq.'+v.id+'&signed_in_at=gte.'+threeAgo.toISOString()+'&select=session_name&order=signed_in_at.desc&limit=40');
+    var seen={}; var prev=[];
+    (pr.data||[]).forEach(function(r){ if(r.session_name && !seen[r.session_name]){ seen[r.session_name]=true; prev.push(r.session_name); } });
+    if(prev.length){
+      usualWrap.style.display='block';
+      prev.slice(0,4).forEach(function(s){ makeTile(s,s,usualTiles,'selectedSession'); });
+      document.getElementById('ret-today-label').textContent = 'On today — '+getTodayName();
+    } else {
+      usualWrap.style.display='none';
+      document.getElementById('ret-today-label').textContent = 'On today — '+getTodayName();
+    }
+  } catch(e){ usualWrap.style.display='none'; }
+
+  // Today + all sessions
+  buildSessionTiles('ret-today-tiles','ret-all-tiles','ret-show-more','ret-all-sessions-wrap','ret-today-label');
+
+  // Reasons
+  var reasonEl = document.getElementById('ret-reason-tiles');
+  reasonEl.innerHTML='';
+  S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
+}
+
+document.getElementById('btn-ret-signin').addEventListener('click', submitReturning);
+document.getElementById('btn-ret-back').addEventListener('click', function(){
+  if(S.visitor && S.visitor.is_co_creator) showScreen('screen-cocreator');
+  else showScreen('screen-name');
+});
+
+async function submitReturning(){
+  var sErr=document.getElementById('ret-session-error');
+  var rErr=document.getElementById('ret-reason-error');
+  sErr.style.display='none'; rErr.style.display='none';
+  if(!S.selectedSession){ sErr.style.display='block'; return; }
+  if(!S.selectedReason){ rErr.style.display='block'; return; }
+  var btn = document.getElementById('btn-ret-signin');
+  btn.innerHTML='<span class="spinner"></span> Signing you in...'; btn.disabled=true;
+  try {
+    var updates={};
+    var retEmail=(document.getElementById('ret-email')||{}).value||'';
+    var retMobile=(document.getElementById('ret-mobile')||{}).value||'';
+    if(retEmail && !S.visitor.email) updates.email=retEmail.trim();
+    if(retMobile && !S.visitor.mobile) updates.mobile=retMobile.replace(/`/g,'').trim();
+    if(S.newsletterConsent) updates.newsletter_consent=true;
+    if(S.whatsappConsent) updates.whatsapp_consent=true;
+    if(Object.keys(updates).length) await SB('visitors?id=eq.'+S.visitor.id,{method:'PATCH',body:JSON.stringify(updates)});
+    var autoOut = await calcAutoSignOut(S.visitor, S.visitType);
+    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+      visitor_id:S.visitor.id, visitor_name:S.visitor.full_name,
+      session_name:S.selectedSession, reason_for_attending:S.selectedReason,
+      visit_type:S.visitType||'community',
+      signed_out_at:autoOut.toISOString(), auto_signed_out:true
+    })});
+    await doThankYou(S.visitor.full_name);
+  } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
+}
+
+// ── SCREEN 4: NEW VISITOR ────────────────────────────────────────
+var AGE_GROUPS=['Under 18','18–24','25–34','35–44','45–54','55–64','65+','Prefer not to say'];
+var GENDERS=['Male','Female','Non-binary','Prefer not to say','Prefer to self-describe'];
+
+function buildNewScreen(){
+  var ageEl=document.getElementById('age-tiles');
+  var genderEl=document.getElementById('gender-tiles');
+  ageEl.innerHTML=''; genderEl.innerHTML='';
+  AGE_GROUPS.forEach(function(a){ makeTile(a,a,ageEl,'selectedAge'); });
+  GENDERS.forEach(function(g){ makeTile(g,g,genderEl,'selectedGender',g==='Prefer to self-describe'); });
+  setupToggle('new-newsletter-toggle','newsletterConsent',false);
+  setupToggle('new-whatsapp-toggle','whatsappConsent',false);
+  setupToggle('new-anon-toggle','anonConsent',true);
+  document.getElementById('new-postcode').addEventListener('input',function(){ this.value=this.value.toUpperCase(); });
+}
+
+document.getElementById('btn-new-next').addEventListener('click', function(){
+  var nameVal = document.getElementById('new-name').value.trim();
+  var nameErr = document.getElementById('new-name-error');
+  nameErr.style.display='none';
+  if(!nameVal){ nameErr.style.display='block'; document.getElementById('new-name').focus(); return; }
+  S.newName=titleCase(nameVal);
+  S.newEmail=document.getElementById('new-email').value.trim();
+  S.newMobile=document.getElementById('new-mobile').value.replace(/`/g,'').trim();
+  S.newPostcode=document.getElementById('new-postcode').value.trim().toUpperCase();
+  buildSessionScreen();
+  showScreen('screen-session');
+});
+document.getElementById('btn-new-back').addEventListener('click', function(){ showScreen('screen-name'); });
+
+// ── SCREEN 5: SESSION ────────────────────────────────────────────
+function buildSessionScreen(){
+  S.selectedSession=''; S.selectedReason='';
+  buildSessionTiles('new-today-tiles','new-all-tiles','new-show-more','new-all-sessions-wrap','new-today-label');
+  var reasonEl=document.getElementById('reason-tiles');
+  reasonEl.innerHTML='';
+  S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
+}
+
+document.getElementById('btn-session-signin').addEventListener('click', submitNew);
+document.getElementById('btn-session-back').addEventListener('click', function(){ showScreen('screen-new'); });
+
+async function submitNew(){
+  var sErr=document.getElementById('session-error');
+  var rErr=document.getElementById('reason-error');
+  sErr.style.display='none'; rErr.style.display='none';
+  if(!S.selectedSession){ sErr.style.display='block'; return; }
+  if(!S.selectedReason){ rErr.style.display='block'; return; }
+  var btn=document.getElementById('btn-session-signin');
+  btn.innerHTML='<span class="spinner"></span> Signing you in...'; btn.disabled=true;
+  try {
+    var vRes=await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
+      full_name:S.newName, email:S.newEmail||null, mobile:S.newMobile||null,
+      postcode:S.newPostcode||null, age_group:S.selectedAge||null, gender:S.selectedGender||null,
+      newsletter_consent:S.newsletterConsent, whatsapp_consent:S.whatsappConsent,
+      anon_reporting_consent:S.anonConsent, is_co_creator:false,
+      first_visit_date:new Date().toISOString().slice(0,10)
+    })});
+    var newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
+    var autoOut=await calcAutoSignOut(newV,'community');
+    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+      visitor_id:newV.id, visitor_name:S.newName,
+      session_name:S.selectedSession, reason_for_attending:S.selectedReason,
+      visit_type:'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
+    })});
+    await doThankYou(S.newName);
+  } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
+}
+
+// ── AUTO SIGN-OUT ────────────────────────────────────────────────
+async function calcAutoSignOut(visitor, visitType){
+  var now=new Date();
+  if(visitor && visitor.id && visitType==='co_creator'){
+    var days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    var today=days[now.getDay()];
+    try {
+      var sr=await SB('volunteer_shifts?volunteer_id=eq.'+visitor.id+'&day_of_week=ilike.'+today+'&limit=1');
+      var shift=(sr.data||[])[0];
+      if(shift && shift.end_time){
+        var parts=shift.end_time.split(':');
+        var so=new Date(now);
+        so.setHours(parseInt(parts[0]),parseInt(parts[1]||0),0,0);
+        if(so>now) return so;
+      }
+    } catch(e){}
+  }
+  var out=new Date(now); out.setHours(out.getHours()+4); return out;
+}
+
+// ── THANK YOU ────────────────────────────────────────────────────
+async function doThankYou(name){
+  var quote='\u201cEvery community is built one connection at a time. Today, you are that connection.\u201d';
+  try {
+    var qr=await SB('daily_quotes?select=quote&limit=50');
+    var qs=(qr.data||[]).filter(function(q){ return q.quote; });
+    if(qs.length) quote='\u201c'+qs[Math.floor(Math.random()*qs.length)].quote+'\u201d';
+  } catch(e){}
+  document.getElementById('ty-quote').textContent=quote;
+  var fn=firstName(name);
+  document.getElementById('ty2-body').textContent='Thank you for being part of H.O.M.E Hub today, '+fn+'. You don\u2019t just attend \u2014 you belong here. What you bring to this community matters more than you know.';
+  showScreen('screen-ty1');
+}
+
+document.getElementById('btn-ty1-next').addEventListener('click', function(){ showScreen('screen-ty2'); });
+document.getElementById('btn-done').addEventListener('click', resetFlow);
+
+// ── RESET ────────────────────────────────────────────────────────
+function resetFlow(){
+  S={typedName:'',visitor:null,visitType:'community',
+    selectedSession:'',selectedReason:'',selectedAge:'',selectedGender:'',
+    newName:'',newEmail:'',newMobile:'',newPostcode:'',
+    newsletterConsent:false,whatsappConsent:false,anonConsent:true,
+    sessions:S.sessions,todaySessions:S.todaySessions,reasons:S.reasons};
+  document.getElementById('name-input').value='';
+  document.getElementById('name-results').style.display='none';
+  document.getElementById('name-no-match').style.display='none';
+  document.getElementById('name-error').style.display='none';
+  showScreen('screen-name');
+  setTimeout(function(){ document.getElementById('name-input').focus(); },300);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+(async function(){
+  await loadConfig();
+  showScreen('screen-name');
+  setTimeout(function(){ document.getElementById('name-input').focus(); },400);
+})();
+</script>
+</body>
+</html>
