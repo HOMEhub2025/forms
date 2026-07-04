@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>H.O.M.E Hub — Forms</title>
+<title>H.O.M.E Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -11,40 +11,70 @@
   --bg:#f5f6fa;--card:#fff;--border:#e2e8f0;
   --text:#1a202c;--muted:#64748b;--radius:14px;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:78px}
+input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 
 /* HEADER */
-.header{background:var(--db);padding:16px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
-.header img{height:38px}
-.header-text h1{font-family:'League Spartan',sans-serif;font-size:1.1rem;font-weight:900;color:#fff;line-height:1.1}
-.header-text p{font-size:.7rem;color:rgba(255,255,255,.6);margin-top:2px;font-weight:500}
+.header{background:var(--db);padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.header img{height:34px}
+.header-text{flex:1;min-width:0}
+.header-text h1{font-family:'League Spartan',sans-serif;font-size:1rem;font-weight:900;color:#fff;line-height:1.1}
+.header-text p{font-size:.68rem;color:rgba(255,255,255,.55);margin-top:2px;font-weight:500}
+.user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:20px;padding:6px 12px 6px 6px;cursor:pointer;touch-action:manipulation;flex-shrink:0}
+.user-chip-avatar{width:26px;height:26px;border-radius:50%;background:var(--or);color:#fff;font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'League Spartan',sans-serif}
+.user-chip span{color:#fff;font-size:.72rem;font-weight:600;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* SCREENS */
+.screen{display:none}
+.screen.active{display:block}
 
 /* HERO */
-.hero{background:linear-gradient(135deg,var(--dg),#004d28);padding:28px 20px 24px;text-align:center;position:relative;overflow:hidden}
+.hero{background:linear-gradient(135deg,var(--dg),#004d28);padding:22px 20px 20px;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:var(--lg);border-radius:50%;opacity:.12}
 .hero::after{content:'';position:absolute;bottom:-30px;left:-30px;width:120px;height:120px;background:var(--or);border-radius:50%;opacity:.1}
-.hero h2{font-family:'League Spartan',sans-serif;font-size:1.6rem;font-weight:900;color:#fff;position:relative;line-height:1.2;margin-bottom:8px}
+.hero h2{font-family:'League Spartan',sans-serif;font-size:1.4rem;font-weight:900;color:#fff;position:relative;line-height:1.2;margin-bottom:6px}
 .hero h2 span{color:var(--or)}
-.hero p{font-size:.85rem;color:rgba(255,255,255,.8);font-weight:500;max-width:340px;margin:0 auto;line-height:1.6;position:relative}
+.hero p{font-size:.8rem;color:rgba(255,255,255,.8);font-weight:500;max-width:340px;margin:0 auto;line-height:1.6;position:relative}
 
 /* SECTION LABEL */
-.section-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:20px 20px 10px}
+.section-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:20px 20px 10px;display:flex;justify-content:space-between;align-items:center}
+.section-label .label-action{color:var(--dg);font-weight:700;text-transform:none;letter-spacing:0;font-size:.72rem;cursor:pointer}
 
-/* FORM CARDS */
+/* STAT CARDS */
+.stats-row{display:flex;gap:10px;padding:0 16px;overflow-x:auto}
+.stat-card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:14px;min-width:104px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.stat-card .num{font-family:'League Spartan',sans-serif;font-size:1.5rem;font-weight:900;color:var(--db);line-height:1}
+.stat-card .lbl{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:4px;line-height:1.3}
+
+/* TILE GRID (dashboard) */
+.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.tile{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;display:flex;flex-direction:column;gap:12px;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:transform .15s}
+.tile:active{transform:scale(.96)}
+.tile-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.tile-icon svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile-label{font-size:.82rem;font-weight:700;color:var(--text);line-height:1.25}
+.today-tile{background:var(--card);border:1.5px solid var(--border);border-top:3px solid var(--or);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.today-tile .tile-time{font-family:'League Spartan',sans-serif;font-weight:900;font-size:.9rem;color:var(--db)}
+.today-tile .tile-title{font-size:.78rem;font-weight:700;color:var(--text);line-height:1.3}
+.today-tile .tile-sub{font-size:.66rem;color:var(--muted);font-weight:500;line-height:1.3}
+.today-tile .tile-tag{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:6px;align-self:flex-start;margin-top:2px}
+.tile-empty{grid-column:1/-1;text-align:center;padding:24px 16px;color:var(--muted);font-size:.8rem;font-weight:500;background:var(--card);border:1.5px dashed var(--border);border-radius:var(--radius)}
+
+/* CARDS (forms + sessions) */
 .cards{display:flex;flex-direction:column;gap:10px;padding:0 16px}
-.card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer;transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer;transition:transform .15s,box-shadow .15s;touch-action:manipulation}
 .card:active{transform:scale(.98);box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .card-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .card-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .card-body{flex:1;min-width:0}
 .card-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:3px;line-height:1.3}
 .card-desc{font-size:.75rem;color:var(--muted);font-weight:500;line-height:1.4}
-.card-share{width:36px;height:36px;border-radius:9px;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.card-meta{font-size:.7rem;color:var(--dg);font-weight:700;margin-top:4px}
+.card-share{width:36px;height:36px;border-radius:9px;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;touch-action:manipulation}
 .card-share svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .card-share:active{background:#e2e8f0}
 
-/* COLOUR ACCENTS */
 .accent-green .card-icon{background:#f0fdf4;color:var(--dg)}
 .accent-blue  .card-icon{background:#eff6ff;color:var(--db)}
 .accent-orange.card-icon{background:#fff7ed;color:var(--or)}
@@ -58,30 +88,98 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 .card.accent-purple{border-left:3px solid #7c3aed}
 .card.accent-red  {border-left:3px solid #dc2626}
 
-/* BOTTOM SHEET */
+/* SUB TABS (Book: Rooms/Sessions, Calendar: Mine/Group) */
+.subtabs{display:flex;gap:8px;padding:14px 16px 4px}
+.subtab{flex:1;text-align:center;padding:10px;border-radius:10px;background:var(--card);border:1.5px solid var(--border);font-size:.8rem;font-weight:700;color:var(--muted);cursor:pointer;touch-action:manipulation}
+.subtab.active{background:var(--db);border-color:var(--db);color:#fff}
+
+/* AGENDA LIST */
+.agenda-item{display:flex;gap:12px;padding:14px 16px;background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);align-items:flex-start}
+.agenda-time{font-family:'League Spartan',sans-serif;font-weight:900;font-size:.85rem;color:var(--db);min-width:52px}
+.agenda-bar{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.agenda-body{flex:1;min-width:0}
+.agenda-title{font-size:.85rem;font-weight:700;color:var(--text);line-height:1.3}
+.agenda-sub{font-size:.72rem;color:var(--muted);font-weight:500;margin-top:2px}
+.agenda-tag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:5px}
+.tag-room{background:#fff7ed;color:var(--or)}
+.tag-session{background:#f0fdf4;color:var(--dg)}
+.tag-meeting{background:#eff6ff;color:var(--db)}
+.agenda-empty{text-align:center;padding:30px 20px;color:var(--muted);font-size:.8rem;font-weight:500}
+
+/* DATE NAV */
+.date-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;gap:10px}
+.date-nav-btn{width:36px;height:36px;border-radius:10px;background:var(--card);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;flex-shrink:0}
+.date-nav-btn svg{width:16px;height:16px;stroke:var(--db);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.date-nav-label{flex:1;text-align:center;font-family:'League Spartan',sans-serif;font-weight:900;font-size:.95rem;color:var(--db)}
+
+/* FAB */
+.fab{position:fixed;bottom:92px;right:18px;width:54px;height:54px;border-radius:50%;background:var(--or);box-shadow:0 4px 16px rgba(245,130,33,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;z-index:90;border:none}
+.fab svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:150;padding:6px 6px calc(6px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto;box-shadow:0 -2px 16px rgba(0,0,0,.07)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px 4px;cursor:pointer;touch-action:manipulation;color:var(--muted);border:none;background:none;min-height:52px;justify-content:center}
+.nav-icon-wrap{width:44px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:background .18s,color .18s}
+.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn span{font-size:.63rem;font-weight:700;transition:color .18s}
+.nav-btn.active .nav-icon-wrap{background:var(--dg);color:#fff}
+.nav-btn.active span{color:var(--dg)}
+
+/* FORM FIELDS */
+.form-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.field label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=date],.field input[type=time],.field select,.field textarea{
+  width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-weight:500;
+}
+.field textarea{resize:vertical;min-height:70px}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:9px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;touch-action:manipulation;background:#fff}
+.chip.active{background:var(--dg);border-color:var(--dg);color:#fff}
+.btn-primary{background:var(--or);color:#fff;border:none;border-radius:12px;padding:15px;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%}
+.btn-primary:active{opacity:.85}
+.btn-primary:disabled{background:#cbd5e1;cursor:not-allowed}
+.btn-secondary{background:#fff;color:var(--db);border:1.5px solid var(--db);border-radius:12px;padding:13px;font-size:.85rem;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%}
+.helper-text{font-size:.72rem;color:var(--muted);font-weight:500;line-height:1.5}
+.busy-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.busy-row{font-size:.75rem;color:var(--muted);background:var(--bg);padding:8px 10px;border-radius:8px;font-weight:600}
+.error-banner{background:#fef2f2;border:1.5px solid #fecaca;color:#dc2626;padding:12px 14px;border-radius:10px;font-size:.78rem;font-weight:600;line-height:1.4}
+
+/* OVERLAY + BOTTOM SHEET */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
 .overlay.open{opacity:1;pointer-events:all}
-.sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:0 0 env(safe-area-inset-bottom);z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-width:480px;margin:0 auto}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:0 0 env(safe-area-inset-bottom);z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,0,.67,0);max-width:480px;margin:0 auto;max-height:88vh;overflow-y:auto}
 .sheet.open{transform:translateY(0)}
 .sheet-handle{width:40px;height:4px;background:#e2e8f0;border-radius:2px;margin:14px auto 0}
 .sheet-form-name{font-family:'League Spartan',sans-serif;font-size:1.1rem;font-weight:900;color:var(--db);padding:14px 20px 6px;text-align:center}
 .sheet-subtitle{font-size:.75rem;color:var(--muted);text-align:center;padding:0 20px 16px;font-weight:500;border-bottom:1px solid #f1f5f9}
 .sheet-options{padding:10px 16px}
-.sheet-opt{display:flex;align-items:center;gap:14px;padding:14px 12px;border-radius:12px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;margin-bottom:4px}
+.sheet-opt{display:flex;align-items:center;gap:14px;padding:14px 12px;border-radius:12px;cursor:pointer;touch-action:manipulation;margin-bottom:4px}
 .sheet-opt:active{background:#f8fafc}
 .sheet-opt-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sheet-opt-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .sheet-opt-text strong{display:block;font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:1px}
 .sheet-opt-text span{font-size:.72rem;color:var(--muted);font-weight:500}
-.sheet-cancel{display:block;text-align:center;padding:14px;font-size:.85rem;font-weight:700;color:var(--muted);cursor:pointer;touch-action:manipulation;margin-bottom:8px}
+.sheet-cancel{display:block;text-align:center;padding:14px;font-size:.85rem;font-weight:700;color:var(--muted);cursor:pointer;touch-action:manipulation;margin-bottom:8px;background:none;border:none;width:100%}
+
+/* USER PICKER */
+.user-list{display:flex;flex-direction:column;gap:8px;padding:14px 16px 20px}
+.user-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);cursor:pointer;touch-action:manipulation}
+.user-row:active{background:#f8fafc}
+.user-avatar{width:38px;height:38px;border-radius:50%;background:var(--db);color:#fff;font-weight:700;font-family:'League Spartan',sans-serif;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.user-row strong{font-size:.85rem;color:var(--text);display:block}
+.user-row span{font-size:.72rem;color:var(--muted);font-weight:500}
 
 /* TOAST */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#0a1928;color:#fff;font-size:.8rem;font-weight:600;padding:10px 20px;border-radius:20px;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:300;font-family:'Montserrat',sans-serif}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:#0a1928;color:#fff;font-size:.8rem;font-weight:600;padding:10px 20px;border-radius:20px;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:300;font-family:'Montserrat',sans-serif;max-width:90%;overflow:hidden;text-overflow:ellipsis}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#dc2626}
 
 /* FOOTER */
-.footer{text-align:center;padding:28px 20px 0;font-size:.7rem;color:var(--muted);line-height:1.8}
+.footer{text-align:center;padding:28px 20px 20px;font-size:.7rem;color:var(--muted);line-height:1.8}
 .footer strong{color:var(--or);font-weight:700}
+.loading-row{text-align:center;padding:30px 20px;color:var(--muted);font-size:.8rem;font-weight:500}
 </style>
 </head>
 <body>
@@ -89,209 +187,1130 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);
 <div class="header">
   <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub">
   <div class="header-text">
-    <h1>H.O.M.E Hub Forms</h1>
-    <p>champions.homehub-benfleet.co.uk</p>
+    <h1>H.O.M.E Hub</h1>
+    <p id="headerDate">Loading…</p>
+  </div>
+  <div class="user-chip" id="userChip">
+    <div class="user-chip-avatar" id="userChipAvatar">?</div>
+    <span id="userChipName">Sign in</span>
   </div>
 </div>
 
-<div class="hero">
-  <h2>Every form.<br><span>One place.</span></h2>
-  <p>Tap a form to open it, or share it directly with the person who needs it.</p>
+<!-- ============ HOME SCREEN ============ -->
+<div class="screen active" id="screen-home">
+  <div class="hero">
+    <h2 id="homeGreeting">Hey <span>famalam</span>.</h2>
+    <p>Here's what's on at the Hub today — book a room, book a session, or see where things stand.</p>
+  </div>
+
+  <div class="section-label">Today at a glance</div>
+  <div class="stats-row" id="homeStats">
+    <div class="stat-card"><div class="num">–</div><div class="lbl">Rooms in use</div></div>
+    <div class="stat-card"><div class="num">–</div><div class="lbl">Sessions today</div></div>
+    <div class="stat-card"><div class="num">–</div><div class="lbl">Meetings today</div></div>
+  </div>
+
+  <div class="section-label">Quick actions</div>
+  <div class="tile-grid">
+    <div class="tile" data-quick="book-room">
+      <div class="tile-icon" style="background:var(--or)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="tile-label">Book a Room</div>
+    </div>
+    <div class="tile" data-quick="book-session">
+      <div class="tile-icon" style="background:var(--dg)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="tile-label">Book a Session</div>
+    </div>
+    <div class="tile" data-quick="add-meeting">
+      <div class="tile-icon" style="background:var(--db)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="tile-label">Add to Calendar</div>
+    </div>
+    <div class="tile" data-quick="view-board">
+      <div class="tile-icon" style="background:#7c3aed"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
+      <div class="tile-label">Full Day Board</div>
+    </div>
+  </div>
+
+  <div class="section-label">Today<span class="label-action" data-goto="screen-manage">See full board</span></div>
+  <div class="tile-grid" id="homeAgenda">
+    <div class="tile-empty">Pulling today's board together…</div>
+  </div>
+
+  <div class="footer">
+    H.O.M.E Hub CIC &nbsp;·&nbsp; Company No. 16104567<br>
+    88 Brook Road, South Benfleet Playing Fields, SS7 5JF<br>
+    Bringing <strong>Unity</strong> Back to the Community
+  </div>
 </div>
 
-<!-- COMMUNITY FORMS -->
-<div class="section-label">Community</div>
-<div class="cards">
-
-  <div class="card accent-green" data-path="sign-in" data-name="Community Sign In">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Community Sign In</div>
-      <div class="card-desc">Sign in to the hub — new visitors and returning community members</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    </div>
+<!-- ============ BOOK SCREEN ============ -->
+<div class="screen" id="screen-book">
+  <div class="hero">
+    <h2>Book a <span>room or session</span>.</h2>
+    <p>Check what's free, then lock it in — it lands straight in the Hub's live diary.</p>
   </div>
 
-  <div class="card accent-blue" data-path="champions-interest" data-name="Champions — Become a Patron">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Become a Champion</div>
-      <div class="card-desc">Support H.O.M.E Hub as a patron — monthly or annual</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    </div>
+  <div class="subtabs">
+    <div class="subtab active" data-book-tab="rooms">Rooms</div>
+    <div class="subtab" data-book-tab="sessions">Sessions</div>
   </div>
 
+  <!-- ROOMS -->
+  <div id="bookRoomsPanel">
+    <div class="form-wrap">
+      <div class="field">
+        <label>Room</label>
+        <select id="roomSelect"><option value="">Loading rooms…</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="roomDate"></div>
+        <div class="field"><label>What's it for</label><select id="roomType"><option value="">Loading…</option></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Start</label><input type="time" id="roomStart"></div>
+        <div class="field"><label>End</label><input type="time" id="roomEnd"></div>
+      </div>
+      <div class="field"><label>Title</label><input type="text" id="roomTitle" placeholder="e.g. Wellbeing Sunday planning"></div>
+      <div class="field"><label>Notes (optional)</label><textarea id="roomNotes" placeholder="Anything the team should know"></textarea></div>
+      <div id="roomBusyWrap"></div>
+      <div id="roomErrorWrap"></div>
+      <button class="btn-primary" id="roomBookBtn" type="button">Book this room</button>
+    </div>
+    <div class="section-label">Coming up in this room</div>
+    <div class="cards" id="roomUpcoming"><div class="loading-row">Pick a room to see what's booked</div></div>
+  </div>
+
+  <!-- SESSIONS -->
+  <div id="bookSessionsPanel" style="display:none">
+    <div class="section-label">Bookable sessions</div>
+    <div class="cards" id="sessionList"><div class="loading-row">Loading sessions…</div></div>
+  </div>
 </div>
 
-<!-- VOLUNTEER FORMS -->
-<div class="section-label">Co-Creators &amp; Volunteers</div>
-<div class="cards">
-
-  <div class="card accent-green" data-path="volunteer-interest" data-name="Volunteer Interest">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Volunteer Interest</div>
-      <div class="card-desc">Express your interest in becoming a Co-Creator at H.O.M.E Hub</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    </div>
+<!-- ============ CALENDAR SCREEN ============ -->
+<div class="screen" id="screen-calendar">
+  <div class="hero">
+    <h2>Your <span>calendar</span>.</h2>
+    <p>Yours, or the whole group's — meetings, catch-ups and everything booked in.</p>
   </div>
 
-  <div class="card accent-blue" data-path="vol-agree-iss1" data-name="Volunteer Agreement">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Volunteer Agreement</div>
-      <div class="card-desc">Co-Creator agreement — issue 1. Complete before your first session</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    </div>
+  <div class="subtabs">
+    <div class="subtab active" data-cal-tab="mine">My calendar</div>
+    <div class="subtab" data-cal-tab="group">Group calendar</div>
   </div>
 
+  <div class="date-nav">
+    <div class="date-nav-btn" id="calPrev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="date-nav-label" id="calDateLabel">Today</div>
+    <div class="date-nav-btn" id="calNext"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+
+  <div class="cards" id="calendarList" style="margin-top:12px">
+    <div class="loading-row">Loading the calendar…</div>
+  </div>
 </div>
 
-<!-- ROOM & SPACE FORMS -->
-<div class="section-label">Room Hire</div>
-<div class="cards">
+<!-- ============ FORMS SCREEN ============ -->
+<div class="screen" id="screen-forms">
+  <div class="hero">
+    <h2>Every form.<br><span>One place.</span></h2>
+    <p>Tap a form to open it, or share it directly with the person who needs it.</p>
+  </div>
 
-  <div class="card accent-orange" data-path="room-hire" data-name="Room Hire Enquiry">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  <div class="section-label">Community</div>
+  <div class="cards">
+    <div class="card accent-green" data-path="sign-in" data-name="Community Sign In">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="card-body"><div class="card-title">Community Sign In</div><div class="card-desc">Sign in to the hub — new visitors and returning community members</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     </div>
-    <div class="card-body">
-      <div class="card-title">Room Hire Enquiry</div>
-      <div class="card-desc">Book a room at H.O.M.E Hub — meetings, events, sessions &amp; more</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    <div class="card accent-blue" data-path="champions-interest" data-name="Champions — Become a Patron">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="card-body"><div class="card-title">Become a Champion</div><div class="card-desc">Support H.O.M.E Hub as a patron — monthly or annual</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     </div>
   </div>
 
-</div>
-
-<!-- PRACTITIONERS & STALLHOLDERS -->
-<div class="section-label">Practitioners &amp; Events</div>
-<div class="cards">
-
-  <div class="card accent-purple" data-path="practitioner-registration" data-name="Practitioner Registration">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+  <div class="section-label">Co-Creators &amp; Volunteers</div>
+  <div class="cards">
+    <div class="card accent-green" data-path="volunteer-interest" data-name="Volunteer Interest">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="card-body"><div class="card-title">Volunteer Interest</div><div class="card-desc">Express your interest in becoming a Co-Creator at H.O.M.E Hub</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     </div>
-    <div class="card-body">
-      <div class="card-title">Practitioner Registration</div>
-      <div class="card-desc">Join H.O.M.E Hub as a practitioner — wellbeing, therapy, movement &amp; more</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    <div class="card accent-blue" data-path="vol-agree-iss1" data-name="Volunteer Agreement">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+      <div class="card-body"><div class="card-title">Volunteer Agreement</div><div class="card-desc">Co-Creator agreement — issue 1. Complete before your first session</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     </div>
   </div>
 
-  <div class="card accent-orange2" data-path="stallholder-interest" data-name="Stallholder Application">
-    <div class="card-icon">
-      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Stallholder Application</div>
-      <div class="card-desc">Apply for a stall at a H.O.M.E Hub market or community event</div>
-    </div>
-    <div class="card-share" data-share>
-      <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+  <div class="section-label">Room Hire</div>
+  <div class="cards">
+    <div class="card accent-orange" data-path="room-hire" data-name="Room Hire Enquiry">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="card-body"><div class="card-title">Room Hire Enquiry</div><div class="card-desc">Book a room at H.O.M.E Hub — meetings, events, sessions &amp; more</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
     </div>
   </div>
 
+  <div class="section-label">Practitioners &amp; Events</div>
+  <div class="cards">
+    <div class="card accent-purple" data-path="practitioner-registration" data-name="Practitioner Registration">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+      <div class="card-body"><div class="card-title">Practitioner Registration</div><div class="card-desc">Join H.O.M.E Hub as a practitioner — wellbeing, therapy, movement &amp; more</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+    </div>
+    <div class="card accent-orange2" data-path="stallholder-interest" data-name="Stallholder Application">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+      <div class="card-body"><div class="card-title">Stallholder Application</div><div class="card-desc">Apply for a stall at a H.O.M.E Hub market or community event</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+    </div>
+  </div>
+
+  <div class="footer" style="padding-top:8px">
+    H.O.M.E Hub CIC &nbsp;·&nbsp; Company No. 16104567<br>
+    88 Brook Road, South Benfleet Playing Fields, SS7 5JF<br>
+    Bringing <strong>Unity</strong> Back to the Community
+  </div>
 </div>
 
-<div class="footer">
-  H.O.M.E Hub CIC &nbsp;·&nbsp; Company No. 16104567<br>
-  88 Brook Road, South Benfleet Playing Fields, SS7 5JF<br>
-  Bringing <strong>Unity</strong> Back to the Community
+<!-- ============ MANAGE SCREEN ============ -->
+<div class="screen" id="screen-manage">
+  <div class="hero">
+    <h2>Manage <span>the day</span>.</h2>
+    <p>Every room, every session, every meeting — one live board.</p>
+  </div>
+
+  <div class="date-nav">
+    <div class="date-nav-btn" id="mgPrev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="date-nav-label" id="mgDateLabel">Today</div>
+    <div class="date-nav-btn" id="mgNext"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+
+  <div class="section-label">Full board</div>
+  <div class="cards" id="mgAgenda" style="gap:8px">
+    <div class="loading-row">Pulling the board together…</div>
+  </div>
+
+  <div class="section-label">Needs a look</div>
+  <div class="cards" id="mgNotifications">
+    <div class="loading-row">Checking notifications…</div>
+  </div>
 </div>
 
-<!-- OVERLAY + BOTTOM SHEET -->
+<!-- FAB (quick add — context changes per screen) -->
+<button class="fab" id="fab"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" data-screen="screen-home">
+    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span>Home</span>
+  </button>
+  <button class="nav-btn" data-screen="screen-book">
+    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+    <span>Book</span>
+  </button>
+  <button class="nav-btn" data-screen="screen-calendar">
+    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></div>
+    <span>Calendar</span>
+  </button>
+  <button class="nav-btn" data-screen="screen-manage">
+    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
+    <span>Manage</span>
+  </button>
+  <button class="nav-btn" data-screen="screen-forms">
+    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+    <span>Forms</span>
+  </button>
+</div>
+
+<!-- SHARE SHEET (forms) -->
 <div class="overlay" id="overlay"></div>
 <div class="sheet" id="sheet">
   <div class="sheet-handle"></div>
   <div class="sheet-form-name" id="sheet-title">Share form</div>
   <div class="sheet-subtitle">Send this form directly to the person who needs it</div>
   <div class="sheet-options">
-
     <div class="sheet-opt" id="opt-whatsapp">
-      <div class="sheet-opt-icon" style="background:#25d366">
-        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-      </div>
-      <div class="sheet-opt-text">
-        <strong>WhatsApp</strong>
-        <span>Send a message with the form link</span>
-      </div>
+      <div class="sheet-opt-icon" style="background:#25d366"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+      <div class="sheet-opt-text"><strong>WhatsApp</strong><span>Send a message with the form link</span></div>
     </div>
-
     <div class="sheet-opt" id="opt-sms">
-      <div class="sheet-opt-icon" style="background:var(--db)">
-        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      </div>
-      <div class="sheet-opt-text">
-        <strong>SMS</strong>
-        <span>Open your messages app with the link ready</span>
-      </div>
+      <div class="sheet-opt-icon" style="background:var(--db)"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="sheet-opt-text"><strong>SMS</strong><span>Open your messages app with the link ready</span></div>
     </div>
-
     <div class="sheet-opt" id="opt-email">
-      <div class="sheet-opt-icon" style="background:var(--or)">
-        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      </div>
-      <div class="sheet-opt-text">
-        <strong>Email</strong>
-        <span>Send by email with a personal message</span>
-      </div>
+      <div class="sheet-opt-icon" style="background:var(--or)"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+      <div class="sheet-opt-text"><strong>Email</strong><span>Send by email with a personal message</span></div>
     </div>
-
     <div class="sheet-opt" id="opt-copy">
-      <div class="sheet-opt-icon" style="background:var(--muted)">
-        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </div>
-      <div class="sheet-opt-text">
-        <strong>Copy link</strong>
-        <span>Paste it wherever you need it</span>
+      <div class="sheet-opt-icon" style="background:var(--muted)"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>
+      <div class="sheet-opt-text"><strong>Copy link</strong><span>Paste it wherever you need it</span></div>
+    </div>
+  </div>
+  <button class="sheet-cancel" id="sheet-cancel" type="button">Cancel</button>
+</div>
+
+<!-- USER PICKER SHEET -->
+<div class="overlay" id="userOverlay"></div>
+<div class="sheet" id="userSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name" id="userSheetTitle">Sign in</div>
+  <div class="sheet-subtitle" id="userSheetSub">Use your H.O.M.E Hub login</div>
+  <div class="form-wrap" id="loginStepWrap">
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="username" placeholder="you@homehub-benfleet.co.uk"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+    <div id="loginErrorWrap"></div>
+    <button class="btn-primary" id="loginSubmitBtn" type="button">Sign in</button>
+  </div>
+  <div class="form-wrap" id="accountStepWrap" style="display:none">
+    <div class="helper-text" id="accountInfoText"></div>
+    <button class="btn-secondary" id="logoutBtn" type="button">Log out</button>
+  </div>
+</div>
+
+<!-- SESSION BOOKING SHEET -->
+<div class="overlay" id="sessionOverlay"></div>
+
+<div class="sheet" id="sessionSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name" id="sessionSheetTitle">Book a session</div>
+  <div class="sheet-subtitle" id="sessionSheetSub">Fill in who's coming and lock in the slot</div>
+  <div class="form-wrap">
+    <div class="field" id="sessionDateField"><label>Date</label><input type="date" id="sessionDate"></div>
+    <div class="field-row">
+      <div class="field"><label>Start time</label><input type="time" id="sessionStart"></div>
+      <div class="field"><label>End time</label><input type="time" id="sessionEnd"></div>
+    </div>
+    <div class="field"><label>Client / attendee name</label><input type="text" id="sessionClientName" placeholder="Who's attending"></div>
+    <div class="field-row">
+      <div class="field"><label>Email (optional)</label><input type="email" id="sessionClientEmail"></div>
+      <div class="field"><label>Phone (optional)</label><input type="tel" id="sessionClientPhone"></div>
+    </div>
+    <div class="field"><label>Notes (optional)</label><textarea id="sessionNotes"></textarea></div>
+    <div id="sessionErrorWrap"></div>
+    <button class="btn-primary" id="sessionSaveBtn" type="button">Confirm booking</button>
+  </div>
+</div>
+
+<!-- MEETING SHEET -->
+<div class="overlay" id="meetingOverlay"></div>
+<div class="sheet" id="meetingSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name">Add to calendar</div>
+  <div class="sheet-subtitle">A quick add — full meeting tools live in Heartwood</div>
+  <div class="form-wrap">
+    <div class="field"><label>Title</label><input type="text" id="meetingTitle" placeholder="e.g. Trustee catch-up"></div>
+    <div class="field"><label>Whose calendar</label>
+      <div class="chip-row">
+        <div class="chip active" data-meeting-cal="personal">Mine, personal</div>
+        <div class="chip" data-meeting-cal="group">Group calendar</div>
       </div>
     </div>
-
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" id="meetingDate"></div>
+      <div class="field"><label>Location type</label>
+        <select id="meetingLocationType">
+          <option value="in_person">In person</option>
+          <option value="online">Online</option>
+          <option value="phone">Phone</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Start</label><input type="time" id="meetingStart"></div>
+      <div class="field"><label>End</label><input type="time" id="meetingEnd"></div>
+    </div>
+    <div class="field"><label>Where / who with</label><input type="text" id="meetingLocation" placeholder="Room name, or who you're meeting"></div>
+    <div class="field"><label>Attendees (optional, comma separated)</label><input type="text" id="meetingAttendees" placeholder="James Taylor, Donna Robinson"></div>
+    <div class="field"><label>Agenda / notes (optional)</label><textarea id="meetingAgenda"></textarea></div>
+    <div id="meetingErrorWrap"></div>
+    <button class="btn-primary" id="meetingSaveBtn" type="button">Add to calendar</button>
   </div>
-  <div class="sheet-cancel" id="sheet-cancel">Cancel</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+/* ============================================================
+   CONFIG + SUPABASE HELPER
+   ============================================================ */
+var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+
+async function SB(path, opts){
+  opts = opts || {};
+  var extraHeaders = opts.headers || {};
+  var restOpts = {};
+  for(var k in opts){ if(k !== 'headers') restOpts[k] = opts[k]; }
+  var sess = await ensureSession();
+  var bearer = sess ? sess.access_token : SUPABASE_ANON_KEY;
+  var headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + bearer,
+    'Content-Type': 'application/json'
+  };
+  for(var h in extraHeaders){ headers[h] = extraHeaders[h]; }
+  var res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, restOpts, {headers: headers}));
+  if(!res.ok){
+    var errText = '';
+    try{ errText = await res.text(); }catch(e){}
+    throw new Error('Supabase ' + res.status + ': ' + errText);
+  }
+  var contentRange = res.headers.get('content-range');
+  var text = await res.text();
+  var data = text ? JSON.parse(text) : null;
+  return {data: data, contentRange: contentRange};
+}
+
+/* ---------- SUPABASE AUTH (real login, not the anon key) ---------- */
+function getSessionRaw(){
+  try{ return JSON.parse(localStorage.getItem('hh_auth') || 'null'); }catch(e){ return null; }
+}
+function saveSession(tokenData){
+  var expiresAt = Date.now() + (tokenData.expires_in * 1000) - 60000; /* refresh a minute early */
+  localStorage.setItem('hh_auth', JSON.stringify({
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token,
+    expires_at: expiresAt,
+    auth_user_id: tokenData.user ? tokenData.user.id : null
+  }));
+}
+function clearSession(){ localStorage.removeItem('hh_auth'); }
+async function authLogin(email, password){
+  var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+    method: 'POST',
+    headers: {apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json'},
+    body: JSON.stringify({email: email, password: password})
+  });
+  var data = await res.json();
+  if(!res.ok) throw new Error(data.error_description || data.msg || 'Couldn\'t sign you in — check the details and try again.');
+  return data;
+}
+async function authRefresh(refreshToken){
+  var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+    method: 'POST',
+    headers: {apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json'},
+    body: JSON.stringify({refresh_token: refreshToken})
+  });
+  var data = await res.json();
+  if(!res.ok) throw new Error('Session expired');
+  return data;
+}
+async function ensureSession(){
+  var s = getSessionRaw();
+  if(!s) return null;
+  if(Date.now() < s.expires_at) return s;
+  try{
+    var refreshed = await authRefresh(s.refresh_token);
+    saveSession(refreshed);
+    return getSessionRaw();
+  }catch(e){
+    clearSession();
+    localStorage.removeItem('hh_user');
+    return null;
+  }
+}
+
+function logAction(action, screen, details){
+  var u = getUser();
+  SB('audit_log', {
+    method: 'POST',
+    headers: {Prefer: 'return=minimal'},
+    body: JSON.stringify({
+      user_name: u ? u.display_name : 'Unknown',
+      user_role: u ? u.role : null,
+      action: action, screen: screen, details: details || '',
+      timestamp: new Date().toISOString()
+    })
+  }).catch(function(){});
+}
+
+/* ============================================================
+   DATE / TIME HELPERS
+   ============================================================ */
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function toISODate(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function fmtDateLabel(iso){
+  var today = toISODate(new Date());
+  var d = new Date(iso + 'T00:00:00');
+  var tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  if(iso === today) return 'Today';
+  if(iso === toISODate(tomorrow)) return 'Tomorrow';
+  if(iso === toISODate(yesterday)) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+}
+function fmtTime(t){
+  if(!t) return '';
+  var parts = t.split(':');
+  return parts[0] + ':' + parts[1];
+}
+function timeToMins(t){
+  if(!t) return 0;
+  var p = t.split(':');
+  return parseInt(p[0],10)*60 + parseInt(p[1],10);
+}
+function rangesOverlap(s1,e1,s2,e2){
+  return timeToMins(s1) < timeToMins(e2) && timeToMins(s2) < timeToMins(e1);
+}
+
+/* ============================================================
+   IDENTITY
+   ============================================================ */
+function getUser(){
+  try{ return JSON.parse(localStorage.getItem('hh_user') || 'null'); }
+  catch(e){ return null; }
+}
+function setUser(u){
+  localStorage.setItem('hh_user', JSON.stringify(u));
+  renderUserChip();
+}
+function initials(name){
+  if(!name) return '?';
+  var parts = name.trim().split(/\s+/);
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+function renderUserChip(){
+  var u = getUser();
+  document.getElementById('userChipName').textContent = u ? u.display_name.split(' ')[0] : 'Sign in';
+  document.getElementById('userChipAvatar').textContent = u ? initials(u.display_name) : '?';
+}
+
+var userOverlay = document.getElementById('userOverlay');
+var userSheet = document.getElementById('userSheet');
+function openUserSheet(){
+  userOverlay.classList.add('open');
+  userSheet.classList.add('open');
+  var u = getUser();
+  if(u){
+    document.getElementById('userSheetTitle').textContent = u.display_name;
+    document.getElementById('userSheetSub').textContent = u.role || 'Signed in';
+    document.getElementById('loginStepWrap').style.display = 'none';
+    document.getElementById('accountStepWrap').style.display = 'flex';
+    document.getElementById('accountInfoText').textContent = 'Signed in as ' + u.display_name + '. Not you? Log out below and switch accounts.';
+  } else {
+    document.getElementById('userSheetTitle').textContent = 'Sign in';
+    document.getElementById('userSheetSub').textContent = 'Use your H.O.M.E Hub login';
+    document.getElementById('loginStepWrap').style.display = 'flex';
+    document.getElementById('accountStepWrap').style.display = 'none';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginErrorWrap').innerHTML = '';
+  }
+}
+function closeUserSheet(){
+  userOverlay.classList.remove('open');
+  userSheet.classList.remove('open');
+}
+document.getElementById('userChip').addEventListener('click', openUserSheet);
+userOverlay.addEventListener('click', function(e){ if(e.target === userOverlay) closeUserSheet(); });
+
+document.getElementById('loginSubmitBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('loginErrorWrap');
+  errWrap.innerHTML = '';
+  var email = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+  if(!email || !password){
+    errWrap.innerHTML = '<div class="error-banner">Email and password are both needed to sign in.</div>';
+    return;
+  }
+  var btn = document.getElementById('loginSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try{
+    var tokenData = await authLogin(email, password);
+    saveSession(tokenData);
+    var profRes = await SB('users_internal?user_id=eq.'+tokenData.user.id+'&select=id,display_name,role');
+    var profile = (profRes.data || [])[0];
+    if(!profile){
+      clearSession();
+      errWrap.innerHTML = '<div class="error-banner">That login works, but there\'s no Hub profile linked to it yet — ask an admin to set your users_internal.user_id.</div>';
+      return;
+    }
+    setUser({id: profile.id, display_name: profile.display_name, role: profile.role});
+    closeUserSheet();
+    showToast('Signed in as ' + profile.display_name.split(' ')[0]);
+    loadHome();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">'+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', function(){
+  clearSession();
+  localStorage.removeItem('hh_user');
+  renderUserChip();
+  closeUserSheet();
+  showToast('Logged out');
+  loadHome();
+});
+
+async function initAuth(){
+  var sess = await ensureSession();
+  if(sess && !getUser()){
+    try{
+      var profRes = await SB('users_internal?user_id=eq.'+sess.auth_user_id+'&select=id,display_name,role');
+      var profile = (profRes.data || [])[0];
+      if(profile) setUser({id: profile.id, display_name: profile.display_name, role: profile.role});
+    }catch(e){ /* stays logged out, will prompt below */ }
+  }
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg, isError){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+
+/* ============================================================
+   SCREEN NAVIGATION
+   ============================================================ */
+var screenLoaders = {};
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-screen') === id); });
+  window.scrollTo(0,0);
+  updateFab(id);
+  if(screenLoaders[id]) screenLoaders[id]();
+}
+document.querySelectorAll('.nav-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){ showScreen(btn.getAttribute('data-screen')); });
+});
+document.querySelectorAll('[data-goto]').forEach(function(el){
+  el.addEventListener('click', function(){ showScreen(el.getAttribute('data-goto')); });
+});
+
+/* FAB behaviour changes with active screen */
+var currentScreen = 'screen-home';
+function updateFab(id){
+  currentScreen = id;
+  var fab = document.getElementById('fab');
+  fab.style.display = (id === 'screen-forms') ? 'none' : 'flex';
+}
+document.getElementById('fab').addEventListener('click', function(){
+  if(currentScreen === 'screen-book'){
+    var activeTab = document.querySelector('.subtab[data-book-tab].active').getAttribute('data-book-tab');
+    if(activeTab === 'rooms'){ document.getElementById('roomTitle').scrollIntoView({behavior:'smooth'}); }
+    else { showToast('Tap a session below to book it'); }
+  } else if(currentScreen === 'screen-calendar' || currentScreen === 'screen-manage' || currentScreen === 'screen-home'){
+    openMeetingSheet();
+  }
+});
+
+/* ============================================================
+   HOME
+   ============================================================ */
+async function loadHome(){
+  var u = getUser();
+  document.getElementById('homeGreeting').innerHTML = u ? ('Hey <span>' + u.display_name.split(' ')[0] + '</span>.') : 'Hey <span>famalam</span>.';
+  var today = toISODate(new Date());
+  var agendaWrap = document.getElementById('homeAgenda');
+  agendaWrap.innerHTML = '<div class="tile-empty">Pulling today\'s board together…</div>';
+  try{
+    var items = await fetchAgendaForDate(today);
+    renderHomeStats(items);
+    renderTodayTiles(agendaWrap, items);
+  }catch(e){
+    agendaWrap.innerHTML = '<div class="tile-empty">Couldn\'t load today\'s board. ' + e.message + '</div>';
+  }
+}
+function renderTodayTiles(wrap, items){
+  if(!items.length){
+    wrap.innerHTML = '<div class="tile-empty">Nothing booked in yet — the day\'s wide open.</div>';
+    return;
+  }
+  var tagClass = {room:'tag-room', session:'tag-session', meeting:'tag-meeting'};
+  var tagLabel = {room:'Room', session:'Session', meeting:'Meeting'};
+  var barColor = {room:'var(--or)', session:'var(--dg)', meeting:'var(--db)'};
+  wrap.innerHTML = items.map(function(i){
+    return '<div class="today-tile" style="border-top-color:'+barColor[i.type]+'">' +
+      '<div class="tile-time">'+fmtTime(i.start)+'</div>' +
+      '<div class="tile-title">'+i.title+'</div>' +
+      (i.sub ? '<div class="tile-sub">'+i.sub+'</div>' : '') +
+      '<span class="tile-tag '+tagClass[i.type]+'">'+tagLabel[i.type]+'</span>' +
+      '</div>';
+  }).join('');
+}
+function renderHomeStats(items){
+  var rooms = items.filter(function(i){ return i.type === 'room'; }).length;
+  var sessions = items.filter(function(i){ return i.type === 'session'; }).length;
+  var meetings = items.filter(function(i){ return i.type === 'meeting'; }).length;
+  var wrap = document.getElementById('homeStats');
+  wrap.innerHTML =
+    '<div class="stat-card"><div class="num">'+rooms+'</div><div class="lbl">Rooms in use</div></div>' +
+    '<div class="stat-card"><div class="num">'+sessions+'</div><div class="lbl">Sessions today</div></div>' +
+    '<div class="stat-card"><div class="num">'+meetings+'</div><div class="lbl">Meetings today</div></div>';
+}
+screenLoaders['screen-home'] = loadHome;
+
+/* Quick action tiles on the dashboard */
+document.querySelectorAll('[data-quick]').forEach(function(tile){
+  tile.addEventListener('click', function(){
+    var action = tile.getAttribute('data-quick');
+    if(action === 'book-room'){
+      showScreen('screen-book');
+    } else if(action === 'book-session'){
+      showScreen('screen-book');
+      var sessionsTab = document.querySelector('[data-book-tab="sessions"]');
+      if(sessionsTab) sessionsTab.click();
+    } else if(action === 'add-meeting'){
+      openMeetingSheet();
+    } else if(action === 'view-board'){
+      showScreen('screen-manage');
+    }
+  });
+});
+
+/* ============================================================
+   AGENDA (shared by Home + Manage) — pulls room_bookings,
+   session_bookings (joined to bookable_sessions) and meetings
+   for a given date, and returns one merged, time-sorted list.
+   ============================================================ */
+async function fetchAgendaForDate(iso){
+  var items = [];
+
+  var roomRes = await SB('room_bookings?booking_date=eq.'+iso+'&order=start_time.asc');
+  (roomRes.data||[]).forEach(function(r){
+    items.push({type:'room', start: r.start_time, end: r.end_time, title: r.booking_title || r.room, sub: r.room + (r.booked_by ? ' · booked by ' + r.booked_by : '')});
+  });
+
+  var sbRes = await SB('session_bookings?booking_date=eq.'+iso+'&status=neq.cancelled&order=slot_start.asc');
+  var sessionBookings = sbRes.data || [];
+  if(sessionBookings.length){
+    var ids = Array.from(new Set(sessionBookings.map(function(b){ return b.bookable_session_id; }).filter(Boolean)));
+    var sessionMap = {};
+    if(ids.length){
+      var sessRes = await SB('bookable_sessions?id=in.('+ids.join(',')+')&select=id,name,room_name,facilitator_name');
+      (sessRes.data||[]).forEach(function(s){ sessionMap[s.id] = s; });
+    }
+    sessionBookings.forEach(function(b){
+      var s = sessionMap[b.bookable_session_id] || {};
+      items.push({type:'session', start: b.slot_start, end: b.slot_end, title: (s.name || 'Session') + ' — ' + b.client_name, sub: (s.room_name ? s.room_name + ' · ' : '') + (s.facilitator_name || '')});
+    });
+  }
+
+  var mRes = await SB('meetings?meeting_date=eq.'+iso+'&order=start_time.asc');
+  (mRes.data||[]).forEach(function(m){
+    items.push({type:'meeting', start: m.start_time, end: m.end_time, title: m.title, sub: (m.calendar_type === 'group' ? 'Group · ' : 'Personal · ') + (m.location_name || m.location_type || '')});
+  });
+
+  items.sort(function(a,b){ return timeToMins(a.start) - timeToMins(b.start); });
+  return items;
+}
+
+function renderAgendaList(wrap, items, compact){
+  if(!items.length){
+    wrap.innerHTML = '<div class="agenda-empty">Nothing booked in yet.</div>';
+    return;
+  }
+  var tagClass = {room:'tag-room', session:'tag-session', meeting:'tag-meeting'};
+  var tagLabel = {room:'Room', session:'Session', meeting:'Meeting'};
+  var barColor = {room:'var(--or)', session:'var(--dg)', meeting:'var(--db)'};
+  wrap.innerHTML = items.map(function(i){
+    return '<div class="agenda-item">' +
+      '<div class="agenda-bar" style="background:'+barColor[i.type]+'"></div>' +
+      '<div class="agenda-time">'+fmtTime(i.start)+'</div>' +
+      '<div class="agenda-body">' +
+        '<div class="agenda-title">'+i.title+'</div>' +
+        (i.sub ? '<div class="agenda-sub">'+i.sub+'</div>' : '') +
+        '<span class="agenda-tag '+tagClass[i.type]+'">'+tagLabel[i.type]+'</span>' +
+      '</div></div>';
+  }).join('');
+}
+
+/* ============================================================
+   BOOK — ROOMS
+   ============================================================ */
+var roomsCache = [];
+var bookingTypesCache = [];
+async function loadBookRoomsData(){
+  document.getElementById('roomDate').value = toISODate(new Date());
+  try{
+    if(!roomsCache.length){
+      var r = await SB('rooms?is_active=eq.true&select=id,name,capacity&order=name.asc');
+      roomsCache = r.data || [];
+    }
+    var sel = document.getElementById('roomSelect');
+    sel.innerHTML = '<option value="">Choose a room…</option>' + roomsCache.map(function(r){
+      return '<option value="'+r.name+'">'+r.name+(r.capacity ? ' (up to '+r.capacity+')' : '')+'</option>';
+    }).join('');
+  }catch(e){ showToast('Couldn\'t load rooms', true); }
+  try{
+    if(!bookingTypesCache.length){
+      var bt = await SB('booking_types?is_active=eq.true&order=sort_order.asc');
+      bookingTypesCache = bt.data || [];
+    }
+    var typeSel = document.getElementById('roomType');
+    typeSel.innerHTML = (bookingTypesCache.length ? bookingTypesCache.map(function(t){ return '<option value="'+t.id+'">'+t.label+'</option>'; }).join('') : '<option value="general">General</option>');
+  }catch(e){ /* non-fatal */ }
+  refreshRoomAvailability();
+}
+async function refreshRoomAvailability(){
+  var room = document.getElementById('roomSelect').value;
+  var date = document.getElementById('roomDate').value;
+  var busyWrap = document.getElementById('roomBusyWrap');
+  var upcomingWrap = document.getElementById('roomUpcoming');
+  if(!room){ busyWrap.innerHTML=''; upcomingWrap.innerHTML = '<div class="loading-row">Pick a room to see what\'s booked</div>'; return; }
+  try{
+    var res = await SB('room_bookings?room=eq.'+encodeURIComponent(room)+'&booking_date=eq.'+date+'&order=start_time.asc');
+    var bookings = res.data || [];
+    if(bookings.length){
+      busyWrap.innerHTML = '<div class="helper-text">Already booked that day:</div><div class="busy-list">' +
+        bookings.map(function(b){ return '<div class="busy-row">'+fmtTime(b.start_time)+' – '+fmtTime(b.end_time)+' · '+(b.booking_title||'Booked')+'</div>'; }).join('') + '</div>';
+    } else {
+      busyWrap.innerHTML = '<div class="helper-text">Nothing else booked in this room that day — you\'re looking good.</div>';
+    }
+  }catch(e){ busyWrap.innerHTML = ''; }
+
+  try{
+    var upRes = await SB('room_bookings?room=eq.'+encodeURIComponent(room)+'&booking_date=gte.'+toISODate(new Date())+'&order=booking_date.asc,start_time.asc&limit=8');
+    var up = upRes.data || [];
+    upcomingWrap.innerHTML = up.length ? up.map(function(b){
+      return '<div class="agenda-item"><div class="agenda-bar" style="background:var(--or)"></div>' +
+        '<div class="agenda-time">'+fmtTime(b.start_time)+'</div>' +
+        '<div class="agenda-body"><div class="agenda-title">'+(b.booking_title||'Booking')+'</div>' +
+        '<div class="agenda-sub">'+fmtDateLabel(b.booking_date)+' · '+fmtTime(b.start_time)+'–'+fmtTime(b.end_time)+(b.booked_by ? ' · '+b.booked_by : '')+'</div></div></div>';
+    }).join('') : '<div class="agenda-empty">Nothing else on the horizon for this room.</div>';
+  }catch(e){ upcomingWrap.innerHTML = '<div class="agenda-empty">Couldn\'t load upcoming bookings.</div>'; }
+}
+document.getElementById('roomSelect').addEventListener('change', refreshRoomAvailability);
+document.getElementById('roomDate').addEventListener('change', refreshRoomAvailability);
+
+document.getElementById('roomBookBtn').addEventListener('click', async function(){
+  var u = getUser();
+  if(!u){ openUserSheet(); showToast('Pick who you are first'); return; }
+  var room = document.getElementById('roomSelect').value;
+  var date = document.getElementById('roomDate').value;
+  var start = document.getElementById('roomStart').value;
+  var end = document.getElementById('roomEnd').value;
+  var title = document.getElementById('roomTitle').value.trim();
+  var type = document.getElementById('roomType').value;
+  var notes = document.getElementById('roomNotes').value.trim();
+  var errWrap = document.getElementById('roomErrorWrap');
+  errWrap.innerHTML = '';
+
+  if(!room || !date || !start || !end || !title){
+    errWrap.innerHTML = '<div class="error-banner">Room, date, start, end and a title are all needed before this can go in the diary.</div>';
+    return;
+  }
+  if(timeToMins(end) <= timeToMins(start)){
+    errWrap.innerHTML = '<div class="error-banner">End time needs to be after the start time.</div>';
+    return;
+  }
+
+  var btn = document.getElementById('roomBookBtn');
+  btn.disabled = true; btn.textContent = 'Checking availability…';
+  try{
+    var clashRes = await SB('room_bookings?room=eq.'+encodeURIComponent(room)+'&booking_date=eq.'+date);
+    var clash = (clashRes.data||[]).find(function(b){ return rangesOverlap(start,end,b.start_time,b.end_time); });
+    if(clash){
+      errWrap.innerHTML = '<div class="error-banner">That clashes with "'+(clash.booking_title||'a booking')+'" from '+fmtTime(clash.start_time)+' to '+fmtTime(clash.end_time)+'. Pick a different time.</div>';
+      btn.disabled = false; btn.textContent = 'Book this room';
+      return;
+    }
+    btn.textContent = 'Saving…';
+    await SB('room_bookings', {
+      method:'POST', headers:{Prefer:'return=representation'},
+      body: JSON.stringify({
+        booking_title: title, room: room, booking_date: date,
+        start_time: start, end_time: end, booked_by: u.display_name,
+        notes: notes, booking_type: type || null, is_recurring: false
+      })
+    });
+    logAction('create_room_booking', 'Book', title + ' — ' + room + ' ' + date);
+    showToast('Room booked — nice one.');
+    document.getElementById('roomTitle').value = '';
+    document.getElementById('roomNotes').value = '';
+    document.getElementById('roomStart').value = '';
+    document.getElementById('roomEnd').value = '';
+    refreshRoomAvailability();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save the booking — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Book this room';
+  }
+});
+
+/* ============================================================
+   BOOK — SESSIONS
+   ============================================================ */
+var currentSession = null;
+async function loadBookSessionsData(){
+  var wrap = document.getElementById('sessionList');
+  wrap.innerHTML = '<div class="loading-row">Loading sessions…</div>';
+  try{
+    var res = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
+    var sessions = res.data || [];
+    if(!sessions.length){ wrap.innerHTML = '<div class="agenda-empty">No bookable sessions set up yet.</div>'; return; }
+    wrap.innerHTML = sessions.map(function(s){
+      var when = s.event_date ? fmtDateLabel(s.event_date) : (s.day_of_week ? 'Every ' + s.day_of_week : 'See details');
+      var timeRange = (s.window_start_time && s.window_end_time) ? (fmtTime(s.window_start_time)+'–'+fmtTime(s.window_end_time)) : '';
+      return '<div class="card accent-green" data-session-id="'+s.id+'">' +
+        '<div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+s.name+'</div>' +
+        '<div class="card-desc">'+(s.facilitator_name ? s.facilitator_name+' · ' : '')+when+(timeRange ? ' · '+timeRange : '')+'</div>' +
+        '<div class="card-meta">'+(s.is_free ? 'Free' : (s.price ? '£'+s.price : ''))+(s.capacity_per_slot ? ' · '+s.capacity_per_slot+' per slot' : '')+'</div></div>' +
+        '</div>';
+    }).join('');
+    wrap.querySelectorAll('[data-session-id]').forEach(function(card){
+      card.addEventListener('click', function(){
+        var s = sessions.find(function(x){ return x.id === card.getAttribute('data-session-id'); });
+        openSessionSheet(s);
+      });
+    });
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load sessions — '+e.message+'</div>';
+  }
+}
+var sessionOverlay = document.getElementById('sessionOverlay');
+var sessionSheet = document.getElementById('sessionSheet');
+function openSessionSheet(s){
+  currentSession = s;
+  document.getElementById('sessionSheetTitle').textContent = s.name;
+  document.getElementById('sessionSheetSub').textContent = (s.facilitator_name ? 'with ' + s.facilitator_name : 'Fill in who\'s coming and lock in the slot');
+  var dateField = document.getElementById('sessionDateField');
+  var dateInput = document.getElementById('sessionDate');
+  if(s.event_date){
+    dateInput.value = s.event_date; dateInput.disabled = true; dateField.style.opacity = .7;
+  } else {
+    dateInput.value = toISODate(new Date()); dateInput.disabled = false; dateField.style.opacity = 1;
+  }
+  document.getElementById('sessionStart').value = s.window_start_time ? fmtTime(s.window_start_time) : '';
+  document.getElementById('sessionEnd').value = s.window_end_time ? fmtTime(s.window_end_time) : '';
+  document.getElementById('sessionClientName').value = '';
+  document.getElementById('sessionClientEmail').value = '';
+  document.getElementById('sessionClientPhone').value = '';
+  document.getElementById('sessionNotes').value = '';
+  document.getElementById('sessionErrorWrap').innerHTML = '';
+  sessionOverlay.classList.add('open'); sessionSheet.classList.add('open');
+}
+function closeSessionSheet(){ sessionOverlay.classList.remove('open'); sessionSheet.classList.remove('open'); }
+sessionOverlay.addEventListener('click', function(e){ if(e.target===sessionOverlay) closeSessionSheet(); });
+
+document.getElementById('sessionSaveBtn').addEventListener('click', async function(){
+  var u = getUser();
+  if(!u){ openUserSheet(); showToast('Pick who you are first'); return; }
+  var errWrap = document.getElementById('sessionErrorWrap');
+  errWrap.innerHTML = '';
+  var date = document.getElementById('sessionDate').value;
+  var start = document.getElementById('sessionStart').value;
+  var end = document.getElementById('sessionEnd').value;
+  var clientName = document.getElementById('sessionClientName').value.trim();
+  if(!date || !start || !end || !clientName){
+    errWrap.innerHTML = '<div class="error-banner">Date, times and a name are needed to confirm this booking.</div>';
+    return;
+  }
+  var btn = document.getElementById('sessionSaveBtn');
+  btn.disabled = true; btn.textContent = 'Checking capacity…';
+  try{
+    if(currentSession.capacity_per_slot){
+      var existing = await SB('session_bookings?bookable_session_id=eq.'+currentSession.id+'&booking_date=eq.'+date+'&status=neq.cancelled');
+      if((existing.data||[]).length >= currentSession.capacity_per_slot){
+        errWrap.innerHTML = '<div class="error-banner">That slot is full ('+currentSession.capacity_per_slot+' max). Try another date or check with the facilitator.</div>';
+        btn.disabled = false; btn.textContent = 'Confirm booking';
+        return;
+      }
+    }
+    btn.textContent = 'Saving…';
+    await SB('session_bookings', {
+      method:'POST', headers:{Prefer:'return=representation'},
+      body: JSON.stringify({
+        bookable_session_id: currentSession.id, booking_date: date,
+        slot_start: start, slot_end: end, client_name: clientName,
+        client_email: document.getElementById('sessionClientEmail').value.trim() || null,
+        client_phone: document.getElementById('sessionClientPhone').value.trim() || null,
+        booked_by: u.display_name, status: 'confirmed',
+        notes: document.getElementById('sessionNotes').value.trim() || null
+      })
+    });
+    logAction('create_session_booking', 'Book', currentSession.name + ' — ' + clientName + ' ' + date);
+    showToast('Session booked for ' + clientName.split(' ')[0]);
+    closeSessionSheet();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Confirm booking';
+  }
+});
+
+/* Book sub-tabs */
+document.querySelectorAll('[data-book-tab]').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('[data-book-tab]').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var which = tab.getAttribute('data-book-tab');
+    document.getElementById('bookRoomsPanel').style.display = which === 'rooms' ? 'block' : 'none';
+    document.getElementById('bookSessionsPanel').style.display = which === 'sessions' ? 'block' : 'none';
+    if(which === 'sessions') loadBookSessionsData();
+  });
+});
+screenLoaders['screen-book'] = loadBookRoomsData;
+
+/* ============================================================
+   CALENDAR
+   ============================================================ */
+var calDate = new Date();
+var calMode = 'mine';
+async function loadCalendar(){
+  document.getElementById('calDateLabel').textContent = fmtDateLabel(toISODate(calDate));
+  var wrap = document.getElementById('calendarList');
+  wrap.innerHTML = '<div class="loading-row">Loading the calendar…</div>';
+  var u = getUser();
+  var iso = toISODate(calDate);
+  try{
+    var filter;
+    if(calMode === 'mine'){
+      if(!u){ wrap.innerHTML = '<div class="agenda-empty">Pick who you are up top to see your calendar.</div>'; return; }
+      filter = 'meeting_date=eq.'+iso+'&or=(organiser_name.eq.'+encodeURIComponent(u.display_name)+',attendee_names.cs.{'+encodeURIComponent(u.display_name)+'})&order=start_time.asc';
+    } else {
+      filter = 'meeting_date=eq.'+iso+'&calendar_type=eq.group&order=start_time.asc';
+    }
+    var res = await SB('meetings?'+filter);
+    var meetings = res.data || [];
+    if(!meetings.length){ wrap.innerHTML = '<div class="agenda-empty">Nothing on '+ (calMode==='mine' ? 'your' : 'the group') +' calendar for this day.</div>'; return; }
+    wrap.innerHTML = meetings.map(function(m){
+      return '<div class="agenda-item"><div class="agenda-bar" style="background:var(--db)"></div>' +
+        '<div class="agenda-time">'+fmtTime(m.start_time)+'</div>' +
+        '<div class="agenda-body"><div class="agenda-title">'+m.title+'</div>' +
+        '<div class="agenda-sub">'+fmtTime(m.start_time)+'–'+fmtTime(m.end_time)+(m.location_name ? ' · '+m.location_name : '')+(m.organiser_name ? ' · '+m.organiser_name : '')+'</div></div></div>';
+    }).join('');
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load the calendar — '+e.message+'</div>';
+  }
+}
+document.querySelectorAll('[data-cal-tab]').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('[data-cal-tab]').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    calMode = tab.getAttribute('data-cal-tab');
+    loadCalendar();
+  });
+});
+document.getElementById('calPrev').addEventListener('click', function(){ calDate.setDate(calDate.getDate()-1); loadCalendar(); });
+document.getElementById('calNext').addEventListener('click', function(){ calDate.setDate(calDate.getDate()+1); loadCalendar(); });
+screenLoaders['screen-calendar'] = loadCalendar;
+
+/* MEETING SHEET (used from Calendar, Home, Manage FABs) */
+var meetingOverlay = document.getElementById('meetingOverlay');
+var meetingSheet = document.getElementById('meetingSheet');
+var meetingCalType = 'personal';
+function openMeetingSheet(){
+  var u = getUser();
+  if(!u){ openUserSheet(); showToast('Pick who you are first'); return; }
+  document.getElementById('meetingTitle').value = '';
+  document.getElementById('meetingDate').value = toISODate(calDate.getTime ? calDate : new Date());
+  document.getElementById('meetingStart').value = '';
+  document.getElementById('meetingEnd').value = '';
+  document.getElementById('meetingLocation').value = '';
+  document.getElementById('meetingAttendees').value = '';
+  document.getElementById('meetingAgenda').value = '';
+  document.getElementById('meetingErrorWrap').innerHTML = '';
+  meetingOverlay.classList.add('open'); meetingSheet.classList.add('open');
+}
+function closeMeetingSheet(){ meetingOverlay.classList.remove('open'); meetingSheet.classList.remove('open'); }
+meetingOverlay.addEventListener('click', function(e){ if(e.target===meetingOverlay) closeMeetingSheet(); });
+document.querySelectorAll('[data-meeting-cal]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-meeting-cal]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    meetingCalType = chip.getAttribute('data-meeting-cal');
+  });
+});
+document.getElementById('meetingSaveBtn').addEventListener('click', async function(){
+  var u = getUser();
+  var errWrap = document.getElementById('meetingErrorWrap');
+  errWrap.innerHTML = '';
+  var title = document.getElementById('meetingTitle').value.trim();
+  var date = document.getElementById('meetingDate').value;
+  var start = document.getElementById('meetingStart').value;
+  var end = document.getElementById('meetingEnd').value;
+  if(!title || !date || !start || !end){
+    errWrap.innerHTML = '<div class="error-banner">Title, date and both times are needed before this can go on the calendar.</div>';
+    return;
+  }
+  var attendeesRaw = document.getElementById('meetingAttendees').value.trim();
+  var attendeeNames = attendeesRaw ? attendeesRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+  var btn = document.getElementById('meetingSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    await SB('meetings', {
+      method:'POST', headers:{Prefer:'return=representation'},
+      body: JSON.stringify({
+        title: title, meeting_date: date, start_time: start, end_time: end,
+        organiser_name: u.display_name, calendar_type: meetingCalType,
+        is_private: meetingCalType === 'personal', created_by: u.display_name,
+        location_type: document.getElementById('meetingLocationType').value,
+        location_name: document.getElementById('meetingLocation').value.trim() || null,
+        attendee_names: attendeeNames, agenda: document.getElementById('meetingAgenda').value.trim() || null,
+        status: 'scheduled'
+      })
+    });
+    logAction('create_meeting', 'Calendar', title + ' ' + date + ' (' + meetingCalType + ')');
+    showToast('Added to the ' + (meetingCalType === 'group' ? 'group' : 'personal') + ' calendar');
+    closeMeetingSheet();
+    if(currentScreen === 'screen-calendar') loadCalendar();
+    if(currentScreen === 'screen-home') loadHome();
+    if(currentScreen === 'screen-manage') loadManage();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Add to calendar';
+  }
+});
+
+/* ============================================================
+   MANAGE
+   ============================================================ */
+var mgDate = new Date();
+async function loadManage(){
+  document.getElementById('mgDateLabel').textContent = fmtDateLabel(toISODate(mgDate));
+  var wrap = document.getElementById('mgAgenda');
+  wrap.innerHTML = '<div class="loading-row">Pulling the board together…</div>';
+  try{
+    var items = await fetchAgendaForDate(toISODate(mgDate));
+    renderAgendaList(wrap, items, false);
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load the board — '+e.message+'</div>';
+  }
+  var nWrap = document.getElementById('mgNotifications');
+  try{
+    var nRes = await SB('notifications?actioned=eq.false&order=created_at.desc&limit=10');
+    var notes = nRes.data || [];
+    nWrap.innerHTML = notes.length ? notes.map(function(n){
+      return '<div class="card accent-red"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+(n.type||'Notification')+'</div><div class="card-desc">'+n.summary+'</div></div></div>';
+    }).join('') : '<div class="agenda-empty">All clear — nothing waiting on you.</div>';
+  }catch(e){
+    nWrap.innerHTML = '<div class="agenda-empty">Notifications aren\'t available right now.</div>';
+  }
+}
+document.getElementById('mgPrev').addEventListener('click', function(){ mgDate.setDate(mgDate.getDate()-1); loadManage(); });
+document.getElementById('mgNext').addEventListener('click', function(){ mgDate.setDate(mgDate.getDate()+1); loadManage(); });
+screenLoaders['screen-manage'] = loadManage;
+
+/* ============================================================
+   FORMS — SHARE SHEET (unchanged behaviour)
+   ============================================================ */
 var BASE = 'https://champions.homehub-benfleet.co.uk';
-var currentPath = '';
-var currentName = '';
-
+var currentPath = '', currentName = '';
 var overlay = document.getElementById('overlay');
-var sheet   = document.getElementById('sheet');
+var sheet = document.getElementById('sheet');
 
-// Open a form on card tap (not share button)
-document.querySelectorAll('.card').forEach(function(card){
+document.querySelectorAll('[data-path]').forEach(function(card){
   card.addEventListener('click', function(e){
     if(e.target.closest('[data-share]')) return;
     var path = card.getAttribute('data-path');
     if(path) window.open(BASE + '/' + path, '_blank');
   });
 });
-
-// Open share sheet
 document.querySelectorAll('[data-share]').forEach(function(btn){
   btn.addEventListener('click', function(e){
     e.stopPropagation();
@@ -299,34 +1318,25 @@ document.querySelectorAll('[data-share]').forEach(function(btn){
     currentPath = card.getAttribute('data-path');
     currentName = card.getAttribute('data-name');
     document.getElementById('sheet-title').textContent = currentName;
-    overlay.classList.add('open');
-    sheet.classList.add('open');
+    overlay.classList.add('open'); sheet.classList.add('open');
   });
 });
-
-function closeSheet(){
-  overlay.classList.remove('open');
-  sheet.classList.remove('open');
-}
-
-overlay.addEventListener('click', closeSheet);
+function closeSheet(){ overlay.classList.remove('open'); sheet.classList.remove('open'); }
+overlay.addEventListener('click', function(e){ if(e.target===overlay) closeSheet(); });
 document.getElementById('sheet-cancel').addEventListener('click', closeSheet);
 
-// Share options
 document.getElementById('opt-whatsapp').addEventListener('click', function(){
   var url = BASE + '/' + currentPath;
-  var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' form — you can fill it in here: ' + url + ' 💚');
+  var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' form — you can fill it in here: ' + url);
   window.open('https://wa.me/?text=' + msg, '_blank');
   closeSheet();
 });
-
 document.getElementById('opt-sms').addEventListener('click', function(){
   var url = BASE + '/' + currentPath;
   var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' form: ' + url);
   window.open('sms:?body=' + msg, '_blank');
   closeSheet();
 });
-
 document.getElementById('opt-email').addEventListener('click', function(){
   var url = BASE + '/' + currentPath;
   var subject = encodeURIComponent('H.O.M.E Hub — ' + currentName);
@@ -334,34 +1344,30 @@ document.getElementById('opt-email').addEventListener('click', function(){
   window.open('mailto:?subject=' + subject + '&body=' + body, '_blank');
   closeSheet();
 });
-
 document.getElementById('opt-copy').addEventListener('click', function(){
   var url = BASE + '/' + currentPath;
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(function(){
-      closeSheet();
-      setTimeout(function(){ showToast('Link copied to clipboard'); }, 300);
-    });
+    navigator.clipboard.writeText(url).then(function(){ closeSheet(); setTimeout(function(){ showToast('Link copied to clipboard'); }, 300); });
   } else {
     var el = document.createElement('textarea');
-    el.value = url;
-    el.style.position = 'fixed';
-    el.style.opacity = '0';
-    document.body.appendChild(el);
-    el.focus(); el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    closeSheet();
-    setTimeout(function(){ showToast('Link copied to clipboard'); }, 300);
+    el.value = url; el.style.position='fixed'; el.style.opacity='0';
+    document.body.appendChild(el); el.focus(); el.select();
+    document.execCommand('copy'); document.body.removeChild(el);
+    closeSheet(); setTimeout(function(){ showToast('Link copied to clipboard'); }, 300);
   }
 });
 
-function showToast(msg){
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 2500);
-}
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async function(){
+  renderUserChip();
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+  await initAuth();
+  renderUserChip();
+  if(!getUser()){ openUserSheet(); }
+  loadHome();
+});
 </script>
 </body>
 </html>
