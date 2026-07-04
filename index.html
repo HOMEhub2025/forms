@@ -381,20 +381,44 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>Every room, every session, every meeting — one live board.</p>
   </div>
 
-  <div class="date-nav">
-    <div class="date-nav-btn" id="mgPrev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
-    <div class="date-nav-label" id="mgDateLabel">Today</div>
-    <div class="date-nav-btn" id="mgNext"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+  <div class="subtabs">
+    <div class="subtab active" data-mg-tab="board">Board</div>
+    <div class="subtab" data-mg-tab="financials">Financials</div>
   </div>
 
-  <div class="section-label">Full board</div>
-  <div class="cards" id="mgAgenda" style="gap:8px">
-    <div class="loading-row">Pulling the board together…</div>
+  <div id="mgBoardPanel">
+    <div class="date-nav">
+      <div class="date-nav-btn" id="mgPrev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="date-nav-label" id="mgDateLabel">Today</div>
+      <div class="date-nav-btn" id="mgNext"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+
+    <div class="section-label">Full board</div>
+    <div class="cards" id="mgAgenda" style="gap:8px">
+      <div class="loading-row">Pulling the board together…</div>
+    </div>
+
+    <div class="section-label">Needs a look</div>
+    <div class="cards" id="mgNotifications">
+      <div class="loading-row">Checking notifications…</div>
+    </div>
   </div>
 
-  <div class="section-label">Needs a look</div>
-  <div class="cards" id="mgNotifications">
-    <div class="loading-row">Checking notifications…</div>
+  <div id="mgFinancialsPanel" style="display:none">
+    <div class="section-label">Where things stand</div>
+    <div class="stats-row" id="finStats">
+      <div class="stat-card"><div class="num">–</div><div class="lbl">Current balance</div></div>
+    </div>
+
+    <div class="section-label">Outstanding invoices</div>
+    <div class="cards" id="finInvoices" style="gap:8px">
+      <div class="loading-row">Loading outstanding invoices…</div>
+    </div>
+
+    <div class="section-label">Recent cash-ups</div>
+    <div class="cards" id="finCashups" style="gap:8px">
+      <div class="loading-row">Loading recent cash-ups…</div>
+    </div>
   </div>
 </div>
 
@@ -480,9 +504,10 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <div class="form-wrap">
     <div class="field" id="sessionDateField"><label>Date</label><input type="date" id="sessionDate"></div>
     <div class="field-row">
-      <div class="field"><label>Start time</label><input type="time" id="sessionStart"></div>
-      <div class="field"><label>End time</label><input type="time" id="sessionEnd"></div>
+      <div class="field"><label id="sessionStartLabel">Start time</label><input type="time" id="sessionStart"></div>
+      <div class="field" id="sessionEndField"><label>End time</label><input type="time" id="sessionEnd"></div>
     </div>
+    <div class="field" id="sessionPlacesField" style="display:none"><label>Number of places</label><input type="text" inputmode="numeric" id="sessionPlaces" value="1"></div>
     <div class="field"><label>Client / attendee name</label><input type="text" id="sessionClientName" placeholder="Who's attending"></div>
     <div class="field-row">
       <div class="field"><label>Email (optional)</label><input type="email" id="sessionClientEmail"></div>
@@ -1043,39 +1068,80 @@ document.getElementById('roomBookBtn').addEventListener('click', async function(
    BOOK — SESSIONS
    ============================================================ */
 var currentSession = null;
+var currentOffering = null;
+var sessionSheetMode = 'session';
 async function loadBookSessionsData(){
   var wrap = document.getElementById('sessionList');
-  wrap.innerHTML = '<div class="loading-row">Loading sessions…</div>';
+  wrap.innerHTML = '<div class="loading-row">Loading everything bookable…</div>';
   try{
-    var res = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
-    var sessions = res.data || [];
-    if(!sessions.length){ wrap.innerHTML = '<div class="agenda-empty">No bookable sessions set up yet.</div>'; return; }
-    wrap.innerHTML = sessions.map(function(s){
-      var when = s.event_date ? fmtDateLabel(s.event_date) : (s.day_of_week ? 'Every ' + s.day_of_week : 'See details');
-      var timeRange = (s.window_start_time && s.window_end_time) ? (fmtTime(s.window_start_time)+'–'+fmtTime(s.window_end_time)) : '';
-      return '<div class="card accent-green" data-session-id="'+s.id+'">' +
-        '<div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
-        '<div class="card-body"><div class="card-title">'+s.name+'</div>' +
-        '<div class="card-desc">'+(s.facilitator_name ? s.facilitator_name+' · ' : '')+when+(timeRange ? ' · '+timeRange : '')+'</div>' +
-        '<div class="card-meta">'+(s.is_free ? 'Free' : (s.price ? '£'+s.price : ''))+(s.capacity_per_slot ? ' · '+s.capacity_per_slot+' per slot' : '')+'</div></div>' +
-        '</div>';
-    }).join('');
+    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
+    var sessions = sessRes.data || [];
+    var offRes = await SB('offerings?is_active=eq.true&order=sort_order.asc');
+    var offerings = offRes.data || [];
+
+    var html = '';
+    if(sessions.length){
+      html += '<div class="section-label" style="padding:0 0 6px">Bookable sessions</div>';
+      html += sessions.map(function(s){
+        var when = s.event_date ? fmtDateLabel(s.event_date) : (s.day_of_week ? 'Every ' + s.day_of_week : 'See details');
+        var timeRange = (s.window_start_time && s.window_end_time) ? (fmtTime(s.window_start_time)+'–'+fmtTime(s.window_end_time)) : '';
+        return '<div class="card accent-green" data-session-id="'+s.id+'">' +
+          '<div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
+          '<div class="card-body"><div class="card-title">'+s.name+'</div>' +
+          '<div class="card-desc">'+(s.facilitator_name ? s.facilitator_name+' · ' : '')+when+(timeRange ? ' · '+timeRange : '')+'</div>' +
+          '<div class="card-meta">'+(s.is_free ? 'Free' : (s.price ? '£'+s.price : ''))+(s.capacity_per_slot ? ' · '+s.capacity_per_slot+' per slot' : '')+'</div></div>' +
+          '</div>';
+      }).join('');
+    }
+    if(offerings.length){
+      html += '<div class="section-label" style="padding:16px 0 6px">Groups &amp; programmes</div>';
+      html += offerings.map(function(o){
+        return '<div class="card accent-blue" data-offering-id="'+o.id+'">' +
+          '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>' +
+          '<div class="card-body"><div class="card-title">'+o.name+'</div>' +
+          '<div class="card-desc">'+(o.facilitator ? o.facilitator+' · ' : '')+(o.when_text || o.frequency || 'See details')+'</div>' +
+          '<div class="card-meta">'+(o.price ? '£'+o.price : 'Free')+(o.category ? ' · '+o.category : '')+'</div></div>' +
+          '</div>';
+      }).join('');
+    }
+    if(!sessions.length && !offerings.length){
+      wrap.innerHTML = '<div class="agenda-empty">Nothing bookable set up yet.</div>';
+      return;
+    }
+    wrap.innerHTML = html;
     wrap.querySelectorAll('[data-session-id]').forEach(function(card){
       card.addEventListener('click', function(){
         var s = sessions.find(function(x){ return x.id === card.getAttribute('data-session-id'); });
         openSessionSheet(s);
       });
     });
+    wrap.querySelectorAll('[data-offering-id]').forEach(function(card){
+      card.addEventListener('click', function(){
+        var o = offerings.find(function(x){ return x.id === card.getAttribute('data-offering-id'); });
+        openOfferingSheet(o);
+      });
+    });
   }catch(e){
-    wrap.innerHTML = '<div class="error-banner">Couldn\'t load sessions — '+e.message+'</div>';
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load what\'s bookable — '+e.message+'</div>';
   }
 }
 var sessionOverlay = document.getElementById('sessionOverlay');
 var sessionSheet = document.getElementById('sessionSheet');
+function resetSessionSheetFields(){
+  document.getElementById('sessionClientName').value = '';
+  document.getElementById('sessionClientEmail').value = '';
+  document.getElementById('sessionClientPhone').value = '';
+  document.getElementById('sessionNotes').value = '';
+  document.getElementById('sessionErrorWrap').innerHTML = '';
+}
 function openSessionSheet(s){
-  currentSession = s;
+  sessionSheetMode = 'session';
+  currentSession = s; currentOffering = null;
   document.getElementById('sessionSheetTitle').textContent = s.name;
   document.getElementById('sessionSheetSub').textContent = (s.facilitator_name ? 'with ' + s.facilitator_name : 'Fill in who\'s coming and lock in the slot');
+  document.getElementById('sessionStartLabel').textContent = 'Start time';
+  document.getElementById('sessionEndField').style.display = 'block';
+  document.getElementById('sessionPlacesField').style.display = 'none';
   var dateField = document.getElementById('sessionDateField');
   var dateInput = document.getElementById('sessionDate');
   if(s.event_date){
@@ -1085,11 +1151,24 @@ function openSessionSheet(s){
   }
   document.getElementById('sessionStart').value = s.window_start_time ? fmtTime(s.window_start_time) : '';
   document.getElementById('sessionEnd').value = s.window_end_time ? fmtTime(s.window_end_time) : '';
-  document.getElementById('sessionClientName').value = '';
-  document.getElementById('sessionClientEmail').value = '';
-  document.getElementById('sessionClientPhone').value = '';
-  document.getElementById('sessionNotes').value = '';
-  document.getElementById('sessionErrorWrap').innerHTML = '';
+  resetSessionSheetFields();
+  sessionOverlay.classList.add('open'); sessionSheet.classList.add('open');
+}
+function openOfferingSheet(o){
+  sessionSheetMode = 'offering';
+  currentOffering = o; currentSession = null;
+  document.getElementById('sessionSheetTitle').textContent = o.name;
+  document.getElementById('sessionSheetSub').textContent = (o.when_text ? 'Usually: ' + o.when_text : 'Book someone into this group');
+  document.getElementById('sessionStartLabel').textContent = 'Time';
+  document.getElementById('sessionEndField').style.display = 'none';
+  document.getElementById('sessionPlacesField').style.display = 'block';
+  document.getElementById('sessionPlaces').value = '1';
+  var dateField = document.getElementById('sessionDateField');
+  var dateInput = document.getElementById('sessionDate');
+  dateInput.value = toISODate(new Date()); dateInput.disabled = false; dateField.style.opacity = 1;
+  document.getElementById('sessionStart').value = '';
+  document.getElementById('sessionEnd').value = '';
+  resetSessionSheetFields();
   sessionOverlay.classList.add('open'); sessionSheet.classList.add('open');
 }
 function closeSessionSheet(){ sessionOverlay.classList.remove('open'); sessionSheet.classList.remove('open'); }
@@ -1102,42 +1181,73 @@ document.getElementById('sessionSaveBtn').addEventListener('click', async functi
   errWrap.innerHTML = '';
   var date = document.getElementById('sessionDate').value;
   var start = document.getElementById('sessionStart').value;
-  var end = document.getElementById('sessionEnd').value;
   var clientName = document.getElementById('sessionClientName').value.trim();
-  if(!date || !start || !end || !clientName){
-    errWrap.innerHTML = '<div class="error-banner">Date, times and a name are needed to confirm this booking.</div>';
-    return;
-  }
   var btn = document.getElementById('sessionSaveBtn');
-  btn.disabled = true; btn.textContent = 'Checking capacity…';
-  try{
-    if(currentSession.capacity_per_slot){
-      var existing = await SB('session_bookings?bookable_session_id=eq.'+currentSession.id+'&booking_date=eq.'+date+'&status=neq.cancelled');
-      if((existing.data||[]).length >= currentSession.capacity_per_slot){
-        errWrap.innerHTML = '<div class="error-banner">That slot is full ('+currentSession.capacity_per_slot+' max). Try another date or check with the facilitator.</div>';
-        btn.disabled = false; btn.textContent = 'Confirm booking';
-        return;
-      }
+
+  if(sessionSheetMode === 'session'){
+    var end = document.getElementById('sessionEnd').value;
+    if(!date || !start || !end || !clientName){
+      errWrap.innerHTML = '<div class="error-banner">Date, times and a name are needed to confirm this booking.</div>';
+      return;
     }
-    btn.textContent = 'Saving…';
-    await SB('session_bookings', {
-      method:'POST', headers:{Prefer:'return=representation'},
-      body: JSON.stringify({
-        bookable_session_id: currentSession.id, booking_date: date,
-        slot_start: start, slot_end: end, client_name: clientName,
-        client_email: document.getElementById('sessionClientEmail').value.trim() || null,
-        client_phone: document.getElementById('sessionClientPhone').value.trim() || null,
-        booked_by: u.display_name, status: 'confirmed',
-        notes: document.getElementById('sessionNotes').value.trim() || null
-      })
-    });
-    logAction('create_session_booking', 'Book', currentSession.name + ' — ' + clientName + ' ' + date);
-    showToast('Session booked for ' + clientName.split(' ')[0]);
-    closeSessionSheet();
-  }catch(e){
-    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
-  }finally{
-    btn.disabled = false; btn.textContent = 'Confirm booking';
+    btn.disabled = true; btn.textContent = 'Checking capacity…';
+    try{
+      if(currentSession.capacity_per_slot){
+        var existing = await SB('session_bookings?bookable_session_id=eq.'+currentSession.id+'&booking_date=eq.'+date+'&status=neq.cancelled');
+        if((existing.data||[]).length >= currentSession.capacity_per_slot){
+          errWrap.innerHTML = '<div class="error-banner">That slot is full ('+currentSession.capacity_per_slot+' max). Try another date or check with the facilitator.</div>';
+          btn.disabled = false; btn.textContent = 'Confirm booking';
+          return;
+        }
+      }
+      btn.textContent = 'Saving…';
+      await SB('session_bookings', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify({
+          bookable_session_id: currentSession.id, booking_date: date,
+          slot_start: start, slot_end: end, client_name: clientName,
+          client_email: document.getElementById('sessionClientEmail').value.trim() || null,
+          client_phone: document.getElementById('sessionClientPhone').value.trim() || null,
+          booked_by: u.display_name, status: 'confirmed',
+          notes: document.getElementById('sessionNotes').value.trim() || null
+        })
+      });
+      logAction('create_session_booking', 'Book', currentSession.name + ' — ' + clientName + ' ' + date);
+      showToast('Session booked for ' + clientName.split(' ')[0]);
+      closeSessionSheet();
+    }catch(e){
+      errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Confirm booking';
+    }
+  } else {
+    if(!date || !start || !clientName){
+      errWrap.innerHTML = '<div class="error-banner">Date, time and a name are needed to confirm this booking.</div>';
+      return;
+    }
+    var places = parseInt(document.getElementById('sessionPlaces').value, 10) || 1;
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try{
+      await SB('public_bookings', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify({
+          booking_ref: 'HUB-' + Date.now(),
+          programme_name: currentOffering.name, session_date: date, session_time: start,
+          booker_name: clientName,
+          booker_email: document.getElementById('sessionClientEmail').value.trim() || null,
+          booker_phone: document.getElementById('sessionClientPhone').value.trim() || null,
+          num_places: places, booking_type: 'staff_booking', status: 'confirmed',
+          notes: document.getElementById('sessionNotes').value.trim() || null
+        })
+      });
+      logAction('create_offering_booking', 'Book', currentOffering.name + ' — ' + clientName + ' ' + date);
+      showToast(clientName.split(' ')[0] + ' booked into ' + currentOffering.name);
+      closeSessionSheet();
+    }catch(e){
+      errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Confirm booking';
+    }
   }
 });
 
@@ -1295,6 +1405,68 @@ async function loadManage(){
 document.getElementById('mgPrev').addEventListener('click', function(){ mgDate.setDate(mgDate.getDate()-1); loadManage(); });
 document.getElementById('mgNext').addEventListener('click', function(){ mgDate.setDate(mgDate.getDate()+1); loadManage(); });
 screenLoaders['screen-manage'] = loadManage;
+
+/* Manage sub-tabs: Board / Financials */
+document.querySelectorAll('[data-mg-tab]').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('[data-mg-tab]').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var which = tab.getAttribute('data-mg-tab');
+    document.getElementById('mgBoardPanel').style.display = which === 'board' ? 'block' : 'none';
+    document.getElementById('mgFinancialsPanel').style.display = which === 'financials' ? 'block' : 'none';
+    if(which === 'financials') loadFinancials();
+  });
+});
+
+function gbp(n){
+  var num = Number(n || 0);
+  return '£' + num.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+}
+async function loadFinancials(){
+  var statsWrap = document.getElementById('finStats');
+  statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>';
+  try{
+    var dRes = await SB('dashboard_data?order=last_updated.desc&limit=1');
+    var d = (dRes.data || [])[0];
+    if(d){
+      statsWrap.innerHTML =
+        '<div class="stat-card"><div class="num">'+gbp(d.current_balance)+'</div><div class="lbl">Current balance</div></div>' +
+        '<div class="stat-card"><div class="num">'+gbp(d.this_month_income)+'</div><div class="lbl">Income this month</div></div>' +
+        '<div class="stat-card"><div class="num">'+gbp(d.this_month_spend)+'</div><div class="lbl">Spend this month</div></div>' +
+        '<div class="stat-card"><div class="num">'+(d.run_rate_days != null ? d.run_rate_days : '–')+'</div><div class="lbl">Run rate (days)</div></div>';
+    } else {
+      statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">No dashboard data yet</div></div>';
+    }
+  }catch(e){
+    statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Couldn\'t load</div></div>';
+  }
+
+  var invWrap = document.getElementById('finInvoices');
+  try{
+    var invRes = await SB('outstanding_invoices?order=days_outstanding.desc&limit=8');
+    var invoices = invRes.data || [];
+    invWrap.innerHTML = invoices.length ? invoices.map(function(i){
+      return '<div class="card accent-red"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+i.customer_name+'</div>' +
+        '<div class="card-desc">'+i.invoice_number+' · '+gbp(i.total)+' · '+i.days_outstanding+' days outstanding</div></div></div>';
+    }).join('') : '<div class="agenda-empty">Nothing outstanding — all invoices are settled.</div>';
+  }catch(e){
+    invWrap.innerHTML = '<div class="error-banner">Couldn\'t load outstanding invoices — '+e.message+'</div>';
+  }
+
+  var cashWrap = document.getElementById('finCashups');
+  try{
+    var cashRes = await SB('cash_ups?order=cashup_date.desc&limit=5');
+    var cashups = cashRes.data || [];
+    cashWrap.innerHTML = cashups.length ? cashups.map(function(c){
+      return '<div class="card accent-green"><div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+fmtDateLabel(c.cashup_date)+'</div>' +
+        '<div class="card-desc">'+gbp(c.gross_total)+' gross · '+(c.completed_by || 'unknown')+'</div></div></div>';
+    }).join('') : '<div class="agenda-empty">No cash-ups logged yet.</div>';
+  }catch(e){
+    cashWrap.innerHTML = '<div class="error-banner">Couldn\'t load cash-ups — '+e.message+'</div>';
+  }
+}
 
 /* ============================================================
    FORMS — SHARE SHEET (unchanged behaviour)
