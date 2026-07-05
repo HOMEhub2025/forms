@@ -344,6 +344,15 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     </div>
   </div>
 
+  <div class="section-label">Practitioner Classes</div>
+  <div class="cards">
+    <div class="card accent-green" data-path="wellness-waitlist" data-name="Class Waiting List">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <div class="card-body"><div class="card-title">Class Waiting List</div><div class="card-desc">For our small, referral-only classes — put your name down for one or more</div></div>
+      <div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+    </div>
+  </div>
+
   <div class="section-label">Room Hire</div>
   <div class="cards">
     <div class="card accent-orange" data-path="room-hire" data-name="Room Hire Enquiry">
@@ -384,6 +393,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <div class="subtabs">
     <div class="subtab active" data-mg-tab="board">Board</div>
     <div class="subtab" data-mg-tab="financials">Financials</div>
+    <div class="subtab" data-mg-tab="waitlist">Waitlist</div>
   </div>
 
   <div id="mgBoardPanel">
@@ -418,6 +428,24 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="section-label">Recent cash-ups</div>
     <div class="cards" id="finCashups" style="gap:8px">
       <div class="loading-row">Loading recent cash-ups…</div>
+    </div>
+  </div>
+
+  <div id="mgWaitlistPanel" style="display:none">
+    <div class="form-wrap" style="padding-bottom:0">
+      <div class="field" style="margin-bottom:0"><label>Filter by class</label>
+        <select id="wlClassFilter"><option value="">All classes</option></select>
+      </div>
+    </div>
+    <div class="section-label">Demand by day</div>
+    <div class="stats-row" id="wlDemandStats">
+      <div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>
+    </div>
+    <div class="helper-text" style="padding:6px 16px 0" id="wlInsight"></div>
+
+    <div class="section-label">On the list<span class="label-action" id="wlFilterLabel">All classes</span></div>
+    <div class="cards" id="wlList" style="gap:8px">
+      <div class="loading-row">Loading the waiting list…</div>
     </div>
   </div>
 </div>
@@ -513,6 +541,14 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="field"><label>Email (optional)</label><input type="email" id="sessionClientEmail"></div>
       <div class="field"><label>Phone (optional)</label><input type="tel" id="sessionClientPhone"></div>
     </div>
+    <div class="field" id="sessionPayWrap" style="display:none">
+      <label>Payment</label>
+      <div class="helper-text" id="sessionPayHint" style="margin-bottom:10px"></div>
+      <div class="chip-row" id="sessionPaidRow">
+        <div class="chip" data-paid="unpaid">Not paid yet</div>
+        <div class="chip active" data-paid="paid">Paid</div>
+      </div>
+    </div>
     <div class="field"><label>Notes (optional)</label><textarea id="sessionNotes"></textarea></div>
     <div id="sessionErrorWrap"></div>
     <button class="btn-primary" id="sessionSaveBtn" type="button">Confirm booking</button>
@@ -552,6 +588,29 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="field"><label>Agenda / notes (optional)</label><textarea id="meetingAgenda"></textarea></div>
     <div id="meetingErrorWrap"></div>
     <button class="btn-primary" id="meetingSaveBtn" type="button">Add to calendar</button>
+  </div>
+</div>
+
+<!-- WAITLIST DETAIL SHEET -->
+<div class="overlay" id="wlOverlay"></div>
+<div class="sheet" id="wlSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name" id="wlSheetName">Name</div>
+  <div class="sheet-subtitle" id="wlSheetSub">Referred by —</div>
+  <div class="form-wrap">
+    <div class="helper-text" id="wlDetailText"></div>
+    <div class="field">
+      <label>Status</label>
+      <div class="chip-row">
+        <div class="chip" data-wl-status="waiting">Waiting</div>
+        <div class="chip" data-wl-status="invited">Invited</div>
+        <div class="chip" data-wl-status="enrolled">Enrolled</div>
+        <div class="chip" data-wl-status="declined">Declined</div>
+      </div>
+    </div>
+    <div class="field"><label>Internal notes (optional)</label><textarea id="wlAdminNotes"></textarea></div>
+    <div id="wlErrorWrap"></div>
+    <button class="btn-primary" id="wlSaveBtn" type="button">Save</button>
   </div>
 </div>
 
@@ -1074,7 +1133,7 @@ async function loadBookSessionsData(){
   var wrap = document.getElementById('sessionList');
   wrap.innerHTML = '<div class="loading-row">Loading everything bookable…</div>';
   try{
-    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
+    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&sync_to_hub_app=eq.true&order=name.asc');
     var sessions = sessRes.data || [];
     var offRes = await SB('offerings?is_active=eq.true&order=sort_order.asc');
     var offerings = offRes.data || [];
@@ -1151,9 +1210,35 @@ function openSessionSheet(s){
   }
   document.getElementById('sessionStart').value = s.window_start_time ? fmtTime(s.window_start_time) : '';
   document.getElementById('sessionEnd').value = s.window_end_time ? fmtTime(s.window_end_time) : '';
+  var payWrap = document.getElementById('sessionPayWrap');
+  var payHint = document.getElementById('sessionPayHint');
+  var paidRow = document.getElementById('sessionPaidRow');
+  var saveBtn = document.getElementById('sessionSaveBtn');
+  if(!s.is_free && s.price){
+    payWrap.style.display = 'block';
+    if(s.payment_link_url){
+      payHint.textContent = 'You\'ll be sent to Stripe to pay £' + s.price + ' — this marks itself paid automatically once Stripe confirms it.';
+      paidRow.style.display = 'none';
+      saveBtn.textContent = 'Pay & book — £' + s.price;
+    } else {
+      payHint.textContent = 'No Stripe link on this one — mark it paid if they\'ve already settled up another way.';
+      paidRow.style.display = 'flex';
+      document.querySelectorAll('#sessionPaidRow .chip').forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-paid') === 'unpaid'); });
+      saveBtn.textContent = 'Confirm booking';
+    }
+  } else {
+    payWrap.style.display = 'none';
+    saveBtn.textContent = 'Confirm booking';
+  }
   resetSessionSheetFields();
   sessionOverlay.classList.add('open'); sessionSheet.classList.add('open');
 }
+document.querySelectorAll('#sessionPaidRow .chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('#sessionPaidRow .chip').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+  });
+});
 function openOfferingSheet(o){
   sessionSheetMode = 'offering';
   currentOffering = o; currentSession = null;
@@ -1163,6 +1248,8 @@ function openOfferingSheet(o){
   document.getElementById('sessionEndField').style.display = 'none';
   document.getElementById('sessionPlacesField').style.display = 'block';
   document.getElementById('sessionPlaces').value = '1';
+  document.getElementById('sessionPayWrap').style.display = 'none';
+  document.getElementById('sessionSaveBtn').textContent = 'Confirm booking';
   var dateField = document.getElementById('sessionDateField');
   var dateInput = document.getElementById('sessionDate');
   dateInput.value = toISODate(new Date()); dateInput.disabled = false; dateField.style.opacity = 1;
@@ -1201,19 +1288,37 @@ document.getElementById('sessionSaveBtn').addEventListener('click', async functi
         }
       }
       btn.textContent = 'Saving…';
-      await SB('session_bookings', {
+      var hasStripeLink = !!(currentSession.payment_link_url && !currentSession.is_free && currentSession.price);
+      var paidChip = document.querySelector('#sessionPaidRow .chip.active');
+      var paymentStatus = hasStripeLink ? 'pending' : ((document.getElementById('sessionPayWrap').style.display !== 'none' && paidChip) ? paidChip.getAttribute('data-paid') : null);
+      var clientEmail = document.getElementById('sessionClientEmail').value.trim();
+      var insertRes = await SB('session_bookings', {
         method:'POST', headers:{Prefer:'return=representation'},
         body: JSON.stringify({
           bookable_session_id: currentSession.id, booking_date: date,
           slot_start: start, slot_end: end, client_name: clientName,
-          client_email: document.getElementById('sessionClientEmail').value.trim() || null,
+          client_email: clientEmail || null,
           client_phone: document.getElementById('sessionClientPhone').value.trim() || null,
-          booked_by: u.display_name, status: 'confirmed',
+          booked_by: u.display_name, status: 'confirmed', payment_status: paymentStatus,
           notes: document.getElementById('sessionNotes').value.trim() || null
         })
       });
-      logAction('create_session_booking', 'Book', currentSession.name + ' — ' + clientName + ' ' + date);
-      showToast('Session booked for ' + clientName.split(' ')[0]);
+      logAction('create_session_booking', 'Book', currentSession.name + ' — ' + clientName + ' ' + date + (paymentStatus ? ' ('+paymentStatus+')' : ''));
+
+      if(hasStripeLink){
+        var newBooking = (insertRes.data || [])[0];
+        if(newBooking && newBooking.id){
+          var stripeUrl = currentSession.payment_link_url;
+          stripeUrl += (stripeUrl.indexOf('?') === -1 ? '?' : '&') + 'client_reference_id=' + encodeURIComponent(newBooking.id);
+          if(clientEmail) stripeUrl += '&prefilled_email=' + encodeURIComponent(clientEmail);
+          window.open(stripeUrl, '_blank');
+          showToast('Slot held for ' + clientName.split(' ')[0] + ' — marks itself paid once Stripe confirms');
+        } else {
+          showToast('Booked, but couldn\'t open the Stripe link — grab it manually from the session.', true);
+        }
+      } else {
+        showToast('Session booked for ' + clientName.split(' ')[0]);
+      }
       closeSessionSheet();
     }catch(e){
       errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
@@ -1406,7 +1511,7 @@ document.getElementById('mgPrev').addEventListener('click', function(){ mgDate.s
 document.getElementById('mgNext').addEventListener('click', function(){ mgDate.setDate(mgDate.getDate()+1); loadManage(); });
 screenLoaders['screen-manage'] = loadManage;
 
-/* Manage sub-tabs: Board / Financials */
+/* Manage sub-tabs: Board / Financials / Waitlist */
 document.querySelectorAll('[data-mg-tab]').forEach(function(tab){
   tab.addEventListener('click', function(){
     document.querySelectorAll('[data-mg-tab]').forEach(function(t){ t.classList.remove('active'); });
@@ -1414,7 +1519,9 @@ document.querySelectorAll('[data-mg-tab]').forEach(function(tab){
     var which = tab.getAttribute('data-mg-tab');
     document.getElementById('mgBoardPanel').style.display = which === 'board' ? 'block' : 'none';
     document.getElementById('mgFinancialsPanel').style.display = which === 'financials' ? 'block' : 'none';
+    document.getElementById('mgWaitlistPanel').style.display = which === 'waitlist' ? 'block' : 'none';
     if(which === 'financials') loadFinancials();
+    if(which === 'waitlist') loadWaitlist();
   });
 });
 
@@ -1467,6 +1574,132 @@ async function loadFinancials(){
     cashWrap.innerHTML = '<div class="error-banner">Couldn\'t load cash-ups — '+e.message+'</div>';
   }
 }
+
+/* ============================================================
+   WAITLIST — demand-by-day view for closed/referral classes
+   ============================================================ */
+var waitlistData = [];
+var waitlistClasses = [];
+var wlDayOrder = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var wlClassFilterLoaded = false;
+
+async function loadWaitlist(){
+  if(!wlClassFilterLoaded){
+    try{
+      var clsRes = await SB('waitlist_classes?order=sort_order.asc');
+      waitlistClasses = clsRes.data || [];
+      var sel = document.getElementById('wlClassFilter');
+      sel.innerHTML = '<option value="">All classes</option>' + waitlistClasses.map(function(c){
+        return '<option value="'+c.id+'">'+c.name+(c.facilitator_name ? ' — '+c.facilitator_name : '')+'</option>';
+      }).join('');
+      sel.addEventListener('change', renderWaitlistView);
+      wlClassFilterLoaded = true;
+    }catch(e){ /* filter just won't populate, non-fatal */ }
+  }
+  var statsWrap = document.getElementById('wlDemandStats');
+  var listWrap = document.getElementById('wlList');
+  statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>';
+  listWrap.innerHTML = '<div class="loading-row">Loading the waiting list…</div>';
+  try{
+    var res = await SB('class_waitlist?status=neq.declined&order=created_at.desc');
+    waitlistData = res.data || [];
+    renderWaitlistView();
+  }catch(e){
+    statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Couldn\'t load</div></div>';
+    listWrap.innerHTML = '<div class="error-banner">Couldn\'t load the waiting list — '+e.message+'</div>';
+  }
+}
+
+function renderWaitlistView(){
+  var statsWrap = document.getElementById('wlDemandStats');
+  var listWrap = document.getElementById('wlList');
+  var filterId = document.getElementById('wlClassFilter').value;
+  var filterLabel = filterId ? (waitlistClasses.find(function(c){ return c.id === filterId; }) || {}).name : 'All classes';
+  document.getElementById('wlFilterLabel').textContent = filterLabel || 'All classes';
+
+  var filtered = filterId ? waitlistData.filter(function(w){ return (w.class_ids||[]).indexOf(filterId) !== -1; }) : waitlistData;
+
+  var counts = {};
+  wlDayOrder.forEach(function(d){ counts[d] = 0; });
+  filtered.forEach(function(w){
+    (w.preferred_days || []).forEach(function(d){ if(counts.hasOwnProperty(d)) counts[d]++; });
+  });
+  statsWrap.innerHTML = wlDayOrder.map(function(d){
+    return '<div class="stat-card"><div class="num">'+counts[d]+'</div><div class="lbl">'+d+'</div></div>';
+  }).join('');
+  var bestDay = wlDayOrder.reduce(function(a,b){ return counts[b] > counts[a] ? b : a; }, wlDayOrder[0]);
+  var insight = document.getElementById('wlInsight');
+  insight.textContent = filtered.length ? (bestDay + ' has the most people who could make it (' + counts[bestDay] + ' of ' + filtered.length + ') — worth building the next cohort around that.') : 'Nobody waiting for this yet.';
+
+  listWrap.innerHTML = filtered.length ? filtered.map(function(w){
+    var statusColor = {waiting:'var(--muted)', invited:'var(--or)', enrolled:'var(--dg)'}[w.status] || 'var(--muted)';
+    return '<div class="card accent-green" data-wl-id="'+w.id+'">' +
+      '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
+      '<div class="card-body"><div class="card-title">'+w.full_name+'</div>' +
+      '<div class="card-desc">'+(w.class_name || 'Class not set')+' · Ref: '+(w.referred_by||'—')+' · '+(w.preferred_days||[]).join('/')+' · '+(w.preferred_time||'')+'</div>' +
+      '<div class="card-meta" style="color:'+statusColor+'">'+(w.status||'waiting').toUpperCase()+'</div></div>' +
+      '</div>';
+  }).join('') : '<div class="agenda-empty">Nobody on the list for this yet.</div>';
+
+  listWrap.querySelectorAll('[data-wl-id]').forEach(function(card){
+    card.addEventListener('click', function(){
+      var w = waitlistData.find(function(x){ return x.id === card.getAttribute('data-wl-id'); });
+      openWaitlistSheet(w);
+    });
+  });
+}
+
+var wlOverlay = document.getElementById('wlOverlay');
+var wlSheet = document.getElementById('wlSheet');
+var currentWaitlistEntry = null;
+function openWaitlistSheet(w){
+  currentWaitlistEntry = w;
+  document.getElementById('wlSheetName').textContent = w.full_name;
+  document.getElementById('wlSheetSub').textContent = 'Referred by ' + (w.referred_by || 'unknown');
+  document.getElementById('wlDetailText').innerHTML =
+    (w.email ? w.email + '<br>' : '') + (w.phone ? w.phone + '<br>' : '') +
+    'Prefers: ' + (w.preferred_days||[]).join(', ') + ' · ' + (w.preferred_time||'any time') + '<br>' +
+    (w.experience_level ? w.experience_level + '<br>' : '') +
+    (w.what_bringing_you ? '"' + w.what_bringing_you + '"' : '');
+  document.querySelectorAll('[data-wl-status]').forEach(function(chip){
+    chip.classList.toggle('active', chip.getAttribute('data-wl-status') === (w.status || 'waiting'));
+  });
+  document.getElementById('wlAdminNotes').value = w.admin_notes || '';
+  document.getElementById('wlErrorWrap').innerHTML = '';
+  wlOverlay.classList.add('open'); wlSheet.classList.add('open');
+}
+function closeWaitlistSheet(){ wlOverlay.classList.remove('open'); wlSheet.classList.remove('open'); }
+wlOverlay.addEventListener('click', function(e){ if(e.target===wlOverlay) closeWaitlistSheet(); });
+document.querySelectorAll('[data-wl-status]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-wl-status]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+  });
+});
+document.getElementById('wlSaveBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('wlErrorWrap');
+  errWrap.innerHTML = '';
+  var statusChip = document.querySelector('[data-wl-status].active');
+  var status = statusChip ? statusChip.getAttribute('data-wl-status') : 'waiting';
+  var btn = document.getElementById('wlSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    var patch = {status: status, admin_notes: document.getElementById('wlAdminNotes').value.trim() || null};
+    if(status === 'invited') patch.invited_at = new Date().toISOString();
+    await SB('class_waitlist?id=eq.'+currentWaitlistEntry.id, {
+      method:'PATCH', headers:{Prefer:'return=representation'},
+      body: JSON.stringify(patch)
+    });
+    logAction('update_waitlist_status', 'Manage', currentWaitlistEntry.full_name + ' → ' + status);
+    showToast(currentWaitlistEntry.full_name.split(' ')[0] + ' marked as ' + status);
+    closeWaitlistSheet();
+    loadWaitlist();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
 
 /* ============================================================
    FORMS — SHARE SHEET (unchanged behaviour)
