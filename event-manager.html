@@ -1,0 +1,2452 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#006837">
+<title>H.O.M.E Hub — Event Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;800;900&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:'Montserrat',sans-serif;background:#f4f6f4;color:#111827}
+:root{
+  --dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;
+  --ink:#111827;--mid:#374151;--mut:#6b7280;--bg:#f9faf8;--border:#e5e7eb;
+  --red:#dc2626;--amber:#d97706;
+  --sh:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
+}
+
+/* ── TOP BAR ─────────────────────────────────────────────────── */
+.topbar{
+  background:var(--dg);padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-brand{font-family:'League Spartan',sans-serif;font-size:18px;font-weight:900;color:white;letter-spacing:-.01em}
+.topbar-brand span{color:var(--or)}
+.topbar-sub{font-size:10px;color:rgba(255,255,255,.5);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.btn-green{background:white;color:var(--dg)}
+.btn-green:hover{background:#f0fdf4}
+.btn-outline{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.2)}
+.btn-outline:hover{background:rgba(255,255,255,.2)}
+
+/* ── MAIN LAYOUT ─────────────────────────────────────────────── */
+.main{max-width:960px;margin:0 auto;padding:24px 16px 80px}
+
+/* ── SECTION HEADERS ─────────────────────────────────────────── */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-family:'League Spartan',sans-serif;font-size:16px;font-weight:800;color:var(--ink)}
+
+/* ── CARDS ───────────────────────────────────────────────────── */
+.card{background:white;border-radius:16px;border:1px solid var(--border);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px}
+.card-header{background:linear-gradient(90deg,var(--dg),#0a5c30);padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+.card-header-title{font-family:'League Spartan',sans-serif;font-size:14px;font-weight:800;color:white;letter-spacing:.01em}
+.card-body{padding:18px}
+
+/* ── FORM FIELDS ─────────────────────────────────────────────── */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+label.lbl{display:block;font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+label.lbl .req{color:var(--or);margin-left:2px}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--ink);background:white;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--dg);box-shadow:0 0 0 3px rgba(0,104,55,.08)}
+textarea{resize:vertical;min-height:72px}
+.select-wrap{position:relative}
+.select-wrap::after{content:'▾';position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--mut);pointer-events:none;font-size:13px}
+select{padding-right:30px}
+
+/* ── CHECK ITEMS ─────────────────────────────────────────────── */
+.check-group{display:flex;flex-direction:column;gap:6px}
+.check-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;transition:all .15s;font-size:12px;font-weight:600;color:var(--ink)}
+.check-item:has(input:checked){border-color:var(--dg);background:#f0fdf4}
+.check-item input{width:16px;height:16px;flex-shrink:0;accent-color:var(--dg)}
+.check-item input:focus{box-shadow:none;border-color:transparent}
+.check-inline{display:flex;flex-wrap:wrap;gap:6px}
+.check-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:100px;border:1.5px solid var(--border);cursor:pointer;font-size:11px;font-weight:700;color:var(--mut);transition:all .15s}
+.check-pill:has(input:checked){border-color:var(--dg);background:#f0fdf4;color:var(--dg)}
+.check-pill input{width:13px;height:13px;accent-color:var(--dg)}
+
+/* ── RISK TABLE ──────────────────────────────────────────────── */
+.risk-table-wrap{overflow-x:auto}
+.risk-table{width:100%;border-collapse:collapse;font-size:11px;min-width:700px}
+.risk-table th{background:#f9fafb;padding:8px 10px;text-align:left;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);border-bottom:1px solid var(--border)}
+.risk-table td{padding:8px 10px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+.risk-table tr:hover td{background:#f9fafb}
+.risk-badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:800;text-align:center}
+.risk-low{background:#f0fdf4;color:var(--dg)}
+.risk-med{background:#fff7ed;color:var(--amber)}
+.risk-high{background:#fee2e2;color:var(--red)}
+.risk-row-input{padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:'Montserrat',sans-serif;width:100%;min-width:60px}
+.risk-row-num{width:52px;text-align:center}
+
+/* ── DOCUMENT PREVIEW ────────────────────────────────────────── */
+.doc-tab-bar{display:flex;gap:4px;padding:0 18px;background:#f9fafb;border-bottom:1px solid var(--border);overflow-x:auto}
+.doc-tab{padding:10px 14px;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.doc-tab.active{color:var(--dg);border-bottom-color:var(--dg)}
+.doc-panel{display:none;padding:18px}
+.doc-panel.active{display:block}
+.doc-preview{background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:20px;font-size:12px;line-height:1.7;color:var(--mid);max-height:480px;overflow-y:auto}
+.doc-preview h1{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px;font-family:'League Spartan',sans-serif}
+.doc-preview h2{font-size:12px;font-weight:800;color:var(--dg);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px;border-bottom:1px solid var(--border);padding-bottom:4px}
+.doc-preview h3{font-size:12px;font-weight:700;color:var(--ink);margin:8px 0 4px}
+.doc-preview p{margin-bottom:6px}
+.doc-preview ul{padding-left:16px;margin-bottom:8px}
+.doc-preview ul li{margin-bottom:3px}
+.doc-preview table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}
+.doc-preview table th{background:#f0fdf4;padding:5px 8px;font-weight:800;text-align:left;border:1px solid var(--border)}
+.doc-preview table td{padding:5px 8px;border:1px solid var(--border);vertical-align:top}
+.doc-footer{font-size:10px;color:var(--mut);border-top:1px solid var(--border);padding-top:10px;margin-top:16px}
+
+/* ── EVENT LIST ──────────────────────────────────────────────── */
+.event-card{background:white;border-radius:14px;border:1px solid var(--border);box-shadow:var(--sh);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .15s}
+.event-card:hover{box-shadow:var(--sh2)}
+.event-date-badge{background:var(--dg);color:white;border-radius:10px;padding:8px 12px;text-align:center;flex-shrink:0;min-width:52px}
+.event-date-badge .day{font-size:20px;font-weight:900;line-height:1;font-family:'League Spartan',sans-serif}
+.event-date-badge .mon{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.event-info{flex:1}
+.event-title{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:3px}
+.event-meta{font-size:11px;color:var(--mut);display:flex;gap:10px;flex-wrap:wrap}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:800}
+.status-draft{background:#f3f4f6;color:var(--mut)}
+.status-planned{background:#eff6ff;color:var(--db)}
+.status-active{background:#f0fdf4;color:var(--dg)}
+.status-complete{background:#f0fdf4;color:var(--dg)}
+
+/* ── STEPS WIZARD ────────────────────────────────────────────── */
+.wizard-steps{display:flex;gap:0;margin-bottom:20px;background:white;border-radius:12px;border:1px solid var(--border);padding:4px;overflow-x:auto}
+.wizard-step{flex:1;padding:8px 6px;border-radius:8px;text-align:center;cursor:pointer;transition:all .15s;min-width:80px}
+.wizard-step .step-num{font-size:10px;font-weight:800;color:var(--mut);margin-bottom:2px}
+.wizard-step .step-lbl{font-size:10px;font-weight:700;color:var(--mut);white-space:nowrap}
+.wizard-step.active{background:var(--dg)}
+.wizard-step.active .step-num,.wizard-step.active .step-lbl{color:white}
+.wizard-step.done{background:#f0fdf4}
+.wizard-step.done .step-num,.wizard-step.done .step-lbl{color:var(--dg)}
+.step-panel{display:none}
+.step-panel.active{display:block}
+
+/* ── KPI STRIP ───────────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.kpi-card{background:white;border-radius:12px;border:1px solid var(--border);padding:14px;border-top:3px solid var(--dg)}
+.kpi-val{font-size:22px;font-weight:900;color:var(--dg);font-family:'League Spartan',sans-serif;line-height:1}
+.kpi-lbl{font-size:10px;font-weight:700;color:var(--mut);margin-top:4px}
+
+/* ── TOAST ───────────────────────────────────────────────────── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#111827;color:white;padding:10px 18px;border-radius:100px;font-size:12px;font-weight:700;z-index:9999;transition:transform .3s;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
+.modal-overlay.open{display:flex}
+.modal-box{background:white;border-radius:18px;max-width:640px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-header{padding:20px 20px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.modal-title{font-family:'League Spartan',sans-serif;font-size:16px;font-weight:800;color:var(--ink)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--mut);padding:0;line-height:1}
+.modal-body{padding:20px}
+.modal-footer{padding:0 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-cancel{padding:11px;border:1px solid var(--border);border-radius:10px;background:white;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:var(--mid)}
+.btn-save{padding:11px;border:none;border-radius:10px;background:var(--dg);color:white;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700}
+.btn-danger{background:var(--red)}
+
+/* ── STALLHOLDERS ────────────────────────────────────────────── */
+.sh-filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.sh-filter-bar select{width:auto;padding:7px 28px 7px 10px;font-size:11px;border-radius:8px}
+.sh-filter-btn{padding:6px 14px;border-radius:100px;border:1.5px solid var(--border);background:white;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;transition:all .15s;white-space:nowrap}
+.sh-filter-btn.active{background:var(--dg);color:white;border-color:var(--dg)}
+.sh-card{background:white;border-radius:14px;border:1.5px solid var(--border);box-shadow:var(--sh);padding:16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:14px;cursor:pointer;transition:all .15s}
+.sh-card:hover{box-shadow:var(--sh2);border-color:var(--lg)}
+.sh-card.status-pending{border-left:4px solid var(--amber)}
+.sh-card.status-authorised{border-left:4px solid var(--dg)}
+.sh-card.status-declined{border-left:4px solid var(--red)}
+.sh-card.status-paid{border-left:4px solid var(--lg)}
+.sh-avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--dg),#39b54a);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:white;flex-shrink:0;font-family:'League Spartan',sans-serif}
+.sh-info{flex:1;min-width:0}
+.sh-name{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:2px}
+.sh-meta{font-size:11px;color:var(--mut);margin-bottom:6px}
+.sh-tags{display:flex;gap:6px;flex-wrap:wrap}
+.sh-tag{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700}
+.sh-tag-vendor{background:#eff6ff;color:var(--db)}
+.sh-tag-stall{background:#f0fdf4;color:var(--dg)}
+.sh-tag-table{background:#fff7ed;color:var(--amber)}
+.sh-tag-pli{background:#fee2e2;color:var(--red)}
+.sh-tag-pli-ok{background:#f0fdf4;color:var(--dg)}
+.sh-status{flex-shrink:0;text-align:right}
+.sh-status-badge{display:inline-block;padding:3px 10px;border-radius:100px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.sh-pending{background:#fff7ed;color:var(--amber)}
+.sh-authorised{background:#eff6ff;color:var(--db)}
+.sh-paid{background:#f0fdf4;color:var(--dg)}
+.sh-declined{background:#fee2e2;color:var(--red)}
+.sh-date{font-size:10px;color:var(--mut);margin-top:4px}
+.sh-empty{padding:48px;text-align:center;color:var(--mut);font-size:13px}
+/* Detail modal */
+.sh-detail-row{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.sh-detail-row:last-child{border:none}
+.sh-detail-key{font-weight:700;color:var(--mut);min-width:130px;flex-shrink:0}
+.sh-detail-val{color:var(--ink);line-height:1.5}
+.sh-desc-box{background:#f9faf8;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--mid);line-height:1.65;margin:10px 0}
+.sh-action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.btn-authorise{padding:12px;border:none;border-radius:10px;background:var(--dg);color:white;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;transition:all .15s}
+.btn-authorise:hover{background:#005229}
+.btn-authorise:disabled{background:var(--mut);cursor:not-allowed}
+.btn-decline{padding:12px;border:none;border-radius:10px;background:var(--red);color:white;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;transition:all .15s}
+.btn-decline:hover{background:#b91c1c}
+.btn-decline:disabled{background:var(--mut);cursor:not-allowed}
+.sh-notes-area{width:100%;margin-top:10px;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--ink);resize:vertical;min-height:64px}
+.sh-notes-area:focus{outline:none;border-color:var(--dg)}
+.sh-payment-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.sh-payment-row input{flex:1;font-size:12px}
+.sh-payment-row button{padding:10px 14px;border:none;border-radius:8px;background:var(--dg);color:white;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+@media(max-width:600px){.sh-action-row{grid-template-columns:1fr}.sh-card{flex-direction:column}.sh-status{text-align:left}}
+
+/* ── FINANCIALS ──────────────────────────────────────────────────── */
+.fin-section{margin-bottom:20px}
+.fin-section-title{font-family:'League Spartan',sans-serif;font-size:13px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.fin-section-title .fin-badge{font-size:11px;font-weight:700;padding:2px 10px;border-radius:100px}
+.fin-income-badge{background:#f0fdf4;color:var(--dg)}
+.fin-outgoing-badge{background:#fee2e2;color:var(--red)}
+.fin-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.fin-row:last-child{border:none}
+.fin-row-label{flex:1;font-size:12px;font-weight:600;color:var(--ink)}
+.fin-row-input{width:100px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:12px;text-align:right;color:var(--ink)}
+.fin-row-input:focus{outline:none;border-color:var(--dg)}
+.fin-custom-row{display:flex;gap:8px;align-items:center;padding:6px 0}
+.fin-custom-label{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:12px}
+.fin-custom-label:focus{outline:none;border-color:var(--dg)}
+.fin-remove{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px;line-height:1}
+.fin-add-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;transition:.15s;margin-top:8px}
+.fin-add-btn:hover{border-color:var(--dg);color:var(--dg)}
+.fin-summary{background:linear-gradient(135deg,var(--dg),#005229);border-radius:14px;padding:20px;color:white;margin-top:16px}
+.fin-summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.fin-summary-item{text-align:center}
+.fin-summary-val{font-family:'League Spartan',sans-serif;font-size:24px;font-weight:900;line-height:1}
+.fin-summary-lbl{font-size:10px;color:rgba(255,255,255,.65);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.fin-profit{color:#86efac}
+.fin-loss{color:#fca5a5}
+/* Lessons */
+.lesson-card{background:white;border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;transition:.15s}
+.lesson-card:hover{border-color:var(--lg)}
+.lesson-card.went-well{border-left:4px solid var(--dg)}
+.lesson-card.to-improve{border-left:4px solid var(--amber)}
+.lesson-card.actioned{opacity:.6}
+.lesson-top{display:flex;align-items:flex-start;gap:10px}
+.lesson-text{flex:1;font-size:12px;font-weight:600;color:var(--ink);line-height:1.5}
+.lesson-status-sel{padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;cursor:pointer;background:white}
+.lesson-status-sel:focus{outline:none;border-color:var(--dg)}
+.lesson-notes{width:100%;margin-top:8px;padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:11px;resize:vertical;min-height:48px}
+.lesson-notes:focus{outline:none;border-color:var(--dg)}
+.lesson-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.lesson-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px}
+.lesson-ww{background:#f0fdf4;color:var(--dg)}
+.lesson-ti{background:#fff7ed;color:var(--amber)}
+.lesson-reuse{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--mut);cursor:pointer;margin-left:auto}
+.lesson-reuse input{accent-color:var(--dg)}
+.lesson-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:2px}
+.lesson-add-row{display:flex;gap:8px;margin-top:10px}
+.lesson-add-input{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:12px}
+.lesson-add-input:focus{outline:none;border-color:var(--dg)}
+.lesson-add-btn{padding:9px 14px;border:none;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.lesson-ww-btn{background:var(--dg);color:white}
+.lesson-ti-btn{background:var(--amber);color:white}
+/* Overview */
+.fin-overview-card{background:white;border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+.fin-overview-event{font-family:'League Spartan',sans-serif;font-size:14px;font-weight:900;color:var(--ink);margin-bottom:4px}
+.fin-overview-date{font-size:11px;color:var(--mut);margin-bottom:10px}
+.fin-bar-wrap{height:10px;background:#f3f4f6;border-radius:100px;overflow:hidden;margin:8px 0}
+.fin-bar-income{height:100%;border-radius:100px;background:var(--dg);transition:width .4s}
+.fin-bar-outgoing{height:100%;border-radius:100px;background:var(--red);transition:width .4s}
+.fin-overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.fin-overview-stat{text-align:center;padding:8px;background:#f9faf8;border-radius:8px}
+.fin-overview-stat-val{font-family:'League Spartan',sans-serif;font-size:16px;font-weight:900}
+.fin-overview-stat-lbl{font-size:10px;color:var(--mut);font-weight:600;margin-top:2px}
+.fin-total-banner{background:linear-gradient(135deg,var(--db),#0a2a52);border-radius:14px;padding:20px;color:white;margin-bottom:20px}
+.fin-total-banner h3{font-family:'League Spartan',sans-serif;font-size:16px;font-weight:900;margin-bottom:12px}
+.fin-total-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.fin-total-item{text-align:center}
+.fin-total-val{font-family:'League Spartan',sans-serif;font-size:26px;font-weight:900}
+.fin-total-lbl{font-size:10px;color:rgba(255,255,255,.6);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+@media(max-width:600px){.fin-summary-grid,.fin-overview-grid,.fin-total-grid{grid-template-columns:1fr 1fr}}
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-brand">H.O.M.E <span>HUB</span> CIC</div>
+    <div class="topbar-sub">Event Manager</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline" onclick="showView('list')">← All events</button>
+    <button class="btn btn-outline" onclick="showView('stallholders')" id="sh-nav-btn">🏕️ Stallholders <span id="sh-badge" style="display:none;background:var(--or);color:#fff;border-radius:100px;padding:1px 7px;font-size:10px;margin-left:4px"></span></button>
+    <button class="btn btn-outline" onclick="showView('financials')">📊 Financials</button>
+    <button class="btn btn-green" onclick="newEvent()">+ New event</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: EVENT LIST -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="view-list" class="main">
+  <div class="section-head">
+    <div class="section-title">Events</div>
+  </div>
+  <div class="kpi-grid" id="list-kpis"></div>
+  <div id="event-list-container">
+    <div style="padding:32px;text-align:center;color:var(--mut)">Loading events...</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: EVENT WIZARD -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="view-wizard" class="main" style="display:none">
+  <div class="section-head">
+    <div class="section-title" id="wizard-title">New event</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="showView('list')" style="background:#f9fafb;color:var(--mid);border-color:var(--border)">← Back</button>
+      <button class="btn btn-green" style="background:var(--dg);color:white" onclick="saveEvent()">💾 Save event</button>
+    </div>
+  </div>
+
+  <!-- Wizard steps -->
+  <div class="wizard-steps" id="wizard-steps">
+    <div class="wizard-step active" onclick="goStep(0)"><div class="step-num">1</div><div class="step-lbl">Details</div></div>
+    <div class="wizard-step" onclick="goStep(1)"><div class="step-num">2</div><div class="step-lbl">Activities</div></div>
+    <div class="wizard-step" onclick="goStep(2)"><div class="step-num">3</div><div class="step-lbl">Staffing</div></div>
+    <div class="wizard-step" onclick="goStep(3)"><div class="step-num">4</div><div class="step-lbl">Risk</div></div>
+    <div class="wizard-step" onclick="goStep(4)"><div class="step-num">5</div><div class="step-lbl">Safety</div></div>
+    <div class="wizard-step" onclick="goStep(5)"><div class="step-num">6</div><div class="step-lbl">Documents</div></div>
+    <div class="wizard-step" onclick="goStep(6)"><div class="step-num">7</div><div class="step-lbl">Financials</div></div>
+    <div class="wizard-step" onclick="goStep(7)"><div class="step-num">8</div><div class="step-lbl">Lessons</div></div>
+  </div>
+
+  <!-- ── STEP 1: Event details ───────────────────────────────── -->
+  <div class="step-panel active" id="step-0">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">📋 Event details</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="lbl">Event title <span class="req">*</span></label>
+          <input id="ev-title" type="text" placeholder="e.g. Spring Equinox Family Fun & Wellbeing Day">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="lbl">Event date <span class="req">*</span></label>
+            <input id="ev-date" type="date">
+          </div>
+          <div class="field">
+            <label class="lbl">Assessment date</label>
+            <input id="ev-assess-date" type="date">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="lbl">Start time</label>
+            <input id="ev-start" type="time" value="12:00">
+          </div>
+          <div class="field">
+            <label class="lbl">End time</label>
+            <input id="ev-end" type="time" value="21:30">
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">Location <span class="req">*</span></label>
+          <input id="ev-location" type="text" value="South Benfleet Playing Fields and Adjacent Areas – SS7 5JF">
+        </div>
+        <div class="field">
+          <label class="lbl">Event overview <span class="req">*</span></label>
+          <textarea id="ev-overview" rows="4" placeholder="Describe the event — activities, audience, key features..."></textarea>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="lbl">Public liability policy no.</label>
+            <input id="ev-policy" type="text" value="444900291173" placeholder="e.g. 444900291173">
+          </div>
+          <div class="field">
+            <label class="lbl">Estimated attendance</label>
+            <input id="ev-attendance" type="number" placeholder="e.g. 300">
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">Status</label>
+          <div class="select-wrap">
+            <select id="ev-status">
+              <option value="draft">Draft</option>
+              <option value="planned">Planned</option>
+              <option value="active">Active / in progress</option>
+              <option value="complete">Complete</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">Special conditions / notes</label>
+          <textarea id="ev-special" rows="2" placeholder="e.g. Strictly alcohol free. No smoking inside venue."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">📄 Licences & permissions</div></div>
+      <div class="card-body">
+        <div class="check-group">
+          <label class="check-item"><input type="checkbox" id="lic-ten"> Temporary Event Notice (TEN) applied</label>
+          <label class="check-item"><input type="checkbox" id="lic-cpbc"> Permission from Castle Point Borough Council Licensing</label>
+          <label class="check-item"><input type="checkbox" id="lic-prs"> PRS/PPL music licence in place</label>
+          <label class="check-item"><input type="checkbox" id="lic-food"> Food hygiene compliance confirmed for vendors</label>
+          <label class="check-item"><input type="checkbox" id="lic-pat"> PAT testing confirmed for all electrical equipment</label>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label class="lbl">Additional licences / permissions</label>
+          <textarea id="ev-licences-other" rows="2" placeholder="Any other licences or permissions required..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Activities ──────────────────────────────────── -->
+  <div class="step-panel" id="step-1">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">🎪 Event activities</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="lbl">Select all activities at this event</label>
+          <div class="check-inline">
+            <label class="check-pill"><input type="checkbox" name="activities" value="Live music"> Live music</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="DJ"> DJ</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Food vendors"> Food vendors</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Craft stalls"> Craft stalls</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Charity stalls"> Charity stalls</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Football"> Football</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Boxercise"> Boxercise</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Dancing"> Dancing</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Chair yoga"> Chair yoga</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Children's activities"> Children's activities</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Show cars (static)"> Show cars (static)</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Indoor disco"> Indoor disco</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Wellbeing workshops"> Wellbeing workshops</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Face painting"> Face painting</label>
+            <label class="check-pill"><input type="checkbox" name="activities" value="Inflatables"> Inflatables</label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">Additional activities not listed above</label>
+          <textarea id="ev-activities-other" rows="2" placeholder="List any other activities..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">🏕️ Welfare & facilities</div></div>
+      <div class="card-body">
+        <div class="check-inline">
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Portable toilets"> Portable toilets</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Park facilities"> Park facilities</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="First aid station"> First aid station</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Free water station"> Free water station</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Shade structures"> Shade structures</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Seating areas"> Seating areas</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Lost child point"> Lost child point</label>
+          <label class="check-pill"><input type="checkbox" name="welfare" value="Accessible access"> Accessible access</label>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label class="lbl">Additional welfare notes</label>
+          <textarea id="ev-welfare-notes" rows="2" placeholder="e.g. Hearing loop available, baby changing provision..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Staffing ────────────────────────────────────── -->
+  <div class="step-panel" id="step-2">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">👥 Staffing & key roles</div></div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label class="lbl">Event safety officer <span class="req">*</span></label>
+            <input id="st-safety" type="text" value="Mark Cox" placeholder="Full name">
+          </div>
+          <div class="field">
+            <label class="lbl">Event organiser <span class="req">*</span></label>
+            <input id="st-organiser" type="text" value="James Taylor" placeholder="Full name">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="lbl">First aid lead</label>
+            <input id="st-firstaid" type="text" placeholder="Full name or TBC">
+          </div>
+          <div class="field">
+            <label class="lbl">Steward supervisor</label>
+            <input id="st-steward" type="text" placeholder="Full name or TBC">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="lbl">Assessment completed by</label>
+            <input id="st-assessor" type="text" value="Mark Cox">
+          </div>
+          <div class="field">
+            <label class="lbl">Number of stewards</label>
+            <input id="st-steward-count" type="number" value="8" min="1">
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl">Staffing notes</label>
+          <textarea id="st-notes" rows="2" placeholder="e.g. Radios issued to key staff. All stewards briefed 1 hour before event."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">🚨 Emergency procedures</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="lbl">Evacuation assembly point</label>
+          <input id="em-assembly" type="text" placeholder="e.g. Car park to the north of the playing fields">
+        </div>
+        <div class="field">
+          <label class="lbl">Emergency contact number (on-site)</label>
+          <input id="em-phone" type="tel" value="+44 (0) 7958 427 854">
+        </div>
+        <div class="field">
+          <label class="lbl">Emergency procedure notes</label>
+          <textarea id="em-notes" rows="3" placeholder="e.g. PA announcements for emergency instructions. All stewards have site map. Vehicle restrictions enforced during event."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Risk Assessment ─────────────────────────────── -->
+  <div class="step-panel" id="step-3">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-title">⚠️ Risk assessment</div>
+        <button onclick="addRiskRow()" style="background:rgba(255,255,255,.2);border:none;color:white;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700">+ Add risk</button>
+      </div>
+      <div class="card-body" style="padding:0">
+        <!-- Matrix key -->
+        <div style="padding:12px 16px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:11px;color:var(--mut)">
+          <strong style="color:var(--ink)">Matrix:</strong> &nbsp;
+          L: 1=Low 2=Possible 3=Likely &nbsp;|&nbsp;
+          S: 1=Minor 2=Moderate 3=Major &nbsp;|&nbsp;
+          <span class="risk-badge risk-low">1–3 Low</span> &nbsp;
+          <span class="risk-badge risk-med">4–6 Medium</span> &nbsp;
+          <span class="risk-badge risk-high">7–9 High</span>
+        </div>
+        <div class="risk-table-wrap">
+          <table class="risk-table">
+            <thead>
+              <tr>
+                <th style="min-width:160px">Hazard / Risk</th>
+                <th style="min-width:110px">Who might be harmed</th>
+                <th style="min-width:180px">Existing control measures</th>
+                <th class="risk-row-num">L</th>
+                <th class="risk-row-num">S</th>
+                <th class="risk-row-num">Risk</th>
+                <th style="min-width:140px">Further action required</th>
+                <th style="width:32px"></th>
+              </tr>
+            </thead>
+            <tbody id="risk-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px">
+          <label class="lbl">Additional risk assessment notes</label>
+          <textarea id="risk-notes" rows="2" placeholder="e.g. Copy of this risk assessment will be shared with all stallholders and activity leaders prior to the event. A site walk-through will take place one hour before event start."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: Safety Plan ─────────────────────────────────── -->
+  <div class="step-panel" id="step-4">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">🛡️ Safety management</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="lbl">Safety objectives</label>
+          <div class="check-group">
+            <label class="check-item"><input type="checkbox" name="safety-obj" value="Prevent accidents and incidents" checked> Prevent accidents and incidents</label>
+            <label class="check-item"><input type="checkbox" name="safety-obj" value="Manage emergency situations efficiently" checked> Manage emergency situations efficiently</label>
+            <label class="check-item"><input type="checkbox" name="safety-obj" value="Protect staff, volunteers, public, and property" checked> Protect staff, volunteers, public, and property</label>
+            <label class="check-item"><input type="checkbox" name="safety-obj" value="Comply with legal obligations and licensing" checked> Comply with legal obligations and licensing</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">🚗 Vehicle management</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="lbl">Vehicle management notes</label>
+          <textarea id="vm-notes" rows="3" value="">No vehicle movement during public hours. Display and show cars parked in a dedicated, supervised area. No unattended vehicles permitted.</textarea>
+        </div>
+        <div class="check-group">
+          <label class="check-item"><input type="checkbox" id="vm-no-movement" checked> No vehicle movement during public opening hours</label>
+          <label class="check-item"><input type="checkbox" id="vm-supervised"> All vehicles supervised at all times</label>
+          <label class="check-item"><input type="checkbox" id="vm-barriers"> Barriers or cones to maintain safe distance from display vehicles</label>
+          <label class="check-item"><input type="checkbox" id="vm-times"> Agreed vehicle access times communicated to all participants</label>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">🌦️ Weather & crowd management</div></div>
+      <div class="card-body">
+        <div class="field">
+          <label class="lbl">Weather preparedness</label>
+          <textarea id="wp-notes" rows="2" placeholder="e.g. Shelter provision. Heat management plan activated for 28°C+. Event pause plan for severe weather."></textarea>
+        </div>
+        <div class="field">
+          <label class="lbl">Crowd management plan</label>
+          <textarea id="cm-notes" rows="2" placeholder="e.g. Entry/exit points stewarded. Stall layout planned to reduce congestion. Visible steward presence throughout."></textarea>
+        </div>
+        <div class="field">
+          <label class="lbl">Communication plan</label>
+          <textarea id="cp-notes" rows="2" placeholder="e.g. Mobile phones for key personnel. Central event control point at first aid location. PA system for announcements."></textarea>
+        </div>
+        <div class="field">
+          <label class="lbl">Site safety arrangements</label>
+          <textarea id="ss-notes" rows="2" placeholder="e.g. Fire points and extinguishers at cooking areas. Designated assembly point. Clearly marked walkways, exits, and emergency routes."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 6: Documents ───────────────────────────────────── -->
+  <div class="step-panel" id="step-5">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">📄 Generate documents</div></div>
+      <div class="card-tab-bar doc-tab-bar" id="doc-tabs">
+        <div class="doc-tab active" onclick="showDocTab(0)">Event Management Plan</div>
+        <div class="doc-tab" onclick="showDocTab(1)">Risk Assessment</div>
+        <div class="doc-tab" onclick="showDocTab(2)">Safety Plan</div>
+        <div class="doc-tab" onclick="showDocTab(3)">Volunteer Brief</div>
+        <div class="doc-tab" onclick="showDocTab(4)">Stallholder Brief</div>
+        <div class="doc-tab" onclick="showDocTab(5)">Event Debrief</div>
+      </div>
+      <div id="doc-panel-0" class="doc-panel active">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+          <button onclick="downloadPDF(0)" style="display:flex;align-items:center;gap:5px;background:var(--dg);color:white;border:none;padding:8px 14px;border-radius:8px;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📥 Download PDF</button>
+        </div>
+        <div class="doc-preview" id="preview-0"></div>
+      </div>
+      <div id="doc-panel-1" class="doc-panel">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+          <button onclick="downloadPDF(1)" style="display:flex;align-items:center;gap:5px;background:var(--dg);color:white;border:none;padding:8px 14px;border-radius:8px;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📥 Download PDF</button>
+        </div>
+        <div class="doc-preview" id="preview-1"></div>
+      </div>
+      <div id="doc-panel-2" class="doc-panel">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+          <button onclick="downloadPDF(2)" style="display:flex;align-items:center;gap:5px;background:var(--dg);color:white;border:none;padding:8px 14px;border-radius:8px;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📥 Download PDF</button>
+        </div>
+        <div class="doc-preview" id="preview-2"></div>
+      </div>
+      <div id="doc-panel-3" class="doc-panel">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+          <button onclick="downloadPDF(3)" style="display:flex;align-items:center;gap:5px;background:var(--dg);color:white;border:none;padding:8px 14px;border-radius:8px;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📥 Download PDF</button>
+        </div>
+        <div class="doc-preview" id="preview-3"></div>
+      </div>
+      <div id="doc-panel-4" class="doc-panel">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+          <button onclick="downloadPDF(4)" style="display:flex;align-items:center;gap:5px;background:var(--dg);color:white;border:none;padding:8px 14px;border-radius:8px;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📥 Download PDF</button>
+        </div>
+        <div class="doc-preview" id="preview-4"></div>
+      </div>
+      <div id="doc-panel-5" class="doc-panel">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">
+          <button onclick="downloadPDF(5)" style="display:flex;align-items:center;gap:5px;background:var(--dg);color:white;border:none;padding:8px 14px;border-radius:8px;font-family:Montserrat,sans-serif;font-size:11px;font-weight:700;cursor:pointer">📥 Download PDF</button>
+        </div>
+        <div class="doc-preview" id="preview-5"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── STEP 7: Financials ──────────────────────────────────────── -->
+  <div class="step-panel" id="step-6">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">💰 Event Financials</div></div>
+      <div class="card-body">
+
+        <!-- INCOME -->
+        <div class="fin-section">
+          <div class="fin-section-title">Income <span class="fin-badge fin-income-badge">↑</span></div>
+          <div class="fin-row"><span class="fin-row-label">🏕️ Stallholder Fees</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fi-stallholder" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div class="fin-row"><span class="fin-row-label">🎟️ Raffle</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fi-raffle" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div class="fin-row"><span class="fin-row-label">🏹 Archery & Axe Throwing</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fi-archery" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div class="fin-row"><span class="fin-row-label">☕ Tea, Coffee & Cake</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fi-tcc" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div class="fin-row"><span class="fin-row-label">🎰 Tombola</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fi-tombola" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div class="fin-row"><span class="fin-row-label">🤝 Partnerships (Chezza, Havana Vibes…)</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fi-partnerships" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div id="fi-custom-income-rows"></div>
+          <button class="fin-add-btn" onclick="addCustomFinRow('income')">+ Add income line</button>
+        </div>
+
+        <!-- OUTGOINGS -->
+        <div class="fin-section">
+          <div class="fin-section-title">Outgoings <span class="fin-badge fin-outgoing-badge">↓</span></div>
+          <div class="fin-row"><span class="fin-row-label">🍔 Food & Drink</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fo-food" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div class="fin-row"><span class="fin-row-label">📣 Marketing</span><input class="fin-row-input" type="number" min="0" step="0.01" id="fo-marketing" placeholder="0.00" oninput="calcFinSummary()"/></div>
+          <div id="fi-custom-outgoing-rows"></div>
+          <button class="fin-add-btn" onclick="addCustomFinRow('outgoing')">+ Add outgoing line</button>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="fin-summary" id="fin-summary">
+          <div style="font-family:'League Spartan',sans-serif;font-size:14px;font-weight:800;color:white;margin-bottom:4px">Live P&L</div>
+          <div class="fin-summary-grid">
+            <div class="fin-summary-item"><div class="fin-summary-val" id="fin-total-income">£0.00</div><div class="fin-summary-lbl">Total Income</div></div>
+            <div class="fin-summary-item"><div class="fin-summary-val" id="fin-total-outgoing">£0.00</div><div class="fin-summary-lbl">Total Outgoings</div></div>
+            <div class="fin-summary-item"><div class="fin-summary-val fin-profit" id="fin-profit">£0.00</div><div class="fin-summary-lbl">Profit / Loss</div></div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;text-align:right">
+          <button onclick="saveFinancials()" style="padding:10px 20px;border:none;border-radius:10px;background:var(--dg);color:white;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;cursor:pointer">💾 Save financials</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 8: Lessons & Actions ───────────────────────────────── -->
+  <div class="step-panel" id="step-7">
+    <div class="card">
+      <div class="card-header"><div class="card-header-title">📝 Lessons & Actions</div></div>
+      <div class="card-body">
+        <div style="font-size:12px;color:var(--mut);margin-bottom:16px;line-height:1.6">Log what went well and what to improve. Mark items for reuse and they'll be available as a checklist when planning your next event.</div>
+
+        <!-- Add new lesson -->
+        <div style="background:#f9faf8;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Add new item</div>
+          <input class="lesson-add-input" id="lesson-input" placeholder="e.g. PA system worked really well for announcements…" style="width:100%;margin-bottom:8px"/>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="lesson-add-btn lesson-ww-btn" onclick="addLesson('went_well')">✅ Went well</button>
+            <button class="lesson-add-btn lesson-ti-btn" onclick="addLesson('to_improve')">⚠️ To improve</button>
+          </div>
+        </div>
+
+        <!-- Reuse suggestions banner -->
+        <div id="reuse-banner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--db)">
+          <strong>💡 Suggestions from previous events</strong> — items flagged for reuse are shown below. Click to import them.
+          <div id="reuse-items" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+
+        <!-- Went well -->
+        <div style="margin-bottom:16px">
+          <div class="fin-section-title" style="color:var(--dg)">✅ What went well</div>
+          <div id="lessons-went-well"></div>
+        </div>
+
+        <!-- To improve -->
+        <div>
+          <div class="fin-section-title" style="color:var(--amber)">⚠️ What to improve / action</div>
+          <div id="lessons-to-improve"></div>
+        </div>
+
+        <div style="margin-top:14px;text-align:right">
+          <button onclick="saveLessons()" style="padding:10px 20px;border:none;border-radius:10px;background:var(--dg);color:white;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;cursor:pointer">💾 Save lessons</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wizard nav buttons -->
+  <div style="display:flex;justify-content:space-between;margin-top:8px">
+    <button id="btn-prev" onclick="prevStep()" style="display:none;padding:10px 20px;border:1px solid var(--border);border-radius:10px;background:white;cursor:pointer;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;color:var(--mid)">← Previous</button>
+    <button id="btn-next" onclick="nextStep()" style="margin-left:auto;padding:10px 20px;border:none;border-radius:10px;background:var(--dg);color:white;cursor:pointer;font-family:Montserrat,sans-serif;font-size:12px;font-weight:700">Next →</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// SUPABASE
+// ════════════════════════════════════════════════════════════════════
+const SB_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+const db = supabase.createClient(SB_URL, SB_KEY);
+
+// ════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════
+var CURRENT_EVENT_ID = null;
+var CURRENT_STEP = 0;
+var RISK_ROWS = [];
+var DEFAULT_RISKS = [
+  {hazard:'Slips, trips, and falls', who:'Public, stallholders, staff', controls:'Clearly marked walkways, remove hazards, cable covers on ground', l:2, s:2, action:'Regular monitoring by stewards'},
+  {hazard:'Adverse weather (heat / rain)', who:'All', controls:'Marquees for shelter, water provision, sunscreen advice', l:2, s:2, action:'Monitor forecast, consider event pause for extreme weather'},
+  {hazard:'Crowd management', who:'All', controls:'Designated entry/exit points, visible stewards, capacity control', l:2, s:2, action:'Brief stewards on crowd control procedures'},
+  {hazard:'First aid incidents', who:'All', controls:'Qualified first aiders on-site, first aid point clearly signed', l:2, s:3, action:'Ensure all staff and stewards know emergency procedures'},
+  {hazard:'Electrical equipment (stalls / PA)', who:'Public, stallholders', controls:'PAT tested equipment, cables secured and protected', l:1, s:3, action:'Supervise all connections and keep public away from setups'},
+  {hazard:'Sports activities', who:'Children, public', controls:'Activity areas clearly marked, qualified coaches, safety briefing', l:2, s:3, action:'Parental consent where needed, first aid on standby'},
+  {hazard:'Fire hazards (cooking stalls / generators)', who:'Public, staff', controls:'Fire extinguishers, safe distances maintained, no smoking areas', l:1, s:3, action:'Emergency plan and muster point briefed to vendors'},
+  {hazard:'Lost children', who:'Children, parents', controls:'Clear steward identification, lost child procedure in place', l:1, s:3, action:'Publicise procedure via PA and signage'},
+  {hazard:'Vehicle movement (set up / take down)', who:'All', controls:'Restricted access, supervised vehicle movements, clear times agreed', l:1, s:3, action:'No vehicle movement during open hours'},
+];
+
+// ════════════════════════════════════════════════════════════════════
+// VIEW MANAGEMENT
+// ════════════════════════════════════════════════════════════════════
+function showView(view) {
+  document.getElementById('view-list').style.display = view === 'list' ? 'block' : 'none';
+  document.getElementById('view-wizard').style.display = view === 'wizard' ? 'block' : 'none';
+  if(view === 'list') { CURRENT_EVENT_ID = null; loadEventList(); }
+  if(view === 'financials') loadFinancialsOverview();
+  document.getElementById('view-wizard').style.display = view === 'wizard' ? 'block' : 'none';
+  document.getElementById('view-financials').style.display = view === 'financials' ? 'block' : 'none';
+  document.getElementById('view-stallholders').style.display = view === 'stallholders' ? 'block' : 'none';
+}
+
+function showToast(msg, dur) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, dur||2500);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// EVENT LIST
+// ════════════════════════════════════════════════════════════════════
+async function loadEventList() {
+  var container = document.getElementById('event-list-container');
+  var kpis = document.getElementById('list-kpis');
+  try {
+    var res = await db.from('events_management').select('*').order('event_date', {ascending: false});
+    if(res.error) throw new Error(res.error.message);
+    var events = res.data || [];
+
+    // KPIs
+    var total    = events.length;
+    var upcoming = events.filter(function(e){ return e.event_date >= new Date().toISOString().slice(0,10); }).length;
+    var planned  = events.filter(function(e){ return e.status === 'planned'; }).length;
+    var complete = events.filter(function(e){ return e.status === 'complete'; }).length;
+    kpis.innerHTML =
+      kpi(total.toString(),     'Total events',    '#006837', '#f0fdf4') +
+      kpi(upcoming.toString(),  'Upcoming',        '#0e386a', '#eff6ff') +
+      kpi(planned.toString(),   'Planned',         '#d97706', '#fff7ed') +
+      kpi(complete.toString(),  'Completed',       '#006837', '#f0fdf4');
+
+    if(!events.length) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;background:white;border-radius:16px;border:1px solid var(--border)"><div style="font-size:40px;margin-bottom:12px">🎪</div><div style="font-size:14px;font-weight:800;color:var(--ink)">No events yet</div><div style="font-size:12px;color:var(--mut);margin-top:6px">Click + New event to get started</div></div>';
+      return;
+    }
+
+    container.innerHTML = events.map(function(e) {
+      var d = new Date(e.event_date + 'T12:00:00');
+      var day = d.toLocaleDateString('en-GB', {day:'2-digit'});
+      var mon = d.toLocaleDateString('en-GB', {month:'short'}).toUpperCase();
+      var statusClass = 'status-' + (e.status || 'draft');
+      return '<div class="event-card" onclick="editEvent(\'' + e.id + '\')">' +
+        '<div class="event-date-badge"><div class="day">' + day + '</div><div class="mon">' + mon + '</div></div>' +
+        '<div class="event-info">' +
+          '<div class="event-title">' + esc(e.title) + '</div>' +
+          '<div class="event-meta">' +
+            '<span>📍 ' + esc(e.location || 'TBC') + '</span>' +
+            '<span>⏰ ' + (e.start_time || '') + (e.end_time ? ' – ' + e.end_time : '') + '</span>' +
+            '<span class="status-badge ' + statusClass + '">' + (e.status || 'draft').toUpperCase() + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="color:var(--mut);font-size:18px">›</div>' +
+      '</div>';
+    }).join('');
+  } catch(err) {
+    container.innerHTML = '<div style="padding:16px;background:#fee2e2;border-radius:10px;color:var(--red);font-size:12px">Error: ' + err.message + '</div>';
+  }
+}
+
+function kpi(val, lbl, color, bg) {
+  return '<div class="kpi-card" style="border-top-color:' + color + ';background:' + bg + '">' +
+    '<div class="kpi-val" style="color:' + color + '">' + val + '</div>' +
+    '<div class="kpi-lbl">' + lbl + '</div></div>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NEW / EDIT EVENT
+// ════════════════════════════════════════════════════════════════════
+function newEvent() {
+  CURRENT_EVENT_ID = null;
+  document.getElementById('wizard-title').textContent = 'New event';
+  clearForm();
+  populateDefaultRisks();
+  goStep(0);
+  showView('wizard');
+}
+
+async function editEvent(id) {
+  CURRENT_EVENT_ID = id;
+  try {
+    var res = await db.from('events_management').select('*').eq('id', id).single();
+    if(res.error) throw new Error(res.error.message);
+    var e = res.data;
+    document.getElementById('wizard-title').textContent = e.title || 'Edit event';
+    populateForm(e);
+    goStep(0);
+    showView('wizard');
+    loadFinancials(id);
+    loadLessons(id);
+  } catch(err) {
+    showToast('Error loading event: ' + err.message, 3000);
+  }
+}
+
+function clearForm() {
+  var fields = ['ev-title','ev-date','ev-assess-date','ev-start','ev-end','ev-location',
+    'ev-overview','ev-policy','ev-attendance','ev-special','ev-licences-other',
+    'ev-activities-other','ev-welfare-notes','st-safety','st-organiser','st-firstaid',
+    'st-steward','st-assessor','st-steward-count','st-notes','em-assembly','em-phone',
+    'em-notes','risk-notes','vm-notes','wp-notes','cm-notes','cp-notes','ss-notes'];
+  fields.forEach(function(id) {
+    var el = document.getElementById(id);
+    if(el) el.value = el.defaultValue || '';
+  });
+  document.querySelectorAll('[name="activities"],[name="welfare"],[name="safety-obj"]').forEach(function(cb){ cb.checked = false; });
+  ['lic-ten','lic-cpbc','lic-prs','lic-food','lic-pat','vm-no-movement','vm-supervised','vm-barriers','vm-times'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.checked = false;
+  });
+  document.querySelectorAll('[name="safety-obj"]').forEach(function(cb){ cb.checked = true; });
+  RISK_ROWS = [];
+}
+
+function populateForm(e) {
+  var set = function(id, val) { var el = document.getElementById(id); if(el && val !== undefined && val !== null) el.value = val; };
+  set('ev-title',   e.title);
+  set('ev-date',    e.event_date);
+  set('ev-assess-date', e.assessment_date);
+  set('ev-start',   e.start_time);
+  set('ev-end',     e.end_time);
+  set('ev-location', e.location);
+  set('ev-overview', e.overview);
+  set('ev-policy',  e.policy_number);
+  set('ev-attendance', e.estimated_attendance);
+  set('ev-status',  e.status);
+  set('ev-special', e.special_conditions);
+  set('ev-licences-other', e.licences_other);
+  set('ev-activities-other', e.activities_other);
+  set('ev-welfare-notes', e.welfare_notes);
+  set('st-safety',  e.safety_officer);
+  set('st-organiser', e.organiser);
+  set('st-firstaid', e.first_aid_lead);
+  set('st-steward', e.steward_supervisor);
+  set('st-assessor', e.assessment_completed_by);
+  set('st-steward-count', e.steward_count);
+  set('st-notes',   e.staffing_notes);
+  set('em-assembly', e.assembly_point);
+  set('em-phone',   e.emergency_phone);
+  set('em-notes',   e.emergency_notes);
+  set('risk-notes', e.risk_notes);
+  set('vm-notes',   e.vehicle_notes);
+  set('wp-notes',   e.weather_notes);
+  set('cm-notes',   e.crowd_notes);
+  set('cp-notes',   e.comms_notes);
+  set('ss-notes',   e.site_safety_notes);
+
+  // Checkboxes
+  var licences = e.licences || [];
+  ['lic-ten','lic-cpbc','lic-prs','lic-food','lic-pat'].forEach(function(id, i) {
+    var el = document.getElementById(id); if(el) el.checked = licences[i] || false;
+  });
+  var activities = e.activities || [];
+  document.querySelectorAll('[name="activities"]').forEach(function(cb){ cb.checked = activities.includes(cb.value); });
+  var welfare = e.welfare || [];
+  document.querySelectorAll('[name="welfare"]').forEach(function(cb){ cb.checked = welfare.includes(cb.value); });
+
+  // Risk rows
+  RISK_ROWS = e.risk_rows ? (typeof e.risk_rows === 'string' ? JSON.parse(e.risk_rows) : e.risk_rows) : DEFAULT_RISKS;
+  renderRiskTable();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// SAVE EVENT
+// ════════════════════════════════════════════════════════════════════
+async function saveEvent() {
+  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  var title = g('ev-title');
+  var date  = g('ev-date');
+  if(!title || !date){ showToast('Title and date are required', 2500); return; }
+
+  var licences = ['lic-ten','lic-cpbc','lic-prs','lic-food','lic-pat'].map(function(id){
+    var el = document.getElementById(id); return el ? el.checked : false;
+  });
+  var activities = Array.from(document.querySelectorAll('[name="activities"]:checked')).map(function(cb){return cb.value;});
+  var welfare    = Array.from(document.querySelectorAll('[name="welfare"]:checked')).map(function(cb){return cb.value;});
+
+  // Read risk rows from table
+  collectRiskRows();
+
+  var payload = {
+    title:                  title,
+    event_date:             date,
+    assessment_date:        g('ev-assess-date') || null,
+    start_time:             g('ev-start') || null,
+    end_time:               g('ev-end') || null,
+    location:               g('ev-location') || null,
+    overview:               g('ev-overview') || null,
+    policy_number:          g('ev-policy') || null,
+    estimated_attendance:   parseInt(g('ev-attendance')) || null,
+    status:                 g('ev-status') || 'draft',
+    special_conditions:     g('ev-special') || null,
+    licences:               JSON.stringify(licences),
+    licences_other:         g('ev-licences-other') || null,
+    activities:             JSON.stringify(activities),
+    activities_other:       g('ev-activities-other') || null,
+    welfare:                JSON.stringify(welfare),
+    welfare_notes:          g('ev-welfare-notes') || null,
+    safety_officer:         g('st-safety') || null,
+    organiser:              g('st-organiser') || null,
+    first_aid_lead:         g('st-firstaid') || null,
+    steward_supervisor:     g('st-steward') || null,
+    assessment_completed_by: g('st-assessor') || null,
+    steward_count:          parseInt(g('st-steward-count')) || null,
+    staffing_notes:         g('st-notes') || null,
+    assembly_point:         g('em-assembly') || null,
+    emergency_phone:        g('em-phone') || null,
+    emergency_notes:        g('em-notes') || null,
+    risk_rows:              JSON.stringify(RISK_ROWS),
+    risk_notes:             g('risk-notes') || null,
+    vehicle_notes:          g('vm-notes') || null,
+    weather_notes:          g('wp-notes') || null,
+    crowd_notes:            g('cm-notes') || null,
+    comms_notes:            g('cp-notes') || null,
+    site_safety_notes:      g('ss-notes') || null,
+    updated_at:             new Date().toISOString(),
+  };
+
+  var res;
+  if(CURRENT_EVENT_ID) {
+    res = await db.from('events_management').update(payload).eq('id', CURRENT_EVENT_ID);
+  } else {
+    res = await db.from('events_management').insert([payload]);
+    if(!res.error && res.data && res.data[0]) CURRENT_EVENT_ID = res.data[0].id;
+  }
+
+  if(res.error){ showToast('Save failed: ' + res.error.message, 4000); return; }
+  showToast((CURRENT_EVENT_ID ? 'Event saved ✓' : 'Event created ✓'), 2000);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// WIZARD NAVIGATION
+// ════════════════════════════════════════════════════════════════════
+function goStep(n) {
+  document.querySelectorAll('.step-panel').forEach(function(p, i){ p.classList.toggle('active', i === n); });
+  document.querySelectorAll('.wizard-step').forEach(function(s, i){
+    s.classList.toggle('active', i === n);
+    s.classList.toggle('done', i < n);
+  });
+  CURRENT_STEP = n;
+  document.getElementById('btn-prev').style.display = n > 0 ? 'block' : 'none';
+  document.getElementById('btn-next').textContent = n === 5 ? '💾 Save & finish' : 'Next →';
+  if(n === 5) { renderAllDocuments(); }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function nextStep() {
+  if(CURRENT_STEP === 5) { saveEvent(); return; }
+  if(CURRENT_STEP === 3) collectRiskRows();
+  goStep(CURRENT_STEP + 1);
+}
+
+function prevStep() {
+  goStep(CURRENT_STEP - 1);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RISK TABLE
+// ════════════════════════════════════════════════════════════════════
+function populateDefaultRisks() {
+  RISK_ROWS = DEFAULT_RISKS.map(function(r){ return Object.assign({}, r); });
+  renderRiskTable();
+}
+
+function renderRiskTable() {
+  var tbody = document.getElementById('risk-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = RISK_ROWS.map(function(r, i) {
+    var risk = (parseInt(r.l)||1) * (parseInt(r.s)||1);
+    var cls  = risk >= 7 ? 'risk-high' : risk >= 4 ? 'risk-med' : 'risk-low';
+    return '<tr>' +
+      '<td><input class="risk-row-input" value="' + esc(r.hazard||'') + '" onchange="updateRisk(' + i + ',\'hazard\',this.value)" placeholder="Hazard / risk"></td>' +
+      '<td><input class="risk-row-input" value="' + esc(r.who||'') + '" onchange="updateRisk(' + i + ',\'who\',this.value)" placeholder="Who..."></td>' +
+      '<td><input class="risk-row-input" value="' + esc(r.controls||'') + '" onchange="updateRisk(' + i + ',\'controls\',this.value)" placeholder="Controls..."></td>' +
+      '<td><input class="risk-row-input risk-row-num" type="number" min="1" max="3" value="' + (r.l||1) + '" onchange="updateRisk(' + i + ',\'l\',this.value);refreshRiskRow(' + i + ')"></td>' +
+      '<td><input class="risk-row-input risk-row-num" type="number" min="1" max="3" value="' + (r.s||1) + '" onchange="updateRisk(' + i + ',\'s\',this.value);refreshRiskRow(' + i + ')"></td>' +
+      '<td id="risk-cell-' + i + '"><span class="risk-badge ' + cls + '">' + risk + '</span></td>' +
+      '<td><input class="risk-row-input" value="' + esc(r.action||'') + '" onchange="updateRisk(' + i + ',\'action\',this.value)" placeholder="Further action..."></td>' +
+      '<td><button onclick="removeRisk(' + i + ')" style="background:none;border:none;color:var(--mut);cursor:pointer;font-size:14px;padding:2px 6px">✕</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function updateRisk(i, key, val) {
+  if(RISK_ROWS[i]) RISK_ROWS[i][key] = val;
+}
+
+function refreshRiskRow(i) {
+  if(!RISK_ROWS[i]) return;
+  var risk = (parseInt(RISK_ROWS[i].l)||1) * (parseInt(RISK_ROWS[i].s)||1);
+  var cls = risk >= 7 ? 'risk-high' : risk >= 4 ? 'risk-med' : 'risk-low';
+  var cell = document.getElementById('risk-cell-' + i);
+  if(cell) cell.innerHTML = '<span class="risk-badge ' + cls + '">' + risk + '</span>';
+}
+
+function addRiskRow() {
+  RISK_ROWS.push({hazard:'', who:'', controls:'', l:1, s:1, action:''});
+  renderRiskTable();
+}
+
+function removeRisk(i) {
+  RISK_ROWS.splice(i, 1);
+  renderRiskTable();
+}
+
+function collectRiskRows() {
+  // Sync values from table inputs back to RISK_ROWS
+  var rows = document.querySelectorAll('#risk-tbody tr');
+  rows.forEach(function(row, i) {
+    var inputs = row.querySelectorAll('input');
+    if(inputs[0] && RISK_ROWS[i]) {
+      RISK_ROWS[i].hazard   = inputs[0].value;
+      RISK_ROWS[i].who      = inputs[1] ? inputs[1].value : '';
+      RISK_ROWS[i].controls = inputs[2] ? inputs[2].value : '';
+      RISK_ROWS[i].l        = parseInt(inputs[3] ? inputs[3].value : 1) || 1;
+      RISK_ROWS[i].s        = parseInt(inputs[4] ? inputs[4].value : 1) || 1;
+      RISK_ROWS[i].action   = inputs[5] ? inputs[5].value : '';
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DOCUMENT TABS
+// ════════════════════════════════════════════════════════════════════
+function showDocTab(n) {
+  document.querySelectorAll('.doc-tab').forEach(function(t, i){ t.classList.toggle('active', i === n); });
+  document.querySelectorAll('.doc-panel').forEach(function(p, i){ p.classList.toggle('active', i === n); });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DOCUMENT GENERATORS
+// ════════════════════════════════════════════════════════════════════
+function getFormData() {
+  var g = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  collectRiskRows();
+  return {
+    title:          g('ev-title') || '[Event Title]',
+    date:           g('ev-date')  || '[Date]',
+    assessDate:     g('ev-assess-date') || g('ev-date'),
+    start:          g('ev-start'),
+    end:            g('ev-end'),
+    location:       g('ev-location'),
+    overview:       g('ev-overview'),
+    policy:         g('ev-policy'),
+    attendance:     g('ev-attendance'),
+    special:        g('ev-special'),
+    licencesOther:  g('ev-licences-other'),
+    activitiesOther:g('ev-activities-other'),
+    welfareNotes:   g('ev-welfare-notes'),
+    safetyOfficer:  g('st-safety'),
+    organiser:      g('st-organiser'),
+    firstAid:       g('st-firstaid') || 'TBC',
+    stewardSup:     g('st-steward')  || 'TBC',
+    assessor:       g('st-assessor'),
+    stewardCount:   g('st-steward-count'),
+    staffingNotes:  g('st-notes'),
+    assembly:       g('em-assembly'),
+    emergencyPhone: g('em-phone'),
+    emergencyNotes: g('em-notes'),
+    riskRows:       RISK_ROWS,
+    riskNotes:      g('risk-notes'),
+    vehicleNotes:   g('vm-notes'),
+    weatherNotes:   g('wp-notes'),
+    crowdNotes:     g('cm-notes'),
+    commsNotes:     g('cp-notes'),
+    siteSafetyNotes:g('ss-notes'),
+    activities:     Array.from(document.querySelectorAll('[name="activities"]:checked')).map(function(c){return c.value;}),
+    welfare:        Array.from(document.querySelectorAll('[name="welfare"]:checked')).map(function(c){return c.value;}),
+    safetyObjectives: Array.from(document.querySelectorAll('[name="safety-obj"]:checked')).map(function(c){return c.value;}),
+    licTen:         document.getElementById('lic-ten') && document.getElementById('lic-ten').checked,
+    licCpbc:        document.getElementById('lic-cpbc') && document.getElementById('lic-cpbc').checked,
+    licPrs:         document.getElementById('lic-prs') && document.getElementById('lic-prs').checked,
+    licFood:        document.getElementById('lic-food') && document.getElementById('lic-food').checked,
+    licPat:         document.getElementById('lic-pat') && document.getElementById('lic-pat').checked,
+    vmNoMovement:   document.getElementById('vm-no-movement') && document.getElementById('vm-no-movement').checked,
+    vmSupervised:   document.getElementById('vm-supervised') && document.getElementById('vm-supervised').checked,
+    vmBarriers:     document.getElementById('vm-barriers') && document.getElementById('vm-barriers').checked,
+    vmTimes:        document.getElementById('vm-times') && document.getElementById('vm-times').checked,
+  };
+}
+
+var DOC_FOOTER = 'H.O.M.E Hub CIC | South Benfleet Playing Fields SS7 5JF | m. +44 (0) 7958 427 854 | e. mark@homehub-benfleet.co.uk | Company Registration Number 16104567';
+
+function renderAllDocuments() {
+  var d = getFormData();
+  document.getElementById('preview-0').innerHTML = genEventManagementPlan(d);
+  document.getElementById('preview-1').innerHTML = genRiskAssessment(d);
+  document.getElementById('preview-2').innerHTML = genSafetyPlan(d);
+  document.getElementById('preview-3').innerHTML = genVolunteerBrief(d);
+  document.getElementById('preview-4').innerHTML = genStallholderBrief(d);
+  document.getElementById('preview-5').innerHTML = genDebriefReport(d);
+}
+
+function fmtDate(dateStr) {
+  if(!dateStr) return '[Date]';
+  var d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function hdr(d, docType) {
+  return '<h1>H.O.M.E Hub CIC — ' + esc(docType) + '</h1>' +
+    '<p><strong>Event: </strong>' + esc(d.title) + '</p>' +
+    '<p><strong>Date: </strong>' + fmtDate(d.date) + ' &nbsp;|&nbsp; <strong>Location: </strong>' + esc(d.location) + '</p>' +
+    '<p><strong>Event organiser: </strong>H.O.M.E Hub CIC &nbsp;|&nbsp; <strong>Public liability policy no.: </strong>' + esc(d.policy) + '</p>' +
+    '<p><strong>Assessment completed by: </strong>' + esc(d.assessor) + ' &nbsp;|&nbsp; <strong>Date of assessment: </strong>' + fmtDate(d.assessDate) + '</p><br>';
+}
+
+function foot() {
+  return '<div class="doc-footer">' + esc(DOC_FOOTER) + '</div>';
+}
+
+// Doc 1: Event Management Plan
+function genEventManagementPlan(d) {
+  var allActivities = d.activities.concat(d.activitiesOther ? [d.activitiesOther] : []);
+  var allWelfare    = d.welfare.concat(d.welfareNotes ? [d.welfareNotes] : []);
+  var licList = [];
+  if(d.licTen)  licList.push('Temporary Event Notice applied');
+  if(d.licCpbc) licList.push('Permission from Castle Point Borough Council Licensing');
+  if(d.licPrs)  licList.push('PRS/PPL music licence in place');
+  if(d.licFood) licList.push('Food hygiene compliance confirmed for vendors');
+  if(d.licPat)  licList.push('PAT testing confirmed for all electrical equipment');
+  if(d.licencesOther) licList.push(d.licencesOther);
+  return hdr(d, 'Event Management Plan') +
+    '<h2>Event overview</h2><p>' + esc(d.overview) + '</p>' +
+    (d.special ? '<p><strong>Special conditions: </strong>' + esc(d.special) + '</p>' : '') +
+    '<h2>Event activities</h2><ul>' + allActivities.map(function(a){return '<li>'+esc(a)+'</li>';}).join('') + '</ul>' +
+    '<h2>Licences & permissions</h2>' + (licList.length ? '<ul>' + licList.map(function(l){return '<li>'+esc(l)+'</li>';}).join('') + '</ul>' : '<p>None recorded.</p>') +
+    '<h2>Public liability insurance</h2><p>Policy No. ' + esc(d.policy) + '</p>' +
+    '<h2>Staffing & stewarding</h2>' +
+    '<p>' + esc(d.stewardCount) + ' stewards covering entrances, key activity points, and display area.</p>' +
+    '<p>Event Safety Officer: ' + esc(d.safetyOfficer) + ' | Event Organiser: ' + esc(d.organiser) + '</p>' +
+    (d.staffingNotes ? '<p>' + esc(d.staffingNotes) + '</p>' : '') +
+    '<h2>Welfare & facilities</h2><ul>' + allWelfare.map(function(w){return '<li>'+esc(w)+'</li>';}).join('') + '</ul>' +
+    '<h2>Emergency procedures</h2>' +
+    '<p>Assembly point: ' + esc(d.assembly) + '</p>' +
+    '<p>Emergency contact: ' + esc(d.emergencyPhone) + '</p>' +
+    (d.emergencyNotes ? '<p>' + esc(d.emergencyNotes) + '</p>' : '') +
+    foot();
+}
+
+// Doc 2: Risk Assessment
+function genRiskAssessment(d) {
+  var riskRows = d.riskRows.map(function(r) {
+    var risk = (parseInt(r.l)||1) * (parseInt(r.s)||1);
+    var bg = risk >= 7 ? '#fee2e2' : risk >= 4 ? '#fff7ed' : '#f0fdf4';
+    return '<tr><td>' + esc(r.hazard) + '</td><td>' + esc(r.who) + '</td><td>' + esc(r.controls) + '</td>' +
+      '<td style="text-align:center">' + (r.l||1) + '</td><td style="text-align:center">' + (r.s||1) + '</td>' +
+      '<td style="text-align:center;background:' + bg + ';font-weight:800">' + risk + '</td>' +
+      '<td>' + esc(r.action) + '</td></tr>';
+  }).join('');
+  return hdr(d, 'Risk Assessment') +
+    '<h2>Risk assessment matrix key</h2>' +
+    '<table><tr><th>Likelihood (L)</th><th>Severity (S)</th><th>Risk Rating (L × S)</th></tr>' +
+    '<tr><td>1 = Low</td><td>1 = Minor</td><td style="background:#f0fdf4">1–3 = Low Risk</td></tr>' +
+    '<tr><td>2 = Possible</td><td>2 = Moderate</td><td style="background:#fff7ed">4–6 = Medium Risk</td></tr>' +
+    '<tr><td>3 = Likely</td><td>3 = Major</td><td style="background:#fee2e2">7–9 = High Risk</td></tr></table><br>' +
+    '<h2>Risk assessment table</h2>' +
+    '<table><tr><th>Hazard / Risk</th><th>Who might be harmed</th><th>Existing control measures</th><th>L</th><th>S</th><th>Risk</th><th>Further action required</th></tr>' +
+    riskRows + '</table>' +
+    (d.riskNotes ? '<h2>Additional notes</h2><p>' + esc(d.riskNotes) + '</p>' : '') +
+    foot();
+}
+
+// Doc 3: Safety Plan
+function genSafetyPlan(d) {
+  return hdr(d, 'Community Safety Plan') +
+    '<h2>Event overview</h2><p>' + esc(d.overview) + '</p>' +
+    '<h2>Safety objectives</h2><ul>' + d.safetyObjectives.map(function(o){return '<li>'+esc(o)+'</li>';}).join('') + '</ul>' +
+    '<h2>Safety management structure</h2>' +
+    '<table><tr><th>Role</th><th>Person</th></tr>' +
+    '<tr><td>Event Safety Officer</td><td>' + esc(d.safetyOfficer) + '</td></tr>' +
+    '<tr><td>Event Organiser</td><td>' + esc(d.organiser) + '</td></tr>' +
+    '<tr><td>First Aid Lead</td><td>' + esc(d.firstAid) + '</td></tr>' +
+    '<tr><td>Steward Supervisor</td><td>' + esc(d.stewardSup) + '</td></tr></table>' +
+    '<h2>Communication</h2><p>' + esc(d.commsNotes || 'Mobile phones for key personnel. Central event control point at first aid location.') + '</p>' +
+    '<h2>Site safety arrangements</h2><p>' + esc(d.siteSafetyNotes || 'Fire points and extinguishers at cooking areas. Designated assembly point. Clearly marked walkways, exits, and emergency routes.') + '</p>' +
+    '<h2>First aid</h2><p>Qualified first aiders on-site. First aid point signposted. Record of incidents maintained. First aid lead: ' + esc(d.firstAid) + '</p>' +
+    '<h2>Vehicle management</h2><p>' + esc(d.vehicleNotes || 'No vehicle movement during public hours.') + '</p>' +
+    '<h2>Weather preparedness</h2><p>' + esc(d.weatherNotes || 'Shelter provision. Heat management plan activated for 28°C+. Event pause plan for severe weather.') + '</p>' +
+    '<h2>Crowd management</h2><p>' + esc(d.crowdNotes || 'Entry/exit points stewarded. Stall layout planned to reduce congestion.') + '</p>' +
+    '<h2>Emergency assembly point</h2><p>' + esc(d.assembly) + ' | Emergency contact: ' + esc(d.emergencyPhone) + '</p>' +
+    foot();
+}
+
+// Doc 4: Volunteer Briefing Sheet
+function genVolunteerBrief(d) {
+  return hdr(d, 'Volunteer Briefing Sheet') +
+    '<h2>Event overview</h2><p>' + esc(d.overview) + '</p>' +
+    '<h2>Your role today</h2>' +
+    '<p>Thank you for volunteering at ' + esc(d.title) + '. Please report to <strong>' + esc(d.stewardSup || 'Event control') + '</strong> on arrival.</p>' +
+    '<h2>Key contacts</h2>' +
+    '<table><tr><th>Role</th><th>Person</th></tr>' +
+    '<tr><td>Event Safety Officer</td><td>' + esc(d.safetyOfficer) + '</td></tr>' +
+    '<tr><td>Event Organiser</td><td>' + esc(d.organiser) + '</td></tr>' +
+    '<tr><td>First Aid Lead</td><td>' + esc(d.firstAid) + '</td></tr>' +
+    '<tr><td>Steward Supervisor</td><td>' + esc(d.stewardSup) + '</td></tr>' +
+    '<tr><td>Emergency contact</td><td>' + esc(d.emergencyPhone) + '</td></tr></table>' +
+    '<h2>Your responsibilities</h2>' +
+    '<ul><li>Wear your H.O.M.E Hub volunteer t-shirt at all times</li>' +
+    '<li>Be visible, approachable and helpful to all attendees</li>' +
+    '<li>Know your assigned position and stay within your zone unless directed otherwise</li>' +
+    '<li>Report any incident, concern or hazard to ' + esc(d.stewardSup || 'the event supervisor') + ' immediately</li>' +
+    '<li>Follow all safeguarding procedures — report any concerns about a child or vulnerable adult immediately</li>' +
+    '<li>Do not handle medical situations alone — call the first aid lead immediately</li>' +
+    '<li>Take regular breaks and stay hydrated</li></ul>' +
+    '<h2>Lost child procedure</h2>' +
+    '<p>If you encounter a lost child: (1) Do not leave the child alone, (2) Bring them to the nearest steward or event control point, (3) Notify ' + esc(d.safetyOfficer) + ' immediately, (4) PA announcement will be made.</p>' +
+    '<h2>Emergency evacuation</h2>' +
+    '<p>Assembly point: <strong>' + esc(d.assembly) + '</strong></p>' +
+    '<p>On hearing the evacuation signal, guide all attendees calmly to the assembly point. Do not use the PA unless directed. Do not re-enter until the all-clear is given.</p>' +
+    (d.special ? '<h2>Special conditions</h2><p>' + esc(d.special) + '</p>' : '') +
+    foot();
+}
+
+// Doc 5: Stallholder/Vendor Brief
+function genStallholderBrief(d) {
+  return hdr(d, 'Stallholder & Vendor Brief') +
+    '<h2>Welcome</h2>' +
+    '<p>Thank you for taking part in <strong>' + esc(d.title) + '</strong> on ' + fmtDate(d.date) + '. Please read this document carefully before attending.</p>' +
+    '<h2>Site information</h2>' +
+    '<p><strong>Location:</strong> ' + esc(d.location) + '<br>' +
+    '<strong>Event hours:</strong> ' + (d.start ? d.start + ' – ' + (d.end||'') : '[Times TBC]') + '</p>' +
+    '<h2>Your responsibilities</h2>' +
+    '<ul><li>All electrical equipment must be <strong>PAT tested</strong>. Certificates must be available on request</li>' +
+    '<li>All food vendors must hold a valid food hygiene certificate (level 2 minimum)</li>' +
+    '<li>You are responsible for the cleanliness and safety of your stall area at all times</li>' +
+    '<li>Gas-powered equipment must be inspected before use. Cylinders must be stored safely and upright</li>' +
+    '<li>A fire extinguisher must be available at all cooking stalls</li>' +
+    '<li>No vehicle movement during public event hours — set up and take down times will be communicated separately</li>' +
+    '<li>All waste must be removed or placed in designated waste points at the end of the event</li>' +
+    '<li>No alcohol may be sold or consumed on site — this is a strictly alcohol-free event</li></ul>' +
+    '<h2>Emergency procedure</h2>' +
+    '<p>Assembly point: <strong>' + esc(d.assembly) + '</strong><br>' +
+    'Emergency contact: ' + esc(d.emergencyPhone) + '<br>' +
+    'First aid point will be clearly signposted on site.</p>' +
+    '<h2>Insurance</h2>' +
+    '<p>You are responsible for your own public liability insurance. H.O.M.E Hub CIC public liability policy no: ' + esc(d.policy) + '</p>' +
+    (d.special ? '<h2>Special conditions</h2><p>' + esc(d.special) + '</p>' : '') +
+    '<h2>Contacts</h2>' +
+    '<table><tr><th>Role</th><th>Person</th></tr>' +
+    '<tr><td>Event Organiser</td><td>' + esc(d.organiser) + '</td></tr>' +
+    '<tr><td>Event Safety Officer</td><td>' + esc(d.safetyOfficer) + ' | ' + esc(d.emergencyPhone) + '</td></tr></table>' +
+    foot();
+}
+
+// Doc 6: Post-event Debrief Report
+function genDebriefReport(d) {
+  return hdr(d, 'Post-Event Debrief Report') +
+    '<h2>Event summary</h2>' +
+    '<table><tr><th>Field</th><th>Details</th></tr>' +
+    '<tr><td>Event</td><td>' + esc(d.title) + '</td></tr>' +
+    '<tr><td>Date</td><td>' + fmtDate(d.date) + '</td></tr>' +
+    '<tr><td>Location</td><td>' + esc(d.location) + '</td></tr>' +
+    '<tr><td>Safety Officer</td><td>' + esc(d.safetyOfficer) + '</td></tr>' +
+    '<tr><td>Organiser</td><td>' + esc(d.organiser) + '</td></tr>' +
+    '<tr><td>Est. attendance</td><td>' + esc(d.attendance) + '</td></tr></table>' +
+    '<h2>Actual attendance</h2>' +
+    '<p><em>To be completed after the event.</em></p>' +
+    '<p>Actual attendance: ___________________</p>' +
+    '<h2>Incidents & near misses</h2>' +
+    '<table><tr><th>Time</th><th>Nature of incident</th><th>Person involved</th><th>Action taken</th><th>Follow-up required</th></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></table>' +
+    '<h2>First aid log</h2>' +
+    '<table><tr><th>Time</th><th>Nature of treatment</th><th>Treated by</th><th>Referred to hospital?</th></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></table>' +
+    '<h2>What went well</h2>' +
+    '<p>____________________________________________<br>____________________________________________<br>____________________________________________</p>' +
+    '<h2>What could be improved</h2>' +
+    '<p>____________________________________________<br>____________________________________________<br>____________________________________________</p>' +
+    '<h2>Actions for next event</h2>' +
+    '<table><tr><th>Action</th><th>Owner</th><th>By when</th></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
+    '<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></table>' +
+    '<h2>Sign-off</h2>' +
+    '<p>Event Safety Officer: _________________________ &nbsp;&nbsp; Date: _____________</p>' +
+    '<p>Event Organiser: _________________________ &nbsp;&nbsp; Date: _____________</p>' +
+    foot();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PDF GENERATION
+// ════════════════════════════════════════════════════════════════════
+function downloadPDF(docIndex) {
+  var docNames = ['Event Management Plan','Risk Assessment','Safety Plan','Volunteer Brief','Stallholder Brief','Event Debrief'];
+  var previewEl = document.getElementById('preview-' + docIndex);
+  if(!previewEl) return;
+
+  var d = getFormData();
+  var safeTitle = (d.title || 'Event').replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'-');
+  var filename = 'HOME-Hub-' + docNames[docIndex].replace(/\s/g,'-') + '-' + safeTitle + '.pdf';
+
+  // Use jsPDF with HTML rendering
+  var { jsPDF } = window.jspdf;
+  var doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+  // Brand colours
+  var GREEN = [0, 104, 55];
+  var DARK   = [17, 24, 39];
+  var MID    = [55, 65, 81];
+  var MUT    = [107, 114, 128];
+  var BORDER = [229, 231, 235];
+  var pageW = 210, pageH = 297, margin = 18, contentW = pageW - margin * 2;
+  var y = 0;
+  var pageNum = 1;
+
+  function checkPage(needed) {
+    if(y + needed > pageH - 20) {
+      doc.addPage();
+      y = margin;
+      addPageFooter();
+      pageNum++;
+    }
+  }
+
+  function addPageFooter() {
+    doc.setFontSize(7);
+    doc.setTextColor(...MUT);
+    doc.text(DOC_FOOTER, margin, pageH - 10, { maxWidth: contentW });
+    doc.text('Page ' + pageNum, pageW - margin, pageH - 10, { align: 'right' });
+  }
+
+  // === HEADER BLOCK ===
+  // Green header bar
+  doc.setFillColor(...GREEN);
+  doc.rect(0, 0, pageW, 30, 'F');
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.text('H.O.M.E Hub CIC', margin, 12);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text(docNames[docIndex], margin, 20);
+  doc.setFontSize(8);
+  doc.text('Company Reg: 16104567  |  Policy No: ' + (d.policy || ''), margin, 27);
+
+  y = 40;
+
+  // Event meta block
+  doc.setFillColor(249, 250, 248);
+  doc.roundedRect(margin, y, contentW, 28, 3, 3, 'F');
+  doc.setDrawColor(...BORDER);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, y, contentW, 28, 3, 3, 'S');
+  doc.setFontSize(10);
+  doc.setTextColor(...DARK);
+  doc.setFont('helvetica', 'bold');
+  doc.text(d.title, margin + 4, y + 7);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...MID);
+  doc.text('Date: ' + fmtDate(d.date) + '   |   Location: ' + (d.location || '').slice(0,50), margin + 4, y + 14);
+  doc.text('Assessor: ' + (d.assessor||'') + '   |   Assessment date: ' + fmtDate(d.assessDate), margin + 4, y + 21);
+  doc.text('Safety Officer: ' + (d.safetyOfficer||'') + '   |   Organiser: ' + (d.organiser||''), margin + 4, y + 27.5);
+  y += 36;
+
+  // === CONTENT from HTML preview ===
+  // Parse the preview HTML and render as PDF
+  var parser = new DOMParser();
+  var htmlDoc = parser.parseFromString('<div>' + previewEl.innerHTML + '</div>', 'text/html');
+  var nodes = htmlDoc.querySelectorAll('h2, h3, p, ul, table');
+
+  nodes.forEach(function(node) {
+    var tag = node.tagName.toLowerCase();
+
+    if(tag === 'h2') {
+      checkPage(14);
+      // Section divider
+      y += 4;
+      doc.setFillColor(0, 104, 55, 0.08);
+      doc.setDrawColor(...GREEN);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, margin + contentW, y);
+      y += 5;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...GREEN);
+      doc.text(node.textContent.toUpperCase(), margin, y);
+      y += 7;
+      doc.setTextColor(...DARK);
+    }
+
+    else if(tag === 'h3') {
+      checkPage(10);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...DARK);
+      doc.text(node.textContent, margin, y);
+      y += 6;
+    }
+
+    else if(tag === 'p') {
+      var txt = node.textContent.trim();
+      if(!txt || txt === DOC_FOOTER) return;
+      checkPage(8);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...MID);
+      var lines = doc.splitTextToSize(txt, contentW);
+      lines.forEach(function(line) {
+        checkPage(6);
+        doc.text(line, margin, y);
+        y += 5;
+      });
+      y += 2;
+    }
+
+    else if(tag === 'ul') {
+      node.querySelectorAll('li').forEach(function(li) {
+        checkPage(7);
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...MID);
+        doc.setFillColor(...GREEN);
+        doc.circle(margin + 2, y - 1.5, 1, 'F');
+        var lines = doc.splitTextToSize(li.textContent.trim(), contentW - 8);
+        lines.forEach(function(line, i) {
+          checkPage(6);
+          doc.text(line, margin + 6, y);
+          y += 5;
+        });
+      });
+      y += 2;
+    }
+
+    else if(tag === 'table') {
+      var rows = node.querySelectorAll('tr');
+      if(!rows.length) return;
+      var colCount = rows[0].querySelectorAll('td,th').length;
+      if(!colCount) return;
+      var colW = contentW / colCount;
+
+      rows.forEach(function(row, ri) {
+        var cells = row.querySelectorAll('td,th');
+        if(!cells.length) return;
+        var isHead = cells[0].tagName.toLowerCase() === 'th';
+        var rowH = 7;
+
+        // Estimate row height
+        var maxLines = 1;
+        cells.forEach(function(cell) {
+          var lines = doc.splitTextToSize(cell.textContent.trim(), colW - 4).length;
+          maxLines = Math.max(maxLines, lines);
+        });
+        rowH = Math.max(7, maxLines * 4.5 + 3);
+        checkPage(rowH + 2);
+
+        // Row background
+        if(isHead) {
+          doc.setFillColor(240, 253, 244);
+        } else {
+          doc.setFillColor(ri % 2 === 0 ? 255 : 249, ri % 2 === 0 ? 255 : 250, ri % 2 === 0 ? 255 : 248);
+        }
+        doc.rect(margin, y, contentW, rowH, 'F');
+        doc.setDrawColor(...BORDER);
+        doc.setLineWidth(0.2);
+        doc.rect(margin, y, contentW, rowH, 'S');
+
+        cells.forEach(function(cell, ci) {
+          var cx = margin + ci * colW + 2;
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', isHead ? 'bold' : 'normal');
+          doc.setTextColor(isHead ? GREEN[0] : DARK[0], isHead ? GREEN[1] : DARK[1], isHead ? GREEN[2] : DARK[2]);
+          var lines = doc.splitTextToSize(cell.textContent.trim(), colW - 4);
+          lines.forEach(function(line, li) {
+            doc.text(line, cx, y + 4.5 + li * 4.5);
+          });
+        });
+        y += rowH;
+      });
+      y += 4;
+    }
+  });
+
+  addPageFooter();
+  doc.save(filename);
+  showToast('PDF downloaded ✓', 2500);
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// STALLHOLDERS PIPELINE
+// ════════════════════════════════════════════════════════════════════
+
+// ── CONFIG ──────────────────────────────────────────────────────────
+// Your Resend API key — add this via a Supabase Edge Function in production
+// For now paste your Resend key here for direct sends (testbed only)
+const RESEND_KEY = 'YOUR_RESEND_API_KEY'; // replace when ready
+
+// Your Stripe payment links — create these in your Stripe dashboard
+// Dashboard → Payment Links → Create. Paste the URLs here.
+const STRIPE_LINKS = {
+  stall_only:   'https://buy.stripe.com/YOUR_STALL_ONLY_LINK',
+  stall_table:  'https://buy.stripe.com/YOUR_STALL_TABLE_LINK',
+};
+
+// Make.com webhook URL for WhatsApp
+const MAKE_WEBHOOK_URL = 'YOUR_MAKE_WEBHOOK_URL'; // replace when ready
+
+// ── STATE ────────────────────────────────────────────────────────────
+let shAll = [];
+let shFilter = 'all';
+let shEventFilter = '';
+let shCurrent = null;
+
+// ── SHOW VIEW ───────────────────────────────────────────────────────
+const _origShowView = typeof showView === 'function' ? showView : null;
+function showView(v) {
+  ['list','wizard','stallholders'].forEach(id => {
+    const el = document.getElementById('view-' + id);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById('view-' + v);
+  if (target) target.style.display = 'block';
+  if (v === 'stallholders') loadStallholders();
+  if (v === 'list') loadEventList();
+}
+
+// ── LOAD STALLHOLDERS ────────────────────────────────────────────────
+async function loadStallholders() {
+  document.getElementById('sh-list').innerHTML = '<div class="sh-empty">Loading...</div>';
+  try {
+    const { data, error } = await db
+      .from('practitioner_applications')
+      .select('*, public_events(name, event_date)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    shAll = data || [];
+    populateShEventFilter();
+    renderShKpis();
+    renderShList();
+    updateShBadge();
+  } catch(e) {
+    document.getElementById('sh-list').innerHTML = '<div class="sh-empty">Could not load applications. Check Supabase connection.</div>';
+  }
+}
+
+function populateShEventFilter() {
+  const sel = document.getElementById('sh-event-filter');
+  const events = [...new Map(shAll.filter(a => a.public_events).map(a => [a.event_id, a.public_events.name])).entries()];
+  sel.innerHTML = '<option value="">All events</option>';
+  events.forEach(([id, name]) => {
+    sel.innerHTML += `<option value="${id}">${name}</option>`;
+  });
+}
+
+function renderShKpis() {
+  const total     = shAll.length;
+  const pending   = shAll.filter(a => a.status === 'pending').length;
+  const auth      = shAll.filter(a => a.status === 'authorised').length;
+  const paid      = shAll.filter(a => a.payment_status === 'paid').length;
+  const declined  = shAll.filter(a => a.status === 'declined').length;
+  document.getElementById('sh-kpis').innerHTML = [
+    { val: total,    lbl: 'Total Applications' },
+    { val: pending,  lbl: 'Awaiting Review' },
+    { val: auth,     lbl: 'Authorised' },
+    { val: paid,     lbl: 'Paid & Confirmed' },
+    { val: declined, lbl: 'Declined' },
+  ].map(k => `<div class="kpi-card"><div class="kpi-val">${k.val}</div><div class="kpi-lbl">${k.lbl}</div></div>`).join('');
+}
+
+function updateShBadge() {
+  const pending = shAll.filter(a => a.status === 'pending').length;
+  const badge = document.getElementById('sh-badge');
+  if (pending > 0) { badge.textContent = pending; badge.style.display = 'inline'; }
+  else badge.style.display = 'none';
+}
+
+function setShFilter(f, el) {
+  shFilter = f;
+  document.querySelectorAll('.sh-filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderShList();
+}
+
+function filterStallholders() {
+  shEventFilter = document.getElementById('sh-event-filter').value;
+  renderShList();
+}
+
+function renderShList() {
+  let apps = shAll;
+  if (shEventFilter) apps = apps.filter(a => a.event_id === shEventFilter);
+  if (shFilter !== 'all') {
+    if (shFilter === 'paid') apps = apps.filter(a => a.payment_status === 'paid');
+    else apps = apps.filter(a => a.status === shFilter);
+  }
+
+  if (!apps.length) {
+    document.getElementById('sh-list').innerHTML = '<div class="sh-empty">No applications match this filter.</div>';
+    return;
+  }
+
+  document.getElementById('sh-list').innerHTML = apps.map(a => {
+    const initials = `${(a.first_name||'')[0]||''}${(a.last_name||'')[0]||''}`.toUpperCase();
+    const evName = a.public_events ? a.public_events.name : '—';
+    const created = new Date(a.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const statusClass = `sh-${a.status}`;
+    const statusLabel = a.payment_status === 'paid' ? 'Paid ✓' : a.status.charAt(0).toUpperCase() + a.status.slice(1);
+    const pliTag = a.public_liability_doc_url
+      ? `<span class="sh-tag sh-tag-pli-ok">PLI ✓</span>`
+      : `<span class="sh-tag sh-tag-pli">No PLI</span>`;
+    const tableTag = a.table_hire ? `<span class="sh-tag sh-tag-table">Table hire</span>` : '';
+
+    return `<div class="sh-card status-${a.status}" onclick="openShDetail('${a.id}')">
+      <div class="sh-avatar">${initials}</div>
+      <div class="sh-info">
+        <div class="sh-name">${a.first_name} ${a.last_name}${a.company_name ? ` · <span style="font-weight:500;color:var(--mut)">${a.company_name}</span>` : ''}</div>
+        <div class="sh-meta">${evName} · ${a.email}</div>
+        <div class="sh-tags">
+          <span class="sh-tag sh-tag-vendor">${a.vendor_type}</span>
+          ${a.stall_preference && a.stall_preference !== 'No preference' ? `<span class="sh-tag sh-tag-stall">${a.stall_preference}</span>` : ''}
+          ${tableTag}
+          ${pliTag}
+        </div>
+      </div>
+      <div class="sh-status">
+        <span class="sh-status-badge ${statusClass}">${statusLabel}</span>
+        <div class="sh-date">${created}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── DETAIL MODAL ─────────────────────────────────────────────────────
+function openShDetail(id) {
+  shCurrent = shAll.find(a => a.id === id);
+  if (!shCurrent) return;
+  const a = shCurrent;
+  const evName = a.public_events ? a.public_events.name : '—';
+  const evDate = a.public_events ? new Date(a.public_events.event_date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '—';
+  const created = new Date(a.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+
+  document.getElementById('sh-modal-title').textContent = `${a.first_name} ${a.last_name}`;
+  document.getElementById('sh-modal-status').innerHTML = `<span class="sh-status-badge sh-${a.status}">${a.status}</span>${a.payment_status === 'paid' ? ' <span class="sh-status-badge sh-paid">Paid ✓</span>' : ''}`;
+
+  const isActioned = a.status === 'authorised' || a.status === 'declined';
+  const payLink = a.table_hire ? STRIPE_LINKS.stall_table : STRIPE_LINKS.stall_only;
+
+  document.getElementById('sh-modal-body').innerHTML = `
+    <div class="sh-detail-row"><span class="sh-detail-key">Event</span><span class="sh-detail-val">${evName}<br><span style="color:var(--mut);font-size:11px">${evDate}</span></span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Email</span><span class="sh-detail-val"><a href="mailto:${a.email}" style="color:var(--dg)">${a.email}</a></span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Mobile / WhatsApp</span><span class="sh-detail-val">${a.mobile_phone || '—'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Business</span><span class="sh-detail-val">${a.company_name || '—'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Vendor type</span><span class="sh-detail-val">${a.vendor_type}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Stall preference</span><span class="sh-detail-val">${a.stall_preference || '—'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Table hire</span><span class="sh-detail-val">${a.table_hire ? 'Yes (+£5)' : 'No'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">PLI document</span><span class="sh-detail-val">${a.public_liability_doc_url ? `<a href="${a.public_liability_doc_url}" target="_blank" style="color:var(--dg);font-weight:700">View document ↗</a>` : '<span style="color:var(--red);font-weight:700">Not uploaded</span>'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">PLI expiry</span><span class="sh-detail-val">${a.public_liability_expiry ? new Date(a.public_liability_expiry).toLocaleDateString('en-GB') : '—'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">How heard</span><span class="sh-detail-val">${a.how_did_you_hear || '—'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Special requirements</span><span class="sh-detail-val">${a.special_requirements || 'None'}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Applied</span><span class="sh-detail-val">${created}</span></div>
+    <div class="sh-detail-row"><span class="sh-detail-key">Source</span><span class="sh-detail-val">${a.source || 'online_form'}</span></div>
+
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">What they're offering</div>
+      <div class="sh-desc-box">${a.product_service_description || '—'}</div>
+    </div>
+
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Internal Notes</div>
+      <textarea class="sh-notes-area" id="sh-notes" placeholder="Add notes visible only to the team...">${a.admin_notes || ''}</textarea>
+      <button onclick="saveNotes('${a.id}')" style="margin-top:6px;padding:7px 14px;border:none;border-radius:8px;background:var(--dg);color:white;font-size:11px;font-weight:700;cursor:pointer">Save notes</button>
+    </div>
+
+    ${!isActioned ? `
+    <div class="sh-action-row">
+      <button class="btn-authorise" id="btn-auth" onclick="authoriseApp('${a.id}')">✅ Authorise & Send Payment Link</button>
+      <button class="btn-decline" id="btn-dec" onclick="declineApp('${a.id}')">❌ Decline Application</button>
+    </div>
+    <div style="font-size:10px;color:var(--mut);margin-top:8px;text-align:center">Authorising sends a congratulations email + WhatsApp with the Stripe payment link. Declining sends a kind rejection.</div>
+    ` : `
+    <div style="background:#f9faf8;border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:14px;text-align:center;font-size:12px;color:var(--mut)">
+      ${a.status === 'authorised' ? `✅ Authorised — payment link sent.<br><span style="font-size:11px">Payment status: <strong style="color:var(--dg)">${a.payment_status}</strong></span>` : '❌ Application was declined.'}
+    </div>
+    `}
+  `;
+
+  document.getElementById('sh-modal').classList.add('open');
+}
+
+function closeShModal() {
+  document.getElementById('sh-modal').classList.remove('open');
+  shCurrent = null;
+}
+
+// ── SAVE NOTES ───────────────────────────────────────────────────────
+async function saveNotes(id) {
+  const notes = document.getElementById('sh-notes').value;
+  await db.from('practitioner_applications').update({ admin_notes: notes }).eq('id', id);
+  const app = shAll.find(a => a.id === id);
+  if (app) app.admin_notes = notes;
+  showToast('Notes saved ✓', 2000);
+}
+
+// ── AUTHORISE ────────────────────────────────────────────────────────
+async function authoriseApp(id) {
+  const btn = document.getElementById('btn-auth');
+  const dec = document.getElementById('btn-dec');
+  btn.disabled = true; dec.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const a = shAll.find(x => x.id === id);
+  if (!a) return;
+
+  const payLink = a.table_hire ? STRIPE_LINKS.stall_table : STRIPE_LINKS.stall_only;
+  const evName  = a.public_events ? a.public_events.name : 'our upcoming event';
+  const evDate  = a.public_events ? new Date(a.public_events.event_date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '';
+
+  try {
+    // 1. Update Supabase
+    await db.from('practitioner_applications').update({
+      status: 'authorised',
+      payment_status: 'link_sent',
+      payment_link: payLink,
+      authorisation_sent: true
+    }).eq('id', id);
+
+    // 2. Send email via Resend
+    await sendEmail({
+      to: a.email,
+      subject: `🎉 Your pitch is reserved — ${evName}`,
+      html: buildAuthEmail(a, evName, evDate, payLink)
+    });
+
+    // 3. Fire Make.com webhook for WhatsApp
+    await fireWhatsApp({
+      phone: a.mobile_phone,
+      name: a.first_name,
+      event: evName,
+      date: evDate,
+      payment_link: payLink,
+      type: 'authorised'
+    });
+
+    // 4. Update local state
+    const idx = shAll.findIndex(x => x.id === id);
+    if (idx > -1) { shAll[idx].status = 'authorised'; shAll[idx].payment_status = 'link_sent'; }
+
+    closeShModal();
+    renderShKpis();
+    renderShList();
+    updateShBadge();
+    showToast('Authorised — email & WhatsApp sent ✓', 3000);
+
+  } catch(e) {
+    console.error(e);
+    btn.disabled = false; dec.disabled = false;
+    btn.textContent = '✅ Authorise & Send Payment Link';
+    showToast('Something went wrong — check console', 3000);
+  }
+}
+
+// ── DECLINE ──────────────────────────────────────────────────────────
+async function declineApp(id) {
+  if (!confirm('Are you sure you want to decline this application? A polite email will be sent.')) return;
+  const btn = document.getElementById('btn-dec');
+  const auth = document.getElementById('btn-auth');
+  btn.disabled = true; auth.disabled = true;
+  btn.textContent = 'Declining...';
+
+  const a = shAll.find(x => x.id === id);
+  if (!a) return;
+  const evName = a.public_events ? a.public_events.name : 'our upcoming event';
+
+  try {
+    await db.from('practitioner_applications').update({ status: 'declined' }).eq('id', id);
+
+    await sendEmail({
+      to: a.email,
+      subject: `Your application for ${evName}`,
+      html: buildDeclineEmail(a, evName)
+    });
+
+    await fireWhatsApp({
+      phone: a.mobile_phone,
+      name: a.first_name,
+      event: evName,
+      type: 'declined'
+    });
+
+    const idx = shAll.findIndex(x => x.id === id);
+    if (idx > -1) shAll[idx].status = 'declined';
+
+    closeShModal();
+    renderShKpis();
+    renderShList();
+    updateShBadge();
+    showToast('Application declined — email sent ✓', 3000);
+
+  } catch(e) {
+    console.error(e);
+    btn.disabled = false; auth.disabled = false;
+    btn.textContent = '❌ Decline Application';
+    showToast('Something went wrong — check console', 3000);
+  }
+}
+
+// ── EMAIL SENDER (via Resend) ─────────────────────────────────────────
+async function sendEmail({ to, subject, html }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${RESEND_KEY}`
+    },
+    body: JSON.stringify({
+      from: 'H.O.M.E Hub Events <events@homehub-benfleet.co.uk>',
+      to: [to],
+      subject,
+      html
+    })
+  });
+  if (!res.ok) { const err = await res.text(); throw new Error(err); }
+  return res.json();
+}
+
+// ── WHATSAPP TRIGGER (via Make.com webhook) ────────────────────────────
+async function fireWhatsApp(payload) {
+  if (!MAKE_WEBHOOK_URL || MAKE_WEBHOOK_URL === 'YOUR_MAKE_WEBHOOK_URL') return; // skip if not set
+  await fetch(MAKE_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
+
+// ── EMAIL TEMPLATES ───────────────────────────────────────────────────
+function emailShell(content) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    body{margin:0;padding:0;background:#f4f6f4;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+    .wrap{max-width:580px;margin:32px auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+    .hdr{background:#006837;padding:28px 32px;text-align:center}
+    .hdr img{height:56px;width:auto}
+    .hdr-title{font-size:22px;font-weight:900;color:#fff;margin-top:14px;line-height:1.2}
+    .hdr-title span{color:#f58221}
+    .body{padding:28px 32px;color:#374151;font-size:14px;line-height:1.75}
+    .body h2{font-size:18px;font-weight:800;color:#0e386a;margin-bottom:12px}
+    .body p{margin:0 0 14px}
+    .detail-box{background:#f9faf8;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin:16px 0}
+    .detail-row{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+    .detail-row:last-child{border:none}
+    .detail-key{font-weight:700;color:#6b7280;min-width:120px}
+    .detail-val{color:#111827}
+    .btn-wrap{text-align:center;margin:24px 0}
+    .btn-pay{display:inline-block;background:#f58221;color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:800;font-size:15px;letter-spacing:.01em}
+    .footer{background:#f0fdf4;border-top:1px solid #e5e7eb;padding:16px 32px;font-size:11px;color:#6b7280;text-align:center;line-height:1.7}
+    .footer a{color:#006837}
+    .tagline{font-size:11px;color:rgba(255,255,255,.6);margin-top:6px}
+    .tagline span{color:#f58221}
+  </style></head><body>
+  <div class="wrap">
+    <div class="hdr">
+      <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub"/>
+      ${content.header}
+      <div class="tagline">Bringing <span>unity</span> back to the Community</div>
+    </div>
+    <div class="body">${content.body}</div>
+    <div class="footer">
+      H.O.M.E Hub CIC · Registered No. 16104567<br>
+      88 Brook Road, South Benfleet Playing Fields, Essex, SS7 5JF<br>
+      <a href="mailto:info@homehub-benfleet.co.uk">info@homehub-benfleet.co.uk</a> · <a href="https://homehub-benfleet.co.uk">homehub-benfleet.co.uk</a>
+    </div>
+  </div></body></html>`;
+}
+
+function buildAuthEmail(a, evName, evDate, payLink) {
+  return emailShell({
+    header: `<div class="hdr-title">🎉 Your pitch is <span>reserved!</span></div>`,
+    body: `
+      <h2>Congratulations, ${a.first_name}!</h2>
+      <p>We're absolutely delighted to let you know that your application for <strong>${evName}</strong> has been reviewed and your stall has been reserved. We can't wait to have you with us.</p>
+      <div class="detail-box">
+        <div class="detail-row"><span class="detail-key">Event</span><span class="detail-val">${evName}</span></div>
+        <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">${evDate}</span></div>
+        <div class="detail-row"><span class="detail-key">Location</span><span class="detail-val">H.O.M.E Hub, 88 Brook Road, South Benfleet, SS7 5JF</span></div>
+        <div class="detail-row"><span class="detail-key">Vendor type</span><span class="detail-val">${a.vendor_type}</span></div>
+        <div class="detail-row"><span class="detail-key">Table hire</span><span class="detail-val">${a.table_hire ? 'Yes — included in your payment' : 'No'}</span></div>
+      </div>
+      <p><strong>To lock in your spot, please complete your payment using the link below.</strong> Payment must be received within 7 days to secure your place.</p>
+      <div class="btn-wrap">
+        <a href="${payLink}" class="btn-pay">Complete payment →</a>
+      </div>
+      <p>Once your payment is received, we'll send you your full Stallholder Brief with setup times, what to bring, and everything you need for the day.</p>
+      <p>If you have any questions at all, just reply to this email or message us on WhatsApp — we're always happy to help.</p>
+      <p>With love from the H.O.M.E Hub team 💚</p>
+    `
+  });
+}
+
+function buildDeclineEmail(a, evName) {
+  return emailShell({
+    header: `<div class="hdr-title">Your application for <span>${evName}</span></div>`,
+    body: `
+      <h2>Thank you, ${a.first_name}</h2>
+      <p>Thank you so much for taking the time to apply for a stall at <strong>${evName}</strong>. It means a lot to us that you wanted to be part of it.</p>
+      <p>We received a wonderful response this time around and unfortunately we're unable to offer you a place on this occasion. This is never an easy message to send — the quality of applications was genuinely brilliant and the decisions were incredibly difficult.</p>
+      <p>Please don't be disheartened. We run events throughout the year and we'd love to see your application again for future events. You can apply at any time at:</p>
+      <p style="text-align:center"><a href="https://heartwood.homehub-benfleet.co.uk/practitioner-booking" style="color:#006837;font-weight:700">homehub-benfleet.co.uk — Stall Applications</a></p>
+      <p>Thank you again for being part of our community. We hope to see you at a future event — whether as a stallholder or simply as a guest enjoying everything the day has to offer.</p>
+      <p>With warmth from the H.O.M.E Hub team 💚</p>
+    `
+  });
+}
+
+
+
+// ── STARTUP ──────────────────────────────────────────────────────────
+loadEventList();
+db.from('practitioner_applications').select('id').eq('status','pending').then(function(res) {
+  if (res.data && res.data.length) {
+    var badge = document.getElementById('sh-badge');
+    if (badge) { badge.textContent = res.data.length; badge.style.display = 'inline'; }
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// FINANCIALS & LESSONS
+// ════════════════════════════════════════════════════════════════════
+
+// ── STATE ────────────────────────────────────────────────────────────
+var customIncomeRows = [];
+var customOutgoingRows = [];
+var lessons = [];
+var lessonsOverviewAll = [];
+var lessonsOverviewFilter = 'all';
+
+// ── SHOWVIEW OVERRIDE ────────────────────────────────────────────────
+// Extend showView to handle financials
+var _baseShowView = showView;
+showView = function(v) {
+  ['list','wizard','stallholders','financials'].forEach(function(id) {
+    var el = document.getElementById('view-' + id);
+    if (el) el.style.display = 'none';
+  });
+  var target = document.getElementById('view-' + v);
+  if (target) target.style.display = 'block';
+  if (v === 'stallholders') loadStallholders();
+  if (v === 'list') loadEventList();
+  if (v === 'financials') loadFinancialsOverview();
+};
+
+// ── FINANCIALS CALC ──────────────────────────────────────────────────
+function getFinVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+function calcFinSummary() {
+  var income = getFinVal('fi-stallholder') + getFinVal('fi-raffle') + getFinVal('fi-archery') +
+    getFinVal('fi-tcc') + getFinVal('fi-tombola') + getFinVal('fi-partnerships');
+  customIncomeRows.forEach(function(r) { income += parseFloat(document.getElementById('fi-c-'+r.id)?.value) || 0; });
+
+  var outgoing = getFinVal('fo-food') + getFinVal('fo-marketing');
+  customOutgoingRows.forEach(function(r) { outgoing += parseFloat(document.getElementById('fo-c-'+r.id)?.value) || 0; });
+
+  var profit = income - outgoing;
+  document.getElementById('fin-total-income').textContent = '£' + income.toFixed(2);
+  document.getElementById('fin-total-outgoing').textContent = '£' + outgoing.toFixed(2);
+  var profitEl = document.getElementById('fin-profit');
+  profitEl.textContent = (profit >= 0 ? '+' : '') + '£' + profit.toFixed(2);
+  profitEl.className = 'fin-summary-val ' + (profit >= 0 ? 'fin-profit' : 'fin-loss');
+}
+
+// ── CUSTOM ROWS ──────────────────────────────────────────────────────
+function addCustomFinRow(type) {
+  var id = Date.now();
+  var arr = type === 'income' ? customIncomeRows : customOutgoingRows;
+  var containerId = type === 'income' ? 'fi-custom-income-rows' : 'fi-custom-outgoing-rows';
+  var prefix = type === 'income' ? 'fi-c-' : 'fo-c-';
+  arr.push({ id: id, label: '', value: 0 });
+  var container = document.getElementById(containerId);
+  var row = document.createElement('div');
+  row.className = 'fin-custom-row';
+  row.id = 'custom-row-' + id;
+  row.innerHTML = '<input class="fin-custom-label" placeholder="Label (e.g. Donations)" id="fl-' + id + '" oninput="calcFinSummary()"/>' +
+    '<input class="fin-row-input" type="number" min="0" step="0.01" placeholder="0.00" id="' + prefix + id + '" oninput="calcFinSummary()"/>' +
+    '<button class="fin-remove" onclick="removeCustomRow('' + type + '',' + id + ')">×</button>';
+  container.appendChild(row);
+}
+
+function removeCustomRow(type, id) {
+  if (type === 'income') customIncomeRows = customIncomeRows.filter(function(r){ return r.id !== id; });
+  else customOutgoingRows = customOutgoingRows.filter(function(r){ return r.id !== id; });
+  var el = document.getElementById('custom-row-' + id);
+  if (el) el.remove();
+  calcFinSummary();
+}
+
+function buildCustomJson(arr, prefix) {
+  return arr.map(function(r) {
+    return {
+      label: (document.getElementById('fl-' + r.id)?.value || '').trim(),
+      value: parseFloat(document.getElementById(prefix + r.id)?.value) || 0
+    };
+  }).filter(function(r){ return r.label; });
+}
+
+// ── SAVE FINANCIALS ──────────────────────────────────────────────────
+async function saveFinancials() {
+  if (!CURRENT_EVENT_ID) { showToast('Save the event first', 2500); return; }
+  var payload = {
+    event_id: CURRENT_EVENT_ID,
+    event_name: document.getElementById('ev-title')?.value || '',
+    income_stallholder_fees: getFinVal('fi-stallholder'),
+    income_raffle: getFinVal('fi-raffle'),
+    income_archery_axe: getFinVal('fi-archery'),
+    income_tea_coffee_cake: getFinVal('fi-tcc'),
+    income_tombola: getFinVal('fi-tombola'),
+    income_partnerships: getFinVal('fi-partnerships'),
+    outgoing_food_drink: getFinVal('fo-food'),
+    outgoing_marketing: getFinVal('fo-marketing'),
+    custom_income: buildCustomJson(customIncomeRows, 'fi-c-'),
+    custom_outgoings: buildCustomJson(customOutgoingRows, 'fo-c-')
+  };
+  var res = await db.from('event_financials').upsert(payload, { onConflict: 'event_id' });
+  if (res.error) { showToast('Error saving: ' + res.error.message, 3000); return; }
+  showToast('Financials saved ✓', 2500);
+}
+
+// ── LOAD FINANCIALS INTO FORM ─────────────────────────────────────────
+async function loadFinancials(eventId) {
+  var res = await db.from('event_financials').select('*').eq('event_id', eventId).maybeSingle();
+  if (!res.data) return;
+  var d = res.data;
+  var fields = {
+    'fi-stallholder': d.income_stallholder_fees,
+    'fi-raffle': d.income_raffle,
+    'fi-archery': d.income_archery_axe,
+    'fi-tcc': d.income_tea_coffee_cake,
+    'fi-tombola': d.income_tombola,
+    'fi-partnerships': d.income_partnerships,
+    'fo-food': d.outgoing_food_drink,
+    'fo-marketing': d.outgoing_marketing
+  };
+  Object.entries(fields).forEach(function(e) {
+    var el = document.getElementById(e[0]);
+    if (el && e[1]) el.value = e[1];
+  });
+  // Custom rows
+  customIncomeRows = []; customOutgoingRows = [];
+  document.getElementById('fi-custom-income-rows').innerHTML = '';
+  document.getElementById('fi-custom-outgoing-rows').innerHTML = '';
+  (d.custom_income || []).forEach(function(r) { addCustomFinRow('income'); });
+  (d.custom_outgoings || []).forEach(function(r) { addCustomFinRow('outgoing'); });
+  calcFinSummary();
+}
+
+// ── LESSONS ──────────────────────────────────────────────────────────
+function addLesson(category) {
+  var input = document.getElementById('lesson-input');
+  var text = input.value.trim();
+  if (!text) return;
+  var lesson = { id: Date.now(), category: category, item: text, status: 'open', notes: '', reuse_for_future: false, saved: false };
+  lessons.push(lesson);
+  input.value = '';
+  renderLessons();
+}
+
+function renderLessons() {
+  var ww = lessons.filter(function(l){ return l.category === 'went_well'; });
+  var ti = lessons.filter(function(l){ return l.category === 'to_improve'; });
+  document.getElementById('lessons-went-well').innerHTML = ww.length ? ww.map(lessonCard).join('') : '<div style="font-size:12px;color:var(--mut);padding:8px 0">No items yet — add some above.</div>';
+  document.getElementById('lessons-to-improve').innerHTML = ti.length ? ti.map(lessonCard).join('') : '<div style="font-size:12px;color:var(--mut);padding:8px 0">No items yet — add some above.</div>';
+}
+
+function lessonCard(l) {
+  var statusColor = l.status === 'actioned' ? 'var(--dg)' : l.status === 'in_progress' ? 'var(--amber)' : 'var(--mut)';
+  return '<div class="lesson-card ' + (l.category === 'went_well' ? 'went-well' : 'to-improve') + (l.status === 'actioned' ? ' actioned' : '') + '" id="lc-' + l.id + '">' +
+    '<div class="lesson-top">' +
+    '<span class="lesson-tag ' + (l.category === 'went_well' ? 'lesson-ww' : 'lesson-ti') + '">' + (l.category === 'went_well' ? '✅' : '⚠️') + '</span>' +
+    '<span class="lesson-text">' + l.item + '</span>' +
+    '<select class="lesson-status-sel" onchange="updateLessonStatus(' + l.id + ',this.value)" style="border-color:' + statusColor + ';color:' + statusColor + '">' +
+    '<option value="open"' + (l.status==='open'?' selected':'') + '>Open</option>' +
+    '<option value="in_progress"' + (l.status==='in_progress'?' selected':'') + '>In Progress</option>' +
+    '<option value="actioned"' + (l.status==='actioned'?' selected':'') + '>Actioned ✓</option>' +
+    '</select>' +
+    '<button class="lesson-del" onclick="deleteLesson(' + l.id + ')">🗑️</button>' +
+    '</div>' +
+    '<textarea class="lesson-notes" placeholder="Add notes…" onchange="updateLessonNotes(' + l.id + ',this.value)">' + (l.notes||'') + '</textarea>' +
+    '<div class="lesson-meta">' +
+    '<label class="lesson-reuse"><input type="checkbox" ' + (l.reuse_for_future?'checked':'') + ' onchange="toggleReuse(' + l.id + ',this.checked)"/> Apply to future events</label>' +
+    '</div>' +
+    '</div>';
+}
+
+function updateLessonStatus(id, val) {
+  var l = lessons.find(function(x){ return x.id === id; });
+  if (l) { l.status = val; renderLessons(); }
+}
+function updateLessonNotes(id, val) {
+  var l = lessons.find(function(x){ return x.id === id; });
+  if (l) l.notes = val;
+}
+function toggleReuse(id, val) {
+  var l = lessons.find(function(x){ return x.id === id; });
+  if (l) l.reuse_for_future = val;
+}
+function deleteLesson(id) {
+  lessons = lessons.filter(function(x){ return x.id !== id; });
+  renderLessons();
+}
+
+// ── SAVE LESSONS ─────────────────────────────────────────────────────
+async function saveLessons() {
+  if (!CURRENT_EVENT_ID) { showToast('Save the event first', 2500); return; }
+  var evName = document.getElementById('ev-title')?.value || '';
+  // Delete existing for this event then re-insert
+  await db.from('event_lessons').delete().eq('event_id', CURRENT_EVENT_ID);
+  if (!lessons.length) { showToast('Lessons saved ✓', 2500); return; }
+  var rows = lessons.map(function(l) {
+    return {
+      event_id: CURRENT_EVENT_ID,
+      event_name: evName,
+      category: l.category,
+      item: l.item,
+      status: l.status,
+      notes: l.notes || null,
+      reuse_for_future: l.reuse_for_future
+    };
+  });
+  var res = await db.from('event_lessons').insert(rows);
+  if (res.error) { showToast('Error: ' + res.error.message, 3000); return; }
+  showToast('Lessons saved ✓', 2500);
+}
+
+// ── LOAD LESSONS FOR EVENT ───────────────────────────────────────────
+async function loadLessons(eventId) {
+  lessons = [];
+  var res = await db.from('event_lessons').select('*').eq('event_id', eventId).order('created_at');
+  if (res.data) {
+    lessons = res.data.map(function(l) {
+      return { id: l.id, category: l.category, item: l.item, status: l.status, notes: l.notes || '', reuse_for_future: l.reuse_for_future };
+    });
+  }
+  // Load reuse suggestions from other events
+  var reuse = await db.from('event_lessons').select('*').eq('reuse_for_future', true).neq('event_id', eventId);
+  if (reuse.data && reuse.data.length) {
+    var banner = document.getElementById('reuse-banner');
+    var itemsEl = document.getElementById('reuse-items');
+    banner.style.display = 'block';
+    itemsEl.innerHTML = reuse.data.map(function(r) {
+      return '<div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:8px 10px;font-size:12px">' +
+        '<span>' + (r.category==='went_well'?'✅':'⚠️') + ' ' + r.item + '</span>' +
+        '<span style="font-size:10px;color:var(--mut)">from ' + (r.event_name||'previous event') + '</span>' +
+        '<button onclick="importLesson('' + r.category + '','' + r.item.replace(/'/g,"\'") + '')" style="margin-left:auto;padding:4px 10px;border:none;border-radius:6px;background:var(--db);color:white;font-size:10px;font-weight:700;cursor:pointer">Import</button>' +
+        '</div>';
+    }).join('');
+  }
+  renderLessons();
+}
+
+function importLesson(category, item) {
+  lessons.push({ id: Date.now(), category: category, item: item, status: 'open', notes: '', reuse_for_future: false });
+  renderLessons();
+  showToast('Item imported ✓', 2000);
+}
+
+// ── FINANCIAL OVERVIEW ────────────────────────────────────────────────
+async function loadFinancialsOverview() {
+  document.getElementById('fin-overview-list').innerHTML = '<div class="sh-empty">Loading...</div>';
+  document.getElementById('lessons-overview-list').innerHTML = '<div class="sh-empty">Loading...</div>';
+
+  var finRes = await db.from('event_financials').select('*').order('created_at', { ascending: false });
+  var lessonRes = await db.from('event_lessons').select('*').order('created_at', { ascending: false });
+
+  var fins = finRes.data || [];
+  lessonsOverviewAll = lessonRes.data || [];
+
+  // Collective totals
+  var totIncome = 0, totOut = 0;
+  fins.forEach(function(f) {
+    var inc = (f.income_stallholder_fees||0) + (f.income_raffle||0) + (f.income_archery_axe||0) +
+      (f.income_tea_coffee_cake||0) + (f.income_tombola||0) + (f.income_partnerships||0);
+    (f.custom_income||[]).forEach(function(c){ inc += c.value||0; });
+    var out = (f.outgoing_food_drink||0) + (f.outgoing_marketing||0);
+    (f.custom_outgoings||[]).forEach(function(c){ out += c.value||0; });
+    totIncome += inc; totOut += out;
+    f._income = inc; f._out = out; f._profit = inc - out;
+  });
+
+  var totProfit = totIncome - totOut;
+  document.getElementById('ov-total-income').textContent = '£' + totIncome.toFixed(2);
+  document.getElementById('ov-total-outgoing').textContent = '£' + totOut.toFixed(2);
+  var profEl = document.getElementById('ov-total-profit');
+  profEl.textContent = (totProfit >= 0 ? '+' : '') + '£' + totProfit.toFixed(2);
+  profEl.style.color = totProfit >= 0 ? '#86efac' : '#fca5a5';
+
+  if (!fins.length) {
+    document.getElementById('fin-overview-list').innerHTML = '<div class="sh-empty">No financial data recorded yet. Add financials inside an event.</div>';
+  } else {
+    document.getElementById('fin-overview-list').innerHTML = fins.map(function(f) {
+      var maxVal = Math.max(f._income, f._out, 1);
+      var incPct = Math.round((f._income / maxVal) * 100);
+      var outPct = Math.round((f._out / maxVal) * 100);
+      var profitCol = f._profit >= 0 ? 'var(--dg)' : 'var(--red)';
+      return '<div class="fin-overview-card">' +
+        '<div class="fin-overview-event">' + (f.event_name || 'Unnamed Event') + '</div>' +
+        '<div style="font-size:11px;color:var(--mut);margin-bottom:8px">Income vs Outgoings</div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px">' +
+        '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--dg);font-weight:700;width:60px">Income</span><div class="fin-bar-wrap" style="flex:1"><div class="fin-bar-income" style="width:' + incPct + '%"></div></div><span style="font-size:11px;font-weight:700;color:var(--dg);width:70px;text-align:right">£' + f._income.toFixed(2) + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--red);font-weight:700;width:60px">Outgoing</span><div class="fin-bar-wrap" style="flex:1"><div class="fin-bar-outgoing" style="width:' + outPct + '%"></div></div><span style="font-size:11px;font-weight:700;color:var(--red);width:70px;text-align:right">£' + f._out.toFixed(2) + '</span></div>' +
+        '</div>' +
+        '<div class="fin-overview-grid">' +
+        '<div class="fin-overview-stat"><div class="fin-overview-stat-val" style="color:var(--dg)">£' + f._income.toFixed(2) + '</div><div class="fin-overview-stat-lbl">Income</div></div>' +
+        '<div class="fin-overview-stat"><div class="fin-overview-stat-val" style="color:var(--red)">£' + f._out.toFixed(2) + '</div><div class="fin-overview-stat-lbl">Outgoings</div></div>' +
+        '<div class="fin-overview-stat"><div class="fin-overview-stat-val" style="color:' + profitCol + '">' + (f._profit >= 0 ? '+' : '') + '£' + f._profit.toFixed(2) + '</div><div class="fin-overview-stat-lbl">Net</div></div>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  renderLessonsOverview();
+}
+
+function filterLessonsOverview(f, el) {
+  lessonsOverviewFilter = f;
+  document.querySelectorAll('#view-financials .sh-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderLessonsOverview();
+}
+
+function renderLessonsOverview() {
+  var items = lessonsOverviewAll;
+  if (lessonsOverviewFilter !== 'all') items = items.filter(function(l){ return l.status === lessonsOverviewFilter; });
+  if (!items.length) {
+    document.getElementById('lessons-overview-list').innerHTML = '<div class="sh-empty">No items match this filter.</div>';
+    return;
+  }
+  document.getElementById('lessons-overview-list').innerHTML = items.map(function(l) {
+    var statusCol = l.status === 'actioned' ? 'var(--dg)' : l.status === 'in_progress' ? 'var(--amber)' : 'var(--mut)';
+    return '<div class="lesson-card ' + (l.category === 'went_well' ? 'went-well' : 'to-improve') + (l.status === 'actioned' ? ' actioned' : '') + '">' +
+      '<div class="lesson-top">' +
+      '<span class="lesson-tag ' + (l.category === 'went_well' ? 'lesson-ww' : 'lesson-ti') + '">' + (l.category === 'went_well' ? '✅' : '⚠️') + '</span>' +
+      '<span class="lesson-text">' + l.item + '</span>' +
+      '<select class="lesson-status-sel" onchange="updateOverviewLessonStatus('' + l.id + '',this.value)" style="border-color:' + statusCol + ';color:' + statusCol + '">' +
+      '<option value="open"' + (l.status==='open'?' selected':'') + '>Open</option>' +
+      '<option value="in_progress"' + (l.status==='in_progress'?' selected':'') + '>In Progress</option>' +
+      '<option value="actioned"' + (l.status==='actioned'?' selected':'') + '>Actioned ✓</option>' +
+      '</select>' +
+      '</div>' +
+      (l.notes ? '<div style="font-size:11px;color:var(--mut);margin-top:6px;padding-left:28px">' + l.notes + '</div>' : '') +
+      '<div style="font-size:10px;color:var(--mut);margin-top:6px;padding-left:28px">📅 ' + (l.event_name || 'Unknown event') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function updateOverviewLessonStatus(id, status) {
+  await db.from('event_lessons').update({ status: status }).eq('id', id);
+  var l = lessonsOverviewAll.find(function(x){ return x.id === id; });
+  if (l) l.status = status;
+  renderLessonsOverview();
+  showToast('Status updated ✓', 2000);
+}
+
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: FINANCIALS OVERVIEW -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="view-financials" class="main" style="display:none">
+  <div class="section-head">
+    <div class="section-title">📊 Financial Overview</div>
+    <button class="btn btn-green" style="background:var(--dg);color:white;font-size:11px" onclick="loadFinancialsOverview()">↻ Refresh</button>
+  </div>
+
+  <!-- Collective totals -->
+  <div class="fin-total-banner" id="fin-total-banner">
+    <h3>All Events — Combined Performance</h3>
+    <div class="fin-total-grid">
+      <div class="fin-total-item"><div class="fin-total-val" id="ov-total-income">£0</div><div class="fin-total-lbl">Total Income</div></div>
+      <div class="fin-total-item"><div class="fin-total-val" id="ov-total-outgoing">£0</div><div class="fin-total-lbl">Total Outgoings</div></div>
+      <div class="fin-total-item"><div class="fin-total-val" id="ov-total-profit">£0</div><div class="fin-total-lbl">Net Position</div></div>
+    </div>
+  </div>
+
+  <!-- Per event cards -->
+  <div id="fin-overview-list"><div class="sh-empty">Loading financial data...</div></div>
+
+  <!-- Lessons overview -->
+  <div class="section-head" style="margin-top:24px">
+    <div class="section-title">📝 Open Actions Across All Events</div>
+    <div style="display:flex;gap:6px">
+      <button class="sh-filter-btn active" id="la-all" onclick="filterLessonsOverview('all',this)">All</button>
+      <button class="sh-filter-btn" id="la-open" onclick="filterLessonsOverview('open',this)">Open</button>
+      <button class="sh-filter-btn" id="la-progress" onclick="filterLessonsOverview('in_progress',this)">In Progress</button>
+      <button class="sh-filter-btn" id="la-done" onclick="filterLessonsOverview('actioned',this)">Actioned</button>
+    </div>
+  </div>
+  <div id="lessons-overview-list"><div class="sh-empty">Loading actions...</div></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- VIEW: STALLHOLDERS PIPELINE -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="view-stallholders" class="main" style="display:none">
+
+  <div class="section-head">
+    <div class="section-title">🏕️ Stallholders Pipeline</div>
+    <button class="btn btn-green" style="background:var(--dg);color:white;font-size:11px" onclick="loadStallholders()">↻ Refresh</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="sh-kpis"></div>
+
+  <!-- Filters -->
+  <div class="sh-filter-bar">
+    <div class="select-wrap" style="min-width:180px">
+      <select id="sh-event-filter" onchange="filterStallholders()">
+        <option value="">All events</option>
+      </select>
+    </div>
+    <button class="sh-filter-btn active" data-filter="all" onclick="setShFilter('all',this)">All</button>
+    <button class="sh-filter-btn" data-filter="pending" onclick="setShFilter('pending',this)">⏳ Pending</button>
+    <button class="sh-filter-btn" data-filter="authorised" onclick="setShFilter('authorised',this)">✅ Authorised</button>
+    <button class="sh-filter-btn" data-filter="paid" onclick="setShFilter('paid',this)">💚 Paid</button>
+    <button class="sh-filter-btn" data-filter="declined" onclick="setShFilter('declined',this)">❌ Declined</button>
+  </div>
+
+  <!-- Application list -->
+  <div id="sh-list"><div class="sh-empty">Loading applications...</div></div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: APPLICATION DETAIL -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="sh-modal">
+  <div class="modal-box" style="max-width:580px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="sh-modal-title">Application</div>
+        <div id="sh-modal-status" style="margin-top:4px"></div>
+      </div>
+      <button class="modal-close" onclick="closeShModal()">✕</button>
+    </div>
+    <div class="modal-body" id="sh-modal-body"></div>
+  </div>
+</div>
+
+
+</body>
+</html>
