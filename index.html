@@ -654,6 +654,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
         <label>What are we promoting?</label>
         <div class="chip-row">
           <div class="chip active" data-social-kind="session">A session</div>
+          <div class="chip" data-social-kind="group">A group</div>
           <div class="chip" data-social-kind="room">A room</div>
         </div>
       </div>
@@ -2093,6 +2094,7 @@ document.getElementById('wlSaveBtn').addEventListener('click', async function(){
    ============================================================ */
 var socialKind = 'session';
 var socialSessionsCache = [];
+var socialGroupsCache = [];
 var socialRoomsCache = [];
 var socialCurrentRecord = null;
 var socialLastData = null;
@@ -2116,13 +2118,24 @@ async function loadSocialPicker(){
     label.textContent = 'Which session';
     try{
       if(!socialSessionsCache.length){
-        var res = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
+        var res = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
         socialSessionsCache = res.data || [];
       }
       select.innerHTML = '<option value="">Choose a session…</option>' + socialSessionsCache.map(function(s){
-        return '<option value="'+s.id+'">'+s.name+'</option>';
+        return '<option value="'+s.id+'">'+s.name+(s.status === 'draft' ? ' (draft)' : '')+'</option>';
       }).join('');
     }catch(e){ select.innerHTML = '<option value="">Couldn\'t load sessions</option>'; }
+  } else if(socialKind === 'group'){
+    label.textContent = 'Which group';
+    try{
+      if(!socialGroupsCache.length){
+        var res = await SB('offerings?order=sort_order.asc');
+        socialGroupsCache = res.data || [];
+      }
+      select.innerHTML = '<option value="">Choose a group…</option>' + socialGroupsCache.map(function(o){
+        return '<option value="'+o.id+'">'+o.name+(o.is_active === false ? ' (inactive)' : '')+'</option>';
+      }).join('');
+    }catch(e){ select.innerHTML = '<option value="">Couldn\'t load groups</option>'; }
   } else {
     label.textContent = 'Which room';
     try{
@@ -2155,7 +2168,8 @@ function socialRelativeDayLabel(dateStr){
 
 document.getElementById('socialGenerateBtn').addEventListener('click', async function(){
   var id = document.getElementById('socialPickerSelect').value;
-  if(!id){ showToast('Pick a ' + (socialKind === 'session' ? 'session' : 'room') + ' first'); return; }
+  var kindNoun = socialKind === 'session' ? 'session' : socialKind === 'group' ? 'group' : 'room';
+  if(!id){ showToast('Pick a ' + kindNoun + ' first'); return; }
   var btn = document.getElementById('socialGenerateBtn');
   btn.disabled = true; btn.textContent = 'Writing something heartfelt…';
   var resultWrap = document.getElementById('socialResultWrap');
@@ -2178,6 +2192,15 @@ document.getElementById('socialGenerateBtn').addEventListener('click', async fun
         timeLabel: s.window_start_time ? fmtTime(s.window_start_time) : '',
         isFree: s.is_free, price: s.price, bookingUrl: bookingUrl,
         ctaLabel: "Let us know you're coming"
+      };
+    } else if(socialKind === 'group'){
+      var g = socialGroupsCache.find(function(x){ return x.id === id; });
+      socialCurrentRecord = g;
+      socialLastLink = '';
+      payload = {
+        postType: 'group', name: g.name, facilitatorName: g.facilitator,
+        category: g.category, whenText: g.when_text || g.frequency,
+        description: g.description, isFree: g.price ? false : true, price: g.price
       };
     } else {
       var r = socialRoomsCache.find(function(x){ return x.id === id; });
