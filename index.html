@@ -36,6 +36,9 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .hero h2{font-family:'League Spartan',sans-serif;font-size:1.4rem;font-weight:900;color:#fff;position:relative;line-height:1.2;margin-bottom:6px}
 .hero h2 span{color:var(--or)}
 .hero p{font-size:.8rem;color:rgba(255,255,255,.8);font-weight:500;max-width:340px;margin:0 auto;line-height:1.6;position:relative}
+.back-btn{position:absolute;top:16px;left:16px;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.15);display:none;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;z-index:2;border:none}
+.back-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.back-btn:active{background:rgba(255,255,255,.28)}
 
 /* SECTION LABEL */
 .section-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:20px 20px 10px;display:flex;justify-content:space-between;align-items:center}
@@ -51,8 +54,8 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
 .tile{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;display:flex;flex-direction:column;gap:12px;cursor:pointer;touch-action:manipulation;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:transform .15s}
 .tile:active{transform:scale(.96)}
-.tile-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center}
-.tile-icon svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center}
+.tile-icon svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .tile-label{font-size:.82rem;font-weight:700;color:var(--text);line-height:1.25}
 .today-tile{background:var(--card);border:1.5px solid var(--border);border-top:3px solid var(--or);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .today-tile .tile-time{font-family:'League Spartan',sans-serif;font-weight:900;font-size:.9rem;color:var(--db)}
@@ -60,13 +63,24 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .today-tile .tile-sub{font-size:.66rem;color:var(--muted);font-weight:500;line-height:1.3}
 .today-tile .tile-tag{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:6px;align-self:flex-start;margin-top:2px}
 .tile-empty{grid-column:1/-1;text-align:center;padding:24px 16px;color:var(--muted);font-size:.8rem;font-weight:500;background:var(--card);border:1.5px dashed var(--border);border-radius:var(--radius)}
+.tile-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px}
+.tile-grid-3 .tile{padding:14px 8px;gap:8px;align-items:center;text-align:center}
+.tile-grid-3 .tile-label{font-size:.72rem;line-height:1.25}
+.card-chevron{color:var(--muted);flex-shrink:0}
+.card-chevron svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.identity-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;margin:8px 16px 0;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius)}
+.identity-footer-user{display:flex;align-items:center;gap:10px}
+.identity-footer-avatar{width:34px;height:34px;border-radius:50%;background:var(--db);color:#fff;font-weight:700;font-family:'League Spartan',sans-serif;display:flex;align-items:center;justify-content:center;font-size:.8rem}
+.identity-footer-name{font-size:.82rem;font-weight:700;color:var(--text)}
+.identity-footer-role{font-size:.62rem;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.05em;background:#f0fdf4;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:2px}
+.identity-footer-signout{font-size:.72rem;font-weight:700;color:var(--muted);cursor:pointer;touch-action:manipulation;background:none;border:none}
 
 /* CARDS (forms + sessions) */
 .cards{display:flex;flex-direction:column;gap:10px;padding:0 16px}
 .card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer;transition:transform .15s,box-shadow .15s;touch-action:manipulation}
 .card:active{transform:scale(.98);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.card-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.card-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .card-body{flex:1;min-width:0}
 .card-title{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:3px;line-height:1.3}
 .card-desc{font-size:.75rem;color:var(--muted);font-weight:500;line-height:1.4}
@@ -75,12 +89,12 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .card-share svg{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .card-share:active{background:#e2e8f0}
 
-.accent-green .card-icon{background:#f0fdf4;color:var(--dg)}
-.accent-blue  .card-icon{background:#eff6ff;color:var(--db)}
-.accent-orange.card-icon{background:#fff7ed;color:var(--or)}
-.accent-orange2 .card-icon{background:#fff7ed;color:#d97706}
-.accent-purple .card-icon{background:#f5f3ff;color:#7c3aed}
-.accent-red   .card-icon{background:#fef2f2;color:#dc2626}
+.accent-green .card-icon{color:var(--dg)}
+.accent-blue  .card-icon{color:var(--db)}
+.accent-orange.card-icon{color:var(--or)}
+.accent-orange2 .card-icon{color:#d97706}
+.accent-purple .card-icon{color:#7c3aed}
+.accent-red   .card-icon{color:#dc2626}
 .card.accent-green{border-left:3px solid var(--dg)}
 .card.accent-blue {border-left:3px solid var(--db)}
 .card.accent-orange{border-left:3px solid var(--or)}
@@ -196,49 +210,142 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
 </div>
 
-<!-- ============ HOME SCREEN ============ -->
+<!-- ============ HOME SCREEN (landing page) ============ -->
 <div class="screen active" id="screen-home">
   <div class="hero">
     <h2 id="homeGreeting">Hey <span>famalam</span>.</h2>
-    <p>Here's what's on at the Hub today — book a room, book a session, or see where things stand.</p>
-  </div>
-
-  <div class="section-label">Today at a glance</div>
-  <div class="stats-row" id="homeStats">
-    <div class="stat-card"><div class="num">–</div><div class="lbl">Rooms in use</div></div>
-    <div class="stat-card"><div class="num">–</div><div class="lbl">Sessions today</div></div>
-    <div class="stat-card"><div class="num">–</div><div class="lbl">Meetings today</div></div>
+    <p>What do you need to get done?</p>
   </div>
 
   <div class="section-label">Quick actions</div>
-  <div class="tile-grid">
+  <div class="tile-grid-3">
     <div class="tile" data-quick="book-room">
-      <div class="tile-icon" style="background:var(--or)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="tile-icon" style="color:var(--or)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
       <div class="tile-label">Book a Room</div>
     </div>
     <div class="tile" data-quick="book-session">
-      <div class="tile-icon" style="background:var(--dg)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="tile-icon" style="color:var(--dg)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div class="tile-label">Book a Session</div>
     </div>
-    <div class="tile" data-quick="add-meeting">
-      <div class="tile-icon" style="background:var(--db)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-      <div class="tile-label">Add to Calendar</div>
-    </div>
-    <div class="tile" data-quick="view-board">
-      <div class="tile-icon" style="background:#7c3aed"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
-      <div class="tile-label">Full Day Board</div>
+    <div class="tile" data-quick="quote-builder">
+      <div class="tile-icon" style="color:var(--db)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg></div>
+      <div class="tile-label">Quote Builder</div>
     </div>
   </div>
 
-  <div class="section-label">Today<span class="label-action" data-goto="screen-manage">See full board</span></div>
-  <div class="tile-grid" id="homeAgenda">
-    <div class="tile-empty">Pulling today's board together…</div>
+  <div class="section-label">Business tools</div>
+  <div class="cards">
+    <div class="card accent-blue" data-goto="screen-mgmt-category">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
+      <div class="card-body"><div class="card-title">Management</div><div class="card-desc">Bookings overview, financials, quotes &amp; more</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-purple" data-goto="screen-marketing-category">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div>
+      <div class="card-body"><div class="card-title">Marketing</div><div class="card-desc">Social posts, form links &amp; payment links</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="identity-footer" id="homeIdentityFooter" style="display:none">
+    <div class="identity-footer-user">
+      <div class="identity-footer-avatar" id="identityFooterAvatar">?</div>
+      <div>
+        <div class="identity-footer-name" id="identityFooterName">—</div>
+        <span class="identity-footer-role" id="identityFooterRole">—</span>
+      </div>
+    </div>
+    <button class="identity-footer-signout" id="identityFooterSignout" type="button">Sign out</button>
   </div>
 
   <div class="footer">
     H.O.M.E Hub CIC &nbsp;·&nbsp; Company No. 16104567<br>
     88 Brook Road, South Benfleet Playing Fields, SS7 5JF<br>
     Bringing <strong>Unity</strong> Back to the Community
+  </div>
+</div>
+
+<!-- ============ MANAGEMENT CATEGORY ============ -->
+<div class="screen" id="screen-mgmt-category">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Manage<span>ment</span></h2>
+    <p>Oversight tools — bookings, money, and quotes.</p>
+  </div>
+  <div class="cards" style="margin-top:16px">
+    <div class="card accent-orange" data-goto="screen-manage" data-mg-open="board">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="card-body"><div class="card-title">Bookings Overview</div><div class="card-desc">Day, week or month — everything on the board</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-green" data-goto="screen-manage" data-mg-open="financials">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
+      <div class="card-body"><div class="card-title">Financials &amp; Invoices</div><div class="card-desc">Balance, outstanding invoices, recent cash-ups</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-blue" data-goto="screen-manage" data-mg-open="waitlist">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="card-body"><div class="card-title">Waiting Lists</div><div class="card-desc">Demand by day for closed, referral-only classes</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-purple" data-goto="screen-payment-links">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="card-body"><div class="card-title">Payment Links</div><div class="card-desc">Find, copy and send existing Stripe links</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-red" data-coming-soon="Bookings &amp; Quotes">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="card-body"><div class="card-title">Bookings &amp; Quotes</div><div class="card-desc">Heartwood's room quotes screen — coming soon</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-orange2" data-coming-soon="Session Builder">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="card-body"><div class="card-title">Session Builder</div><div class="card-desc">Create new bookable sessions &amp; workshops — coming soon</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-orange2" data-coming-soon="Room Hire Quote Tool">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="card-body"><div class="card-title">Room Hire Quote Tool</div><div class="card-desc">Branded PDF quotes with payment schedule — coming soon</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MARKETING CATEGORY ============ -->
+<div class="screen" id="screen-marketing-category">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Market<span>ing</span></h2>
+    <p>Get the word out — posts, forms and payment links.</p>
+  </div>
+  <div class="cards" style="margin-top:16px">
+    <div class="card accent-purple" data-goto="screen-manage" data-mg-open="social">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div>
+      <div class="card-body"><div class="card-title">Generate a Social Post</div><div class="card-desc">Instagram, WhatsApp &amp; Facebook, written for you</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-green" data-goto="screen-forms">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="card-body"><div class="card-title">Form Links</div><div class="card-desc">Send any Hub form or survey directly</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-orange" data-goto="screen-payment-links">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="card-body"><div class="card-title">Payment Links</div><div class="card-desc">Find, copy and send existing Stripe links</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAYMENT LINKS ============ -->
+<div class="screen" id="screen-payment-links">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Payment <span>Links</span></h2>
+    <p>Every live Stripe link on a session, ready to copy or send.</p>
+  </div>
+  <div class="cards" id="paymentLinksList" style="margin-top:16px">
+    <div class="loading-row">Loading payment links…</div>
   </div>
 </div>
 
@@ -386,6 +493,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 <!-- ============ MANAGE SCREEN ============ -->
 <div class="screen" id="screen-manage">
   <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
     <h2>Manage <span>the day</span>.</h2>
     <p>Every room, every session, every meeting — one live board.</p>
   </div>
@@ -487,10 +595,6 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <button class="nav-btn" data-screen="screen-calendar">
     <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></div>
     <span>Calendar</span>
-  </button>
-  <button class="nav-btn" data-screen="screen-manage">
-    <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
-    <span>Manage</span>
   </button>
   <button class="nav-btn" data-screen="screen-forms">
     <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
@@ -852,6 +956,13 @@ document.getElementById('logoutBtn').addEventListener('click', function(){
   showToast('Logged out');
   loadHome();
 });
+document.getElementById('identityFooterSignout').addEventListener('click', function(){
+  clearSession();
+  localStorage.removeItem('hh_user');
+  renderUserChip();
+  showToast('Logged out');
+  loadHome();
+});
 
 async function initAuth(){
   var sess = await ensureSession();
@@ -878,19 +989,46 @@ function showToast(msg, isError){
    SCREEN NAVIGATION
    ============================================================ */
 var screenLoaders = {};
-function showScreen(id){
+var screenHistory = [];
+function showScreen(id, opts){
+  opts = opts || {};
+  var current = document.querySelector('.screen.active');
+  if(!opts.isBack && current && current.id !== id){
+    screenHistory.push(current.id);
+  }
+  if(opts.isBack){
+    screenHistory.pop(); // discard the one we're leaving
+  }
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-screen') === id); });
   window.scrollTo(0,0);
   updateFab(id);
+  updateBackButtons(id);
   if(screenLoaders[id]) screenLoaders[id]();
 }
+function goBack(){
+  var prev = screenHistory.pop();
+  showScreen(prev || 'screen-home', {isBack: true});
+}
+function updateBackButtons(id){
+  // Bottom-nav destinations (Home, Book, Calendar, Forms) are always
+  // reachable directly, so no back arrow needed there — only on screens
+  // reached by drilling into a category (Management, Marketing, and the
+  // tool screens opened from them).
+  var topLevel = ['screen-home','screen-book','screen-calendar','screen-forms'];
+  document.querySelectorAll('.back-btn').forEach(function(b){
+    b.style.display = topLevel.indexOf(id) === -1 ? 'flex' : 'none';
+  });
+}
 document.querySelectorAll('.nav-btn').forEach(function(btn){
-  btn.addEventListener('click', function(){ showScreen(btn.getAttribute('data-screen')); });
+  btn.addEventListener('click', function(){ screenHistory = []; showScreen(btn.getAttribute('data-screen')); });
 });
 document.querySelectorAll('[data-goto]').forEach(function(el){
   el.addEventListener('click', function(){ showScreen(el.getAttribute('data-goto')); });
+});
+document.querySelectorAll('.back-btn').forEach(function(btn){
+  btn.addEventListener('click', goBack);
 });
 
 /* FAB behaviour changes with active screen */
@@ -898,7 +1036,8 @@ var currentScreen = 'screen-home';
 function updateFab(id){
   currentScreen = id;
   var fab = document.getElementById('fab');
-  fab.style.display = (id === 'screen-forms') ? 'none' : 'flex';
+  var fabScreens = ['screen-book','screen-calendar','screen-manage','screen-home'];
+  fab.style.display = fabScreens.indexOf(id) !== -1 ? 'flex' : 'none';
 }
 document.getElementById('fab').addEventListener('click', function(){
   if(currentScreen === 'screen-book'){
@@ -916,43 +1055,15 @@ document.getElementById('fab').addEventListener('click', function(){
 async function loadHome(){
   var u = getUser();
   document.getElementById('homeGreeting').innerHTML = u ? ('Hey <span>' + u.display_name.split(' ')[0] + '</span>.') : 'Hey <span>famalam</span>.';
-  var today = toISODate(new Date());
-  var agendaWrap = document.getElementById('homeAgenda');
-  agendaWrap.innerHTML = '<div class="tile-empty">Pulling today\'s board together…</div>';
-  try{
-    var items = await fetchAgendaForDate(today);
-    renderHomeStats(items);
-    renderTodayTiles(agendaWrap, items);
-  }catch(e){
-    agendaWrap.innerHTML = '<div class="tile-empty">Couldn\'t load today\'s board. ' + e.message + '</div>';
+  var footer = document.getElementById('homeIdentityFooter');
+  if(u){
+    footer.style.display = 'flex';
+    document.getElementById('identityFooterAvatar').textContent = initials(u.display_name);
+    document.getElementById('identityFooterName').textContent = u.display_name;
+    document.getElementById('identityFooterRole').textContent = u.role || 'Team member';
+  } else {
+    footer.style.display = 'none';
   }
-}
-function renderTodayTiles(wrap, items){
-  if(!items.length){
-    wrap.innerHTML = '<div class="tile-empty">Nothing booked in yet — the day\'s wide open.</div>';
-    return;
-  }
-  var tagClass = {room:'tag-room', session:'tag-session', meeting:'tag-meeting'};
-  var tagLabel = {room:'Room', session:'Session', meeting:'Meeting'};
-  var barColor = {room:'var(--or)', session:'var(--dg)', meeting:'var(--db)'};
-  wrap.innerHTML = items.map(function(i){
-    return '<div class="today-tile" style="border-top-color:'+barColor[i.type]+'">' +
-      '<div class="tile-time">'+fmtTime(i.start)+'</div>' +
-      '<div class="tile-title">'+i.title+'</div>' +
-      (i.sub ? '<div class="tile-sub">'+i.sub+'</div>' : '') +
-      '<span class="tile-tag '+tagClass[i.type]+'">'+tagLabel[i.type]+'</span>' +
-      '</div>';
-  }).join('');
-}
-function renderHomeStats(items){
-  var rooms = items.filter(function(i){ return i.type === 'room'; }).length;
-  var sessions = items.filter(function(i){ return i.type === 'session'; }).length;
-  var meetings = items.filter(function(i){ return i.type === 'meeting'; }).length;
-  var wrap = document.getElementById('homeStats');
-  wrap.innerHTML =
-    '<div class="stat-card"><div class="num">'+rooms+'</div><div class="lbl">Rooms in use</div></div>' +
-    '<div class="stat-card"><div class="num">'+sessions+'</div><div class="lbl">Sessions today</div></div>' +
-    '<div class="stat-card"><div class="num">'+meetings+'</div><div class="lbl">Meetings today</div></div>';
 }
 screenLoaders['screen-home'] = loadHome;
 
@@ -966,13 +1077,31 @@ document.querySelectorAll('[data-quick]').forEach(function(tile){
       showScreen('screen-book');
       var sessionsTab = document.querySelector('[data-book-tab="sessions"]');
       if(sessionsTab) sessionsTab.click();
-    } else if(action === 'add-meeting'){
-      openMeetingSheet();
-    } else if(action === 'view-board'){
-      showScreen('screen-manage');
+    } else if(action === 'quote-builder'){
+      showToast('Quote Builder is being built properly — soon');
     }
   });
 });
+
+/* Category cards that jump straight into a specific Manage sub-tab */
+document.querySelectorAll('[data-mg-open]').forEach(function(card){
+  card.addEventListener('click', function(){
+    var which = card.getAttribute('data-mg-open');
+    setTimeout(function(){
+      var tab = document.querySelector('[data-mg-tab="'+which+'"]');
+      if(tab) tab.click();
+    }, 0);
+  });
+});
+
+/* Tiles for tools not built yet — honest placeholder, no dead clicks */
+document.querySelectorAll('[data-coming-soon]').forEach(function(card){
+  card.addEventListener('click', function(e){
+    e.stopPropagation();
+    showToast(card.getAttribute('data-coming-soon') + ' is coming soon');
+  });
+});
+
 
 /* ============================================================
    AGENDA (shared by Home + Manage) — pulls room_bookings,
@@ -1862,9 +1991,13 @@ function renderSocialResult(data){
   ];
   wrap.innerHTML = '<div class="form-wrap" style="padding-top:0">' + platforms.map(function(p){
     var ta = 'social-ta-' + p.key;
+    var text = data[p.key] || '';
+    var hasLink = socialLastLink && text.indexOf(socialLastLink) !== -1;
+    var missingLinkNote = (socialLastLink && !hasLink) ? '<div class="helper-text" style="color:var(--or)" id="missing-'+p.key+'">This one doesn\'t mention the link — <button type="button" data-add-link="'+ta+'" style="background:none;border:none;color:var(--or);font-weight:700;text-decoration:underline;cursor:pointer;padding:0;font-size:inherit">add it</button></div>' : '';
     return '<div class="field">' +
       '<label style="color:'+p.color+'">'+p.label+'</label>' +
-      '<textarea id="'+ta+'" rows="'+p.rows+'" style="font-size:.85rem">'+data[p.key]+'</textarea>' +
+      '<textarea id="'+ta+'" rows="'+p.rows+'" style="font-size:.85rem">'+text+'</textarea>' +
+      missingLinkNote +
       '<button class="btn-secondary" data-copy-target="'+ta+'" type="button" style="margin-top:6px">Copy '+p.label+' text</button>' +
       '</div>';
   }).join('') +
@@ -1874,6 +2007,22 @@ function renderSocialResult(data){
     '</div>' +
   '</div>';
 
+  wrap.querySelectorAll('[data-add-link]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var taId = btn.getAttribute('data-add-link');
+      var ta = document.getElementById(taId);
+      var signOffIndex = ta.value.indexOf('Honour & Love');
+      var linkLine = '\n' + socialLastLink + '\n';
+      if(signOffIndex !== -1){
+        ta.value = ta.value.slice(0, signOffIndex) + linkLine + '\n' + ta.value.slice(signOffIndex);
+      } else {
+        ta.value = ta.value.trim() + linkLine;
+      }
+      var note = document.getElementById('missing-' + taId.replace('social-ta-',''));
+      if(note) note.remove();
+      showToast('Link added');
+    });
+  });
   wrap.querySelectorAll('[data-copy-target]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var ta = document.getElementById(btn.getAttribute('data-copy-target'));
@@ -1926,55 +2075,89 @@ async function saveSocialPost(){
 
 
 /* ============================================================
+   PAYMENT LINKS — every session with a live Stripe link, ready
+   to copy or send via the same share sheet as Forms.
+   ============================================================ */
+async function loadPaymentLinks(){
+  var wrap = document.getElementById('paymentLinksList');
+  wrap.innerHTML = '<div class="loading-row">Loading payment links…</div>';
+  try{
+    var res = await SB('bookable_sessions?payment_link_url=not.is.null&status=neq.cancelled&order=name.asc');
+    var sessions = res.data || [];
+    if(!sessions.length){
+      wrap.innerHTML = '<div class="agenda-empty">No sessions have a Stripe link set up yet.</div>';
+      return;
+    }
+    wrap.innerHTML = sessions.map(function(s){
+      return '<div class="card accent-purple" data-path="'+s.payment_link_url+'" data-name="'+s.name.replace(/"/g,'&quot;')+'" data-share-kind="payment">' +
+        '<div class="card-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+s.name+'</div>' +
+        '<div class="card-desc">'+(s.is_free ? 'Free' : '£'+s.price)+(s.facilitator_name ? ' · '+s.facilitator_name : '')+'</div></div>' +
+        '<div class="card-share" data-share><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>' +
+        '</div>';
+    }).join('');
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load payment links — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-payment-links'] = loadPaymentLinks;
+
+/* ============================================================
    FORMS — SHARE SHEET (unchanged behaviour)
    ============================================================ */
 var BASE = 'https://champions.homehub-benfleet.co.uk';
-var currentPath = '', currentName = '';
+var currentPath = '', currentName = '', currentKind = 'form';
 var overlay = document.getElementById('overlay');
 var sheet = document.getElementById('sheet');
+function shareUrl(){
+  if(currentPath.indexOf('http') === 0) return currentPath;
+  return BASE + '/' + currentPath;
+}
+function shareNoun(){ return currentKind === 'payment' ? 'payment link' : 'form'; }
 
-document.querySelectorAll('[data-path]').forEach(function(card){
-  card.addEventListener('click', function(e){
-    if(e.target.closest('[data-share]')) return;
-    var path = card.getAttribute('data-path');
-    if(path) window.open(BASE + '/' + path, '_blank');
-  });
-});
-document.querySelectorAll('[data-share]').forEach(function(btn){
-  btn.addEventListener('click', function(e){
+document.addEventListener('click', function(e){
+  var shareBtn = e.target.closest('[data-share]');
+  if(shareBtn){
     e.stopPropagation();
-    var card = btn.closest('.card');
+    var card = shareBtn.closest('.card');
     currentPath = card.getAttribute('data-path');
     currentName = card.getAttribute('data-name');
+    currentKind = card.getAttribute('data-share-kind') || 'form';
     document.getElementById('sheet-title').textContent = currentName;
     overlay.classList.add('open'); sheet.classList.add('open');
-  });
+    return;
+  }
+  var pathCard = e.target.closest('[data-path]');
+  if(pathCard){
+    var path = pathCard.getAttribute('data-path');
+    if(path) window.open(path.indexOf('http') === 0 ? path : (BASE + '/' + path), '_blank');
+  }
 });
 function closeSheet(){ overlay.classList.remove('open'); sheet.classList.remove('open'); }
 overlay.addEventListener('click', function(e){ if(e.target===overlay) closeSheet(); });
 document.getElementById('sheet-cancel').addEventListener('click', closeSheet);
 
 document.getElementById('opt-whatsapp').addEventListener('click', function(){
-  var url = BASE + '/' + currentPath;
-  var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' form — you can fill it in here: ' + url);
+  var url = shareUrl();
+  var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' ' + shareNoun() + ' — ' + url);
   window.open('https://wa.me/?text=' + msg, '_blank');
   closeSheet();
 });
 document.getElementById('opt-sms').addEventListener('click', function(){
-  var url = BASE + '/' + currentPath;
-  var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' form: ' + url);
+  var url = shareUrl();
+  var msg = encodeURIComponent('Hi! Here is the H.O.M.E Hub ' + currentName + ' ' + shareNoun() + ': ' + url);
   window.open('sms:?body=' + msg, '_blank');
   closeSheet();
 });
 document.getElementById('opt-email').addEventListener('click', function(){
-  var url = BASE + '/' + currentPath;
+  var url = shareUrl();
   var subject = encodeURIComponent('H.O.M.E Hub — ' + currentName);
-  var body = encodeURIComponent('Hi,\n\nHere is the link to the H.O.M.E Hub ' + currentName + ' form:\n\n' + url + '\n\nFeel free to fill it in at your own pace — if you have any questions just get in touch.\n\nWith love,\nH.O.M.E Hub Team');
+  var body = encodeURIComponent('Hi,\n\nHere is the link to the H.O.M.E Hub ' + currentName + ' ' + shareNoun() + ':\n\n' + url + '\n\nIf you have any questions just get in touch.\n\nWith love,\nH.O.M.E Hub Team');
   window.open('mailto:?subject=' + subject + '&body=' + body, '_blank');
   closeSheet();
 });
 document.getElementById('opt-copy').addEventListener('click', function(){
-  var url = BASE + '/' + currentPath;
+  var url = shareUrl();
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(url).then(function(){ closeSheet(); setTimeout(function(){ showToast('Link copied to clipboard'); }, 300); });
   } else {
