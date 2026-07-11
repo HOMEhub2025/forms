@@ -293,9 +293,9 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Payment Links</div><div class="card-desc">Find, copy and send existing Stripe links</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
-    <div class="card accent-red" data-coming-soon="Bookings &amp; Quotes">
+    <div class="card accent-red" data-goto="screen-quotes">
       <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-      <div class="card-body"><div class="card-title">Bookings &amp; Quotes</div><div class="card-desc">Heartwood's room quotes screen — coming soon</div></div>
+      <div class="card-body"><div class="card-title">Bookings &amp; Quotes</div><div class="card-desc">Every room quote — pending, confirmed and lost</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
     <div class="card accent-orange2" data-coming-soon="Session Builder">
@@ -395,6 +395,32 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div id="qbErrorWrap"></div>
     <button class="btn-primary" id="qbGenerateBtn" type="button">Generate quote</button>
     <div class="helper-text" style="text-align:center">Opens a printable quote in a new tab — save as PDF or print straight from your phone.</div>
+  </div>
+</div>
+
+<!-- ============ BOOKINGS & QUOTES ============ -->
+<div class="screen" id="screen-quotes">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Bookings &amp; <span>Quotes</span></h2>
+    <p>Every room quote, wherever it stands.</p>
+  </div>
+  <div class="stats-row" id="qtStats" style="margin-top:16px">
+    <div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>
+  </div>
+  <div class="form-wrap" style="padding-bottom:0">
+    <div class="field" style="margin-bottom:0">
+      <input type="text" id="qtSearch" placeholder="Search by name or room…">
+    </div>
+  </div>
+  <div class="subtabs">
+    <div class="subtab active" data-qt-filter="all">All</div>
+    <div class="subtab" data-qt-filter="quote">Pending</div>
+    <div class="subtab" data-qt-filter="confirmed">Confirmed</div>
+    <div class="subtab" data-qt-filter="cancelled">Lost</div>
+  </div>
+  <div class="cards" id="qtList" style="gap:8px">
+    <div class="loading-row">Loading quotes…</div>
   </div>
 </div>
 
@@ -2174,6 +2200,139 @@ async function loadQuoteBuilder(){
   }catch(e){ sel.innerHTML = '<option value="">Couldn\'t load rooms</option>'; }
 }
 screenLoaders['screen-quote-builder'] = loadQuoteBuilder;
+
+/* ============================================================
+   BOOKINGS & QUOTES — every quote created via the Quote Builder,
+   with the same Pending/Confirmed/Lost shape as Heartwood's own
+   Room Hire screen.
+   ============================================================ */
+var qtData = [];
+var qtFilter = 'all';
+
+async function loadQuotes(){
+  var statsWrap = document.getElementById('qtStats');
+  var listWrap = document.getElementById('qtList');
+  statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>';
+  listWrap.innerHTML = '<div class="loading-row">Loading quotes…</div>';
+  try{
+    var res = await SB('room_bookings?booking_title=ilike.*Room+Hire+Quote*&order=created_at.desc');
+    qtData = res.data || [];
+    renderQuotesView();
+  }catch(e){
+    statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Couldn\'t load</div></div>';
+    listWrap.innerHTML = '<div class="error-banner">Couldn\'t load quotes — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-quotes'] = loadQuotes;
+
+function qtContactName(row){
+  return (row.booking_title || '').replace(/\s*—\s*Room Hire Quote$/i, '').trim() || 'Unknown';
+}
+
+function renderQuotesView(){
+  var search = document.getElementById('qtSearch').value.trim().toLowerCase();
+  var filtered = qtData.filter(function(r){
+    if(qtFilter !== 'all' && (r.status || 'quote') !== qtFilter) return false;
+    if(search){
+      var haystack = (qtContactName(r) + ' ' + (r.room||'')).toLowerCase();
+      if(haystack.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+
+  var buckets = {quote:{count:0,total:0}, confirmed:{count:0,total:0}, cancelled:{count:0,total:0}};
+  qtData.forEach(function(r){
+    var s = r.status || 'quote';
+    if(buckets[s]){ buckets[s].count++; buckets[s].total += Number(r.estimated_cost||0); }
+  });
+  var totalCount = qtData.length;
+  var totalValue = qtData.reduce(function(s,r){ return s + Number(r.estimated_cost||0); }, 0);
+
+  document.getElementById('qtStats').innerHTML =
+    '<div class="stat-card"><div class="num" style="color:var(--or)">'+buckets.quote.count+'</div><div class="lbl">Pending · £'+buckets.quote.total.toFixed(0)+'</div></div>' +
+    '<div class="stat-card"><div class="num" style="color:var(--dg)">'+buckets.confirmed.count+'</div><div class="lbl">Confirmed · £'+buckets.confirmed.total.toFixed(0)+'</div></div>' +
+    '<div class="stat-card"><div class="num" style="color:#dc2626">'+buckets.cancelled.count+'</div><div class="lbl">Lost · £'+buckets.cancelled.total.toFixed(0)+'</div></div>' +
+    '<div class="stat-card"><div class="num">'+totalCount+'</div><div class="lbl">Total · £'+totalValue.toFixed(0)+'</div></div>';
+
+  var listWrap = document.getElementById('qtList');
+  if(!filtered.length){
+    listWrap.innerHTML = '<div class="agenda-empty">No quotes here yet.</div>';
+    return;
+  }
+  var statusMeta = {
+    quote: {label:'Pending', color:'var(--or)'},
+    confirmed: {label:'Confirmed', color:'var(--dg)'},
+    cancelled: {label:'Lost', color:'#dc2626'}
+  };
+  listWrap.innerHTML = filtered.map(function(r){
+    var meta = statusMeta[r.status || 'quote'] || statusMeta.quote;
+    return '<div class="card accent-red" style="align-items:flex-start;flex-direction:column;gap:8px" data-qt-id="'+r.id+'">' +
+      '<div style="display:flex;width:100%;align-items:center;gap:12px">' +
+        '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+qtContactName(r)+'</div>' +
+        '<div class="card-desc">'+r.room+(r.booking_date ? ' · '+fmtDateLabel(r.booking_date) : '')+' · £'+Number(r.estimated_cost||0).toFixed(2)+'</div></div>' +
+        '<span class="agenda-tag" style="background:transparent;border:1.5px solid '+meta.color+';color:'+meta.color+'">'+meta.label+'</span>' +
+      '</div>' +
+      '<div class="field-row" style="width:100%;gap:6px">' +
+        (r.status !== 'confirmed' ? '<button class="btn-secondary" data-qt-action="confirm" data-qt-row="'+r.id+'" type="button" style="padding:8px;font-size:.72rem">Mark Confirmed</button>' : '') +
+        (r.status !== 'cancelled' ? '<button class="btn-secondary" data-qt-action="cancel" data-qt-row="'+r.id+'" type="button" style="padding:8px;font-size:.72rem">Mark Lost</button>' : '') +
+        '<button class="btn-secondary" data-qt-action="reissue" data-qt-row="'+r.id+'" type="button" style="padding:8px;font-size:.72rem">Reissue PDF</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  listWrap.querySelectorAll('[data-qt-action]').forEach(function(btn){
+    btn.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var action = btn.getAttribute('data-qt-action');
+      var rowId = btn.getAttribute('data-qt-row');
+      var row = qtData.find(function(r){ return r.id === rowId; });
+      if(!row) return;
+      if(action === 'confirm' || action === 'cancel'){
+        var newStatus = action === 'confirm' ? 'confirmed' : 'cancelled';
+        btn.disabled = true;
+        try{
+          await SB('room_bookings?id=eq.'+rowId, {
+            method:'PATCH', headers:{Prefer:'return=minimal'},
+            body: JSON.stringify({status: newStatus})
+          });
+          row.status = newStatus;
+          logAction('update_quote_status', 'Bookings & Quotes', qtContactName(row) + ' → ' + newStatus);
+          showToast(qtContactName(row).split(' ')[0] + ' marked ' + (newStatus === 'confirmed' ? 'confirmed' : 'lost'));
+          renderQuotesView();
+        }catch(err){
+          showToast('Couldn\'t update — ' + err.message, true);
+          btn.disabled = false;
+        }
+      } else if(action === 'reissue'){
+        var win = window.open('', '_blank');
+        if(!win){ showToast('Please allow pop-ups to reissue the quote'); return; }
+        win.document.write('<!DOCTYPE html><html><body style="font-family:sans-serif;padding:60px;text-align:center;color:#6b7280">Preparing your quote…</body></html>');
+        win.document.close();
+        var noteDesc = (row.notes || '').replace(/^QUOTE\s*—\s*Day\s*1\s*of\s*1:\s*/i, '');
+        renderQuotePDF(win, {
+          quoteRef: row.quote_ref || ('QT-' + row.id.slice(0,8)),
+          contactName: qtContactName(row), contactEmail: '',
+          roomName: row.room, total: Number(row.estimated_cost||0),
+          validityDays: row.quote_validity_days || 14,
+          quotedByName: row.quoted_by || '', quotedByEmail: row.quoted_by_email || '',
+          dayLine: row.room + (row.booking_date ? ' · ' + fmtDateLabel(row.booking_date) : '') + (row.start_time && row.end_time ? ' · ' + fmtTime(row.start_time) + '–' + fmtTime(row.end_time) : '') + (noteDesc ? ' · ' + noteDesc : ''),
+          payLinkUrl: null
+        });
+      }
+    });
+  });
+}
+
+document.getElementById('qtSearch').addEventListener('input', renderQuotesView);
+document.querySelectorAll('[data-qt-filter]').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('[data-qt-filter]').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    qtFilter = tab.getAttribute('data-qt-filter');
+    renderQuotesView();
+  });
+});
 
 document.querySelectorAll('[data-qb-payment]').forEach(function(chip){
   chip.addEventListener('click', function(){
