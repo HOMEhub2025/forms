@@ -75,6 +75,21 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .identity-footer-role{font-size:.62rem;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.05em;background:#f0fdf4;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:2px}
 .identity-footer-signout{font-size:.72rem;font-weight:700;color:var(--muted);cursor:pointer;touch-action:manipulation;background:none;border:none}
 
+/* PIN QUICK-UNLOCK */
+#pinLockScreen{position:fixed;inset:0;z-index:500;background:var(--db);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.pin-avatar{width:56px;height:56px;border-radius:50%;background:var(--or);color:#fff;font-weight:700;font-family:'League Spartan',sans-serif;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 14px}
+.pin-name{font-family:'League Spartan',sans-serif;font-weight:700;font-size:1.1rem;color:#fff;text-align:center}
+.pin-sub{font-size:.78rem;color:rgba(255,255,255,.7);text-align:center;margin-top:4px;margin-bottom:26px}
+.pin-dots{display:flex;gap:14px;margin-bottom:22px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);background:transparent}
+.pin-dot.filled{background:var(--or);border-color:var(--or)}
+.pin-error{color:var(--or);font-size:.78rem;font-weight:700;margin-bottom:14px;min-height:16px;text-align:center}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,64px);gap:16px}
+.pin-key{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#fff;font-size:1.3rem;font-weight:600;cursor:pointer;touch-action:manipulation;font-family:'Montserrat',sans-serif}
+.pin-key:active{background:rgba(255,255,255,.18)}
+.pin-key.pin-key-empty{background:transparent;cursor:default}
+.pin-use-password{margin-top:26px;background:none;border:none;color:rgba(255,255,255,.65);font-size:.78rem;font-weight:600;text-decoration:underline;cursor:pointer;touch-action:manipulation}
+
 /* CARDS (forms + sessions) */
 .cards{display:flex;flex-direction:column;gap:10px;padding:0 16px}
 .card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.04);cursor:pointer;transition:transform .15s,box-shadow .15s;touch-action:manipulation}
@@ -718,8 +733,50 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
   <div class="form-wrap" id="accountStepWrap" style="display:none">
     <div class="helper-text" id="accountInfoText"></div>
+    <button class="btn-secondary" id="pinManageBtn" type="button">Set a quick PIN</button>
     <button class="btn-secondary" id="logoutBtn" type="button">Log out</button>
   </div>
+</div>
+
+<!-- PIN SET/CHANGE SHEET -->
+<div class="overlay" id="pinSetOverlay"></div>
+<div class="sheet" id="pinSetSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name" id="pinSetTitle">Set a quick PIN</div>
+  <div class="sheet-subtitle">A 4-digit PIN gets you back in fast — your password still works too, this device just remembers you a bit quicker</div>
+  <div class="form-wrap">
+    <div class="field"><label>Choose a 4-digit PIN</label><input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pinSetInput1" placeholder="••••"></div>
+    <div class="field"><label>Confirm PIN</label><input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pinSetInput2" placeholder="••••"></div>
+    <div id="pinSetErrorWrap"></div>
+    <button class="btn-primary" id="pinSetSaveBtn" type="button">Save PIN</button>
+    <button class="btn-secondary" id="pinRemoveBtn" type="button" style="display:none">Remove PIN from this device</button>
+  </div>
+</div>
+
+<!-- PIN LOCK SCREEN -->
+<div id="pinLockScreen">
+  <div class="pin-avatar" id="pinLockAvatar">?</div>
+  <div class="pin-name" id="pinLockName">Welcome back</div>
+  <div class="pin-sub">Enter your PIN</div>
+  <div class="pin-dots" id="pinLockDots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="pin-error" id="pinLockError"></div>
+  <div class="pin-keypad" id="pinLockKeypad">
+    <button class="pin-key" type="button" data-key="1">1</button>
+    <button class="pin-key" type="button" data-key="2">2</button>
+    <button class="pin-key" type="button" data-key="3">3</button>
+    <button class="pin-key" type="button" data-key="4">4</button>
+    <button class="pin-key" type="button" data-key="5">5</button>
+    <button class="pin-key" type="button" data-key="6">6</button>
+    <button class="pin-key" type="button" data-key="7">7</button>
+    <button class="pin-key" type="button" data-key="8">8</button>
+    <button class="pin-key" type="button" data-key="9">9</button>
+    <button class="pin-key pin-key-empty" type="button"></button>
+    <button class="pin-key" type="button" data-key="0">0</button>
+    <button class="pin-key" type="button" data-key="back">⌫</button>
+  </div>
+  <button class="pin-use-password" id="pinUsePasswordBtn" type="button">Use password instead</button>
 </div>
 
 <!-- SESSION BOOKING SHEET -->
@@ -1025,6 +1082,7 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async functi
 
 document.getElementById('logoutBtn').addEventListener('click', function(){
   clearSession();
+  clearPinHash();
   localStorage.removeItem('hh_user');
   renderUserChip();
   closeUserSheet();
@@ -1033,6 +1091,7 @@ document.getElementById('logoutBtn').addEventListener('click', function(){
 });
 document.getElementById('identityFooterSignout').addEventListener('click', function(){
   clearSession();
+  clearPinHash();
   localStorage.removeItem('hh_user');
   renderUserChip();
   showToast('Logged out');
@@ -1049,6 +1108,105 @@ async function initAuth(){
     }catch(e){ /* stays logged out, will prompt below */ }
   }
 }
+
+/* ============================================================
+   PIN QUICK-UNLOCK — a device-local convenience layer sat on top
+   of the real Supabase Auth session. The PIN never touches the
+   server; it's purely a fast way back in on this one device. Real
+   security still comes from the underlying login.
+   ============================================================ */
+function getPinHash(){ return localStorage.getItem('hh_pin_hash'); }
+function setPinHash(hash){ localStorage.setItem('hh_pin_hash', hash); }
+function clearPinHash(){ localStorage.removeItem('hh_pin_hash'); }
+async function hashPin(pin){
+  var enc = new TextEncoder().encode(pin);
+  var buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+var pinSetOverlay = document.getElementById('pinSetOverlay');
+var pinSetSheet = document.getElementById('pinSetSheet');
+document.getElementById('pinManageBtn').addEventListener('click', function(){
+  var hasExisting = !!getPinHash();
+  document.getElementById('pinSetTitle').textContent = hasExisting ? 'Change your PIN' : 'Set a quick PIN';
+  document.getElementById('pinRemoveBtn').style.display = hasExisting ? 'block' : 'none';
+  document.getElementById('pinSetInput1').value = '';
+  document.getElementById('pinSetInput2').value = '';
+  document.getElementById('pinSetErrorWrap').innerHTML = '';
+  closeUserSheet();
+  pinSetOverlay.classList.add('open'); pinSetSheet.classList.add('open');
+});
+function closePinSetSheet(){ pinSetOverlay.classList.remove('open'); pinSetSheet.classList.remove('open'); }
+pinSetOverlay.addEventListener('click', function(e){ if(e.target===pinSetOverlay) closePinSetSheet(); });
+document.getElementById('pinSetSaveBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('pinSetErrorWrap');
+  errWrap.innerHTML = '';
+  var pin1 = document.getElementById('pinSetInput1').value.trim();
+  var pin2 = document.getElementById('pinSetInput2').value.trim();
+  if(!/^[0-9]{4}$/.test(pin1)){ errWrap.innerHTML = '<div class="error-banner">PIN needs to be exactly 4 digits.</div>'; return; }
+  if(pin1 !== pin2){ errWrap.innerHTML = '<div class="error-banner">Those two don\'t match — give it another go.</div>'; return; }
+  var hash = await hashPin(pin1);
+  setPinHash(hash);
+  closePinSetSheet();
+  showToast('PIN set for this device');
+});
+document.getElementById('pinRemoveBtn').addEventListener('click', function(){
+  clearPinHash();
+  closePinSetSheet();
+  showToast('PIN removed from this device');
+});
+
+var pinLockScreen = document.getElementById('pinLockScreen');
+var pinLockDigits = '';
+function openPinLock(u){
+  document.getElementById('pinLockAvatar').textContent = initials(u.display_name);
+  document.getElementById('pinLockName').textContent = 'Welcome back, ' + u.display_name.split(' ')[0];
+  pinLockDigits = '';
+  document.getElementById('pinLockError').textContent = '';
+  renderPinDots();
+  pinLockScreen.style.display = 'flex';
+}
+function closePinLock(){
+  pinLockScreen.style.display = 'none';
+  loadHome();
+}
+function renderPinDots(){
+  document.querySelectorAll('#pinLockDots .pin-dot').forEach(function(dot, i){
+    dot.classList.toggle('filled', i < pinLockDigits.length);
+  });
+}
+document.querySelectorAll('#pinLockKeypad [data-key]').forEach(function(key){
+  key.addEventListener('click', async function(){
+    var val = key.getAttribute('data-key');
+    document.getElementById('pinLockError').textContent = '';
+    if(val === 'back'){
+      pinLockDigits = pinLockDigits.slice(0, -1);
+      renderPinDots();
+      return;
+    }
+    if(pinLockDigits.length >= 4) return;
+    pinLockDigits += val;
+    renderPinDots();
+    if(pinLockDigits.length === 4){
+      var entered = await hashPin(pinLockDigits);
+      if(entered === getPinHash()){
+        closePinLock();
+      } else {
+        document.getElementById('pinLockError').textContent = 'Wrong PIN — try again';
+        pinLockDigits = '';
+        setTimeout(renderPinDots, 150);
+      }
+    }
+  });
+});
+document.getElementById('pinUsePasswordBtn').addEventListener('click', function(){
+  clearPinHash();
+  clearSession();
+  localStorage.removeItem('hh_user');
+  renderUserChip();
+  pinLockScreen.style.display = 'none';
+  openUserSheet();
+});
 
 /* ============================================================
    TOAST
@@ -2669,8 +2827,15 @@ document.addEventListener('DOMContentLoaded', async function(){
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
   await initAuth();
   renderUserChip();
-  if(!getUser()){ openUserSheet(); }
-  loadHome();
+  var u = getUser();
+  if(u && getPinHash()){
+    openPinLock(u);
+  } else if(!u){
+    openUserSheet();
+    loadHome();
+  } else {
+    loadHome();
+  }
 });
 </script>
 </body>
