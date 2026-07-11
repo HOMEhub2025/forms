@@ -308,6 +308,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Payment Links</div><div class="card-desc">Find, copy and send existing Stripe links</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
+    <div class="card accent-green" data-goto="screen-register">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg></div>
+      <div class="card-body"><div class="card-title">Session Register</div><div class="card-desc">Who's booked and who signed in — send to the practitioner</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-red" data-goto="screen-quotes">
       <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
       <div class="card-body"><div class="card-title">Bookings &amp; Quotes</div><div class="card-desc">Every room quote — pending, confirmed and lost</div></div>
@@ -436,6 +441,38 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
   <div class="cards" id="qtList" style="gap:8px">
     <div class="loading-row">Loading quotes…</div>
+  </div>
+</div>
+
+<!-- ============ SESSION REGISTER ============ -->
+<div class="screen" id="screen-register">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Session <span>Register</span></h2>
+    <p>Who's booked, who signed in, straight to the practitioner.</p>
+  </div>
+  <div class="form-wrap">
+    <div class="field">
+      <label>Session</label>
+      <select id="regSessionSelect"><option value="">Choose a session…</option></select>
+    </div>
+    <div class="field"><label>Date</label><input type="date" id="regDate"></div>
+    <button class="btn-primary" id="regLoadBtn" type="button">Build register</button>
+  </div>
+
+  <div id="regResultWrap" style="display:none">
+    <div class="section-label">Booked (session_bookings)</div>
+    <div class="cards" id="regBookedList" style="gap:8px"></div>
+
+    <div class="section-label">Signed in that day (visitor data)</div>
+    <div class="cards" id="regSignedInList" style="gap:8px"></div>
+
+    <div class="form-wrap">
+      <div class="field"><label>Send to (practitioner's email)</label><input type="email" id="regEmail" placeholder="practitioner@example.com"></div>
+      <div id="regErrorWrap"></div>
+      <button class="btn-primary" id="regSendBtn" type="button">Send register by email</button>
+      <button class="btn-secondary" id="regCopyBtn" type="button">Copy register text</button>
+    </div>
   </div>
 </div>
 
@@ -2506,6 +2543,133 @@ async function loadQuotes(){
 }
 screenLoaders['screen-quotes'] = loadQuotes;
 
+/* ============================================================
+   SESSION REGISTER — who's booked (session_bookings) and who
+   actually signed in (sign_ins, real visitor data), sent to the
+   practitioner running it.
+   ============================================================ */
+var regSessionsCache = [];
+var regCurrentBooked = [];
+var regCurrentSignedIn = [];
+var regCurrentSession = null;
+var regCurrentDate = '';
+
+async function loadRegisterScreen(){
+  document.getElementById('regDate').value = toISODate(new Date());
+  document.getElementById('regResultWrap').style.display = 'none';
+  var sel = document.getElementById('regSessionSelect');
+  try{
+    if(!regSessionsCache.length){
+      var res = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+      regSessionsCache = res.data || [];
+    }
+    sel.innerHTML = '<option value="">Choose a session…</option>' + regSessionsCache.map(function(s){
+      return '<option value="'+s.id+'">'+s.name+'</option>';
+    }).join('');
+  }catch(e){ sel.innerHTML = '<option value="">Couldn\'t load sessions</option>'; }
+}
+screenLoaders['screen-register'] = loadRegisterScreen;
+
+document.getElementById('regLoadBtn').addEventListener('click', async function(){
+  var sessionId = document.getElementById('regSessionSelect').value;
+  var date = document.getElementById('regDate').value;
+  if(!sessionId || !date){ showToast('Pick a session and a date first'); return; }
+  var s = regSessionsCache.find(function(x){ return x.id === sessionId; });
+  regCurrentSession = s;
+  regCurrentDate = date;
+
+  var btn = document.getElementById('regLoadBtn');
+  btn.disabled = true; btn.textContent = 'Building…';
+  var resultWrap = document.getElementById('regResultWrap');
+  var bookedWrap = document.getElementById('regBookedList');
+  var signedWrap = document.getElementById('regSignedInList');
+  resultWrap.style.display = 'block';
+  bookedWrap.innerHTML = '<div class="loading-row">Loading booked list…</div>';
+  signedWrap.innerHTML = '<div class="loading-row">Loading sign-ins…</div>';
+  document.getElementById('regErrorWrap').innerHTML = '';
+
+  try{
+    var bookedRes = await SB('session_bookings?bookable_session_id=eq.'+sessionId+'&booking_date=eq.'+date+'&status=neq.cancelled&order=slot_start.asc');
+    regCurrentBooked = bookedRes.data || [];
+    bookedWrap.innerHTML = regCurrentBooked.length ? regCurrentBooked.map(function(b){
+      return '<div class="card accent-green" style="cursor:default"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+b.client_name+'</div>' +
+        '<div class="card-desc">'+(b.client_email || b.client_phone || 'No contact given')+' · '+(b.payment_status || 'n/a')+'</div></div></div>';
+    }).join('') : '<div class="agenda-empty">Nobody booked in for this date.</div>';
+
+    var dayStart = date + 'T00:00:00';
+    var dayEnd = date + 'T23:59:59';
+    var signedRes = await SB('sign_ins?session_name=ilike.*'+encodeURIComponent(s.name)+'*&signed_in_at=gte.'+dayStart+'&signed_in_at=lte.'+dayEnd+'&order=signed_in_at.asc');
+    regCurrentSignedIn = signedRes.data || [];
+    signedWrap.innerHTML = regCurrentSignedIn.length ? regCurrentSignedIn.map(function(v){
+      return '<div class="card accent-blue" style="cursor:default"><div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+v.visitor_name+'</div>' +
+        '<div class="card-desc">Signed in '+new Date(v.signed_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div></div></div>';
+    }).join('') : '<div class="agenda-empty">No sign-ins found matching this session name for that day — worth checking the sign-in used the same name.</div>';
+
+    var emailField = document.getElementById('regEmail');
+    if(!emailField.value && s.facilitator_name){
+      try{
+        var pRes = await SB('practitioners?full_name=eq.'+encodeURIComponent(s.facilitator_name)+'&select=contact_email&limit=1');
+        var practitioner = (pRes.data || [])[0];
+        if(practitioner && practitioner.contact_email) emailField.value = practitioner.contact_email;
+      }catch(e){ /* no match — leave blank for manual entry */ }
+    }
+  }catch(e){
+    bookedWrap.innerHTML = '<div class="error-banner">Couldn\'t load the register — '+e.message+'</div>';
+    signedWrap.innerHTML = '';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Build register';
+  }
+});
+
+function regBuildText(){
+  var lines = [];
+  lines.push('Session Register — ' + (regCurrentSession ? regCurrentSession.name : '') + ' — ' + fmtDateLabel(regCurrentDate));
+  lines.push('');
+  lines.push('BOOKED (' + regCurrentBooked.length + ')');
+  if(regCurrentBooked.length){
+    regCurrentBooked.forEach(function(b){
+      lines.push('- ' + b.client_name + (b.client_email ? ' (' + b.client_email + ')' : (b.client_phone ? ' (' + b.client_phone + ')' : '')));
+    });
+  } else {
+    lines.push('- Nobody booked in for this date.');
+  }
+  lines.push('');
+  lines.push('SIGNED IN (' + regCurrentSignedIn.length + ')');
+  if(regCurrentSignedIn.length){
+    regCurrentSignedIn.forEach(function(v){
+      lines.push('- ' + v.visitor_name + ' — ' + new Date(v.signed_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
+    });
+  } else {
+    lines.push('- No sign-ins recorded for this session on this day.');
+  }
+  lines.push('');
+  lines.push('Honour & Love');
+  lines.push('H.O.M.E Hub');
+  return lines.join('\n');
+}
+
+document.getElementById('regSendBtn').addEventListener('click', function(){
+  var errWrap = document.getElementById('regErrorWrap');
+  errWrap.innerHTML = '';
+  var email = document.getElementById('regEmail').value.trim();
+  if(!email){ errWrap.innerHTML = '<div class="error-banner">Add the practitioner\'s email first — we couldn\'t find one on file to fill in automatically.</div>'; return; }
+  var subject = encodeURIComponent('Register — ' + regCurrentSession.name + ' — ' + fmtDateLabel(regCurrentDate));
+  var body = encodeURIComponent(regBuildText());
+  window.open('mailto:' + encodeURIComponent(email) + '?subject=' + subject + '&body=' + body, '_blank');
+  logAction('send_session_register', 'Session Register', regCurrentSession.name + ' — ' + regCurrentDate + ' → ' + email);
+  showToast('Email opened, ready to send');
+});
+document.getElementById('regCopyBtn').addEventListener('click', function(){
+  var text = regBuildText();
+  navigator.clipboard.writeText(text).then(function(){
+    showToast('Register copied — ready to paste');
+  }).catch(function(){
+    showToast('Couldn\'t copy — try again', true);
+  });
+});
+
 function qtContactName(row){
   return (row.booking_title || '').replace(/\s*—\s*Room Hire Quote$/i, '').trim() || 'Unknown';
 }
@@ -2623,8 +2787,76 @@ document.querySelectorAll('[data-qb-payment]').forEach(function(chip){
   });
 });
 
+/* ── ROOM PRICING — ported exactly from Heartwood's calcRoomCost,
+   the "canonical pricing engine — shared logic for Heartwood + customer app".
+   Keeping this identical means a quote from here always matches what
+   Heartwood itself would charge for the same room and hours. ── */
+var ROOM_RATE_PEAK_DEFAULT     = 34;
+var ROOM_RATE_OFF_PEAK_DEFAULT = 20;
+var ROOM_DISCOUNT_PCT_DEFAULT  = 0.10;
+var ROOM_DISCOUNT_HRS_DEFAULT  = 4;
+var ROOM_MIN_HOURS             = 1;
+var ROOM_RATE_DAY_DEFAULT      = 200;
+var ROOM_DAY_RATE_HRS_DEFAULT  = 7;
+var ROOM_GRACE_THRESHOLD_HRS   = 3;
+var ROOM_GRACE_SHORT_MINS      = 15;
+var ROOM_GRACE_LONG_MINS       = 30;
+
+function roomGraceMins(bookedHours){
+  return (bookedHours > ROOM_GRACE_THRESHOLD_HRS) ? ROOM_GRACE_LONG_MINS : ROOM_GRACE_SHORT_MINS;
+}
+function getRoomTier(dateStr){
+  // PEAK = Saturday & Sunday (all day). OFF-PEAK = Monday–Friday.
+  if(!dateStr) return 'off_peak';
+  var day = new Date(dateStr + 'T12:00:00').getDay();
+  return (day === 0 || day === 6) ? 'peak' : 'off_peak';
+}
+function calcRoomCost(roomRateRow, roomName, dateStr, hours){
+  var hrs = Math.max(hours || 0, ROOM_MIN_HOURS);
+  var graceMins = roomGraceMins(hrs);
+  var isMainHall = /main hall/i.test(roomName || '');
+  var rr = roomRateRow || {};
+
+  if(isMainHall){
+    var peakRate = rr.peak_rate != null ? Number(rr.peak_rate) : ROOM_RATE_PEAK_DEFAULT;
+    var offPeakRate = rr.offpeak_rate != null ? Number(rr.offpeak_rate) : ROOM_RATE_OFF_PEAK_DEFAULT;
+    var discountPct = rr.block_discount_pct != null ? Number(rr.block_discount_pct) : ROOM_DISCOUNT_PCT_DEFAULT;
+    var discountHrs = rr.block_discount_min_hours != null ? Number(rr.block_discount_min_hours) : ROOM_DISCOUNT_HRS_DEFAULT;
+    var dayRate = rr.full_day_rate != null ? Number(rr.full_day_rate) : ROOM_RATE_DAY_DEFAULT;
+    var dayRateHrs = ROOM_DAY_RATE_HRS_DEFAULT;
+
+    var tier = getRoomTier(dateStr);
+    var rate = (tier === 'peak') ? peakRate : offPeakRate;
+    var gross = rate * hrs;
+    var discount = 0;
+
+    if(tier === 'peak' && hrs >= dayRateHrs){
+      var daySaving = gross - dayRate;
+      return {
+        total: dayRate, tier: tier, rate: rate, hours: hrs, discount: daySaving, graceMins: graceMins, isDayRate: true,
+        breakdown: '£'+rate+'/hr × '+hrs+'hrs = £'+gross.toFixed(2)+' − £'+daySaving.toFixed(2)+' day rate saving = £'+dayRate+' flat day rate'
+      };
+    }
+    if(tier === 'peak' && hrs >= discountHrs){
+      discount = gross * discountPct;
+    }
+    var total = gross - discount;
+    return {
+      total: total, tier: tier, rate: rate, hours: hrs, discount: discount, graceMins: graceMins, isDayRate: false,
+      breakdown: '£'+rate+'/hr × '+hrs+'hr'+(tier==='peak'?' (peak — Sat/Sun)':' (off-peak — Mon-Fri)')+(discount>0 ? ' − £'+discount.toFixed(2)+' (10% block discount)' : '')
+    };
+  }
+
+  var flatRate = rr.rate_per_hour != null ? Number(rr.rate_per_hour) : 0;
+  return {
+    total: flatRate * hrs, tier: 'flat', rate: flatRate, hours: hrs, discount: 0, graceMins: graceMins, isDayRate: false,
+    breakdown: flatRate ? ('£'+flatRate+'/hr × '+hrs+'hr') : 'Rate on enquiry — nothing set for this room yet'
+  };
+}
+
 async function qbSuggestRate(){
   var room = document.getElementById('qbRoom').value;
+  var date = document.getElementById('qbDate').value;
   var start = document.getElementById('qbStart').value;
   var end = document.getElementById('qbEnd').value;
   var hint = document.getElementById('qbRateHint');
@@ -2633,19 +2865,21 @@ async function qbSuggestRate(){
   if(hours <= 0){ hint.textContent = ''; return; }
   try{
     var res = await SB('room_rates?room_name=eq.'+encodeURIComponent(room)+'&limit=1');
-    var rr = (res.data || [])[0];
-    if(rr){
-      var rate = rr.offpeak_rate || rr.rate_per_hour;
-      if(rate){
-        var suggested = (hours * rate).toFixed(2);
-        hint.textContent = 'Suggested: £' + suggested + ' (' + hours + 'hrs × £' + rate + '/hr) — tap to use';
-        hint.style.cursor = 'pointer';
-        hint.onclick = function(){ document.getElementById('qbTotal').value = suggested; };
-      } else { hint.textContent = ''; }
-    } else { hint.textContent = ''; }
+    var rr = (res.data || [])[0] || null;
+    var result = calcRoomCost(rr, room, date, hours);
+    if(result.total > 0){
+      var suggested = result.total.toFixed(2);
+      hint.innerHTML = 'Suggested: <strong>£'+suggested+'</strong> — '+result.breakdown+' — tap to use';
+      hint.style.cursor = 'pointer';
+      hint.onclick = function(){ document.getElementById('qbTotal').value = suggested; };
+    } else {
+      hint.textContent = result.breakdown;
+      hint.style.cursor = 'default';
+      hint.onclick = null;
+    }
   }catch(e){ hint.textContent = ''; }
 }
-['qbRoom','qbStart','qbEnd'].forEach(function(id){
+['qbRoom','qbDate','qbStart','qbEnd'].forEach(function(id){
   document.getElementById(id).addEventListener('change', qbSuggestRate);
 });
 
