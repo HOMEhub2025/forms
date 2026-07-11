@@ -57,7 +57,15 @@ Never invent details not provided.`;
 
     let systemPrompt, userPrompt;
 
-    if (postType === 'general') {
+    if (postType === 'volunteer') {
+      const { roleName, roleDescription, timeCommitment, howToApply } = body;
+      if (!roleName) { res.status(400).json({ error: 'Role name is required' }); return; }
+
+      systemPrompt = baseVoice + `\n\nThis particular post is a VOLUNTEER CALL-OUT — asking the community for someone to take on a specific role. It should feel like an invitation to belong and contribute, not a job advert. Warmly explain what the role involves and why it matters to the Hub and the people it serves, then invite people to get in touch. Always naturally include how to apply/get in touch if given.`;
+
+      userPrompt = `Write a volunteer recruitment post set for this role:\n\nRole: ${roleName}\nWhat's involved: ${roleDescription || '(not specified — keep it warm and inviting about helping out generally in this role)'}\nTime commitment: ${timeCommitment || '(not specified — do not invent hours, just invite people to ask)'}\nHow to apply / get in touch: ${howToApply || '(not given — invite people to pop into the Hub or message the page)'}`;
+
+    } else if (postType === 'general') {
       const { topic, details, callToAction } = body;
       if (!topic) { res.status(400).json({ error: 'Topic is required' }); return; }
 
