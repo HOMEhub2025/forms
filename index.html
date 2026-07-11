@@ -303,9 +303,9 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Session Builder</div><div class="card-desc">Create new bookable sessions &amp; workshops — coming soon</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
-    <div class="card accent-orange2" data-coming-soon="Room Hire Quote Tool">
+    <div class="card accent-purple" data-goto="screen-quote-builder">
       <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-      <div class="card-body"><div class="card-title">Room Hire Quote Tool</div><div class="card-desc">Branded PDF quotes with payment schedule — coming soon</div></div>
+      <div class="card-body"><div class="card-title">Room Hire Quote Tool</div><div class="card-desc">Branded PDF quotes with payment schedule</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
   </div>
@@ -346,6 +346,55 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
   <div class="cards" id="paymentLinksList" style="margin-top:16px">
     <div class="loading-row">Loading payment links…</div>
+  </div>
+</div>
+
+<!-- ============ ROOM HIRE QUOTE TOOL ============ -->
+<div class="screen" id="screen-quote-builder">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Quote <span>Builder</span></h2>
+    <p>A proper branded quote, deposit link included — the same one Heartwood sends.</p>
+  </div>
+  <div class="form-wrap">
+    <div class="field">
+      <label>Room</label>
+      <select id="qbRoom"><option value="">Choose a room…</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" id="qbDate"></div>
+      <div class="field"><label>Quote valid for</label>
+        <select id="qbValidity">
+          <option value="7">7 days</option>
+          <option value="14" selected>14 days</option>
+          <option value="21">21 days</option>
+          <option value="30">30 days</option>
+          <option value="60">60 days</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Start</label><input type="time" id="qbStart"></div>
+      <div class="field"><label>End</label><input type="time" id="qbEnd"></div>
+    </div>
+    <div class="field"><label>Contact name</label><input type="text" id="qbContactName" placeholder="Who's this quote for"></div>
+    <div class="field"><label>Contact email</label><input type="email" id="qbContactEmail"></div>
+    <div class="field"><label>What's it for (shows on the quote)</label><input type="text" id="qbDescription" placeholder="e.g. Weekly Pilates class"></div>
+    <div class="field">
+      <label>Total room hire</label>
+      <input type="text" inputmode="decimal" id="qbTotal" placeholder="0.00">
+      <div class="helper-text" id="qbRateHint"></div>
+    </div>
+    <div class="field">
+      <label>Deposit &amp; payment link</label>
+      <div class="chip-row">
+        <div class="chip active" data-qb-payment="link">Create Stripe deposit link</div>
+        <div class="chip" data-qb-payment="none">Bank transfer only</div>
+      </div>
+    </div>
+    <div id="qbErrorWrap"></div>
+    <button class="btn-primary" id="qbGenerateBtn" type="button">Generate quote</button>
+    <div class="helper-text" style="text-align:center">Opens a printable quote in a new tab — save as PDF or print straight from your phone.</div>
   </div>
 </div>
 
@@ -1078,7 +1127,7 @@ document.querySelectorAll('[data-quick]').forEach(function(tile){
       var sessionsTab = document.querySelector('[data-book-tab="sessions"]');
       if(sessionsTab) sessionsTab.click();
     } else if(action === 'quote-builder'){
-      showToast('Quote Builder is being built properly — soon');
+      showScreen('screen-quote-builder');
     }
   });
 });
@@ -2101,6 +2150,290 @@ async function loadPaymentLinks(){
   }
 }
 screenLoaders['screen-payment-links'] = loadPaymentLinks;
+
+/* ============================================================
+   ROOM HIRE QUOTE TOOL — full branded quote, matching Heartwood's
+   real generateQuotePDF template exactly, plus a Stripe deposit
+   link created the same way Heartwood does it.
+   ============================================================ */
+var qbRoomsCache = [];
+var qbPaymentMode = 'link';
+
+async function loadQuoteBuilder(){
+  document.getElementById('qbDate').value = toISODate(new Date());
+  document.getElementById('qbErrorWrap').innerHTML = '';
+  var sel = document.getElementById('qbRoom');
+  try{
+    if(!qbRoomsCache.length){
+      var res = await SB('rooms?is_active=eq.true&order=name.asc');
+      qbRoomsCache = res.data || [];
+    }
+    sel.innerHTML = '<option value="">Choose a room…</option>' + qbRoomsCache.map(function(r){
+      return '<option value="'+r.name+'">'+r.name+'</option>';
+    }).join('');
+  }catch(e){ sel.innerHTML = '<option value="">Couldn\'t load rooms</option>'; }
+}
+screenLoaders['screen-quote-builder'] = loadQuoteBuilder;
+
+document.querySelectorAll('[data-qb-payment]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-qb-payment]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    qbPaymentMode = chip.getAttribute('data-qb-payment');
+  });
+});
+
+async function qbSuggestRate(){
+  var room = document.getElementById('qbRoom').value;
+  var start = document.getElementById('qbStart').value;
+  var end = document.getElementById('qbEnd').value;
+  var hint = document.getElementById('qbRateHint');
+  if(!room || !start || !end){ hint.textContent = ''; return; }
+  var hours = (timeToMins(end) - timeToMins(start)) / 60;
+  if(hours <= 0){ hint.textContent = ''; return; }
+  try{
+    var res = await SB('room_rates?room_name=eq.'+encodeURIComponent(room)+'&limit=1');
+    var rr = (res.data || [])[0];
+    if(rr){
+      var rate = rr.offpeak_rate || rr.rate_per_hour;
+      if(rate){
+        var suggested = (hours * rate).toFixed(2);
+        hint.textContent = 'Suggested: £' + suggested + ' (' + hours + 'hrs × £' + rate + '/hr) — tap to use';
+        hint.style.cursor = 'pointer';
+        hint.onclick = function(){ document.getElementById('qbTotal').value = suggested; };
+      } else { hint.textContent = ''; }
+    } else { hint.textContent = ''; }
+  }catch(e){ hint.textContent = ''; }
+}
+['qbRoom','qbStart','qbEnd'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', qbSuggestRate);
+});
+
+document.getElementById('qbGenerateBtn').addEventListener('click', async function(){
+  var u = getUser();
+  if(!u){ openUserSheet(); showToast('Pick who you are first'); return; }
+  var errWrap = document.getElementById('qbErrorWrap');
+  errWrap.innerHTML = '';
+
+  var room = document.getElementById('qbRoom').value;
+  var date = document.getElementById('qbDate').value;
+  var start = document.getElementById('qbStart').value;
+  var end = document.getElementById('qbEnd').value;
+  var contactName = document.getElementById('qbContactName').value.trim();
+  var contactEmail = document.getElementById('qbContactEmail').value.trim();
+  var description = document.getElementById('qbDescription').value.trim();
+  var total = parseFloat(document.getElementById('qbTotal').value);
+  var validityDays = parseInt(document.getElementById('qbValidity').value, 10);
+
+  if(!room || !date || !start || !end || !contactName || !description || !total || total <= 0){
+    errWrap.innerHTML = '<div class="error-banner">Room, date, times, contact name, description and a total are all needed to build a quote.</div>';
+    return;
+  }
+
+  // Open the tab immediately, in the same click — fills in once ready,
+  // same trick Heartwood uses so popup blockers don't catch it while we
+  // wait on Stripe.
+  var win = window.open('', '_blank');
+  if(!win){ errWrap.innerHTML = '<div class="error-banner">Please allow pop-ups to generate the quote.</div>'; return; }
+  win.document.write('<!DOCTYPE html><html><body style="font-family:sans-serif;padding:60px;text-align:center;color:#6b7280">Preparing your quote…</body></html>');
+  win.document.close();
+
+  var btn = document.getElementById('qbGenerateBtn');
+  btn.disabled = true; btn.textContent = 'Building your quote…';
+
+  try{
+    var quoteRef = 'QT-' + Date.now().toString().slice(-8);
+
+    var quoterEmail = '';
+    try{
+      var profRes = await SB('users_internal?id=eq.'+u.id+'&select=email');
+      quoterEmail = ((profRes.data||[])[0]||{}).email || '';
+    }catch(e){ /* non-fatal, quote still works without it */ }
+
+    var insertRes = await SB('room_bookings', {
+      method:'POST', headers:{Prefer:'return=representation'},
+      body: JSON.stringify({
+        booking_title: contactName + ' — Room Hire Quote',
+        room: room, booking_date: date, start_time: start, end_time: end,
+        booked_by: u.display_name, status: 'quote', estimated_cost: total,
+        quote_validity_days: validityDays, quoted_by: u.display_name, quoted_by_email: quoterEmail || null,
+        notes: 'QUOTE — Day 1 of 1: ' + description
+      })
+    });
+    var newBooking = (insertRes.data || [])[0];
+
+    var payLinkUrl = null;
+    if(qbPaymentMode === 'link'){
+      try{
+        var deposit = (total / 2).toFixed(2);
+        var payRes = await fetch('/api/create-quote-payment-link', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            amount: parseFloat(deposit), description: room + ' hire deposit — ' + quoteRef,
+            quoteRef: quoteRef, contactEmail: contactEmail
+          })
+        });
+        var payData = await payRes.json();
+        if(payRes.ok && payData.url) payLinkUrl = payData.url;
+      }catch(payErr){ /* quote still works fine without a link */ }
+    }
+
+    if(payLinkUrl && newBooking){
+      try{
+        await SB('room_bookings?id=eq.'+newBooking.id, {
+          method:'PATCH', headers:{Prefer:'return=minimal'},
+          body: JSON.stringify({quote_ref: quoteRef})
+        });
+      }catch(e){ /* non-fatal */ }
+    }
+
+    logAction('create_room_quote', 'Quote Builder', contactName + ' — ' + room + ' — £' + total.toFixed(2));
+    renderQuotePDF(win, {
+      quoteRef: quoteRef, contactName: contactName, contactEmail: contactEmail,
+      roomName: room, total: total, validityDays: validityDays,
+      quotedByName: u.display_name, quotedByEmail: quoterEmail,
+      dayLine: (room) + (date ? ' · ' + fmtDateLabel(date) : '') + (start && end ? ' · ' + fmtTime(start) + '–' + fmtTime(end) : '') + (description ? ' · ' + description : ''),
+      payLinkUrl: payLinkUrl
+    });
+    showToast('Quote generated for ' + contactName.split(' ')[0]);
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t build the quote — '+e.message+'</div>';
+    win.close();
+  }finally{
+    btn.disabled = false; btn.textContent = 'Generate quote';
+  }
+});
+
+/* The branded HTML, matching Heartwood's real quote template exactly —
+   same colours, same payment schedule, same cancellation policy, same
+   bank details — so a quote from here looks identical to one from
+   Heartwood itself. */
+function renderQuotePDF(win, q){
+  var total = q.total;
+  var deposit = (total/2).toFixed(2);
+  var balance = (total/2).toFixed(2);
+  var today = new Date();
+  var validUntil = new Date(today); validUntil.setDate(validUntil.getDate() + q.validityDays);
+  var todayStr = today.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+  var validStr = validUntil.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
+
+  var BANK_NAME = 'Helping Overcoming Motivating Exploring ("H.O.M.E") Hub Community Interest Company';
+  var BANK_PROVIDER = 'SumUp Payments Limited';
+  var BANK_SORT_CODE = '04-14-50';
+  var BANK_ACCOUNT_NO = '63949069';
+
+  var payOnlineBox = q.payLinkUrl
+    ? '<div style="background:#f5f4ff;border:1.5px solid #d9d6ff;border-radius:10px;padding:10px 12px;text-align:center">' +
+        '<div style="font-size:10px;font-weight:700;color:#635bff;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Pay online</div>' +
+        '<a href="'+q.payLinkUrl+'" style="display:inline-block;background:#635bff;color:white;font-size:12.5px;font-weight:700;padding:11px 20px;border-radius:8px;text-decoration:none;font-family:Montserrat,sans-serif;margin-bottom:6px">Pay £'+deposit+' deposit \u2192</a>' +
+        '<div style="font-size:9.5px;color:#8b87c9">Secure payment via Stripe \u00b7 confirms your booking automatically</div>' +
+      '</div>'
+    : '<div style="background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;text-align:center">' +
+        '<div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Pay online</div>' +
+        '<div style="font-size:11px;color:#9ca3af">Please use bank transfer below, or contact us</div>' +
+      '</div>';
+
+  var payBankBox =
+    '<div style="background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px">' +
+      '<div style="font-size:10px;font-weight:700;color:#0e386a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Or pay by bank transfer</div>' +
+      '<div style="font-size:10.5px;color:#374151;line-height:1.5">' +
+        '<strong>Account name:</strong> '+BANK_NAME+'<br>' +
+        '<strong>Bank:</strong> '+BANK_PROVIDER+'<br>' +
+        '<strong>Sort code:</strong> '+BANK_SORT_CODE+'<br>' +
+        '<strong>Account number:</strong> '+BANK_ACCOUNT_NO +
+      '</div>' +
+      '<div style="font-size:10.5px;color:#c2410c;font-weight:700;margin-top:8px">Please use <span style="text-decoration:underline">'+q.quoteRef+'</span> as your payment reference</div>' +
+    '</div>';
+
+  var payButtonHtml =
+    '<div style="margin-bottom:10px">' +
+      '<div style="font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">How to pay your deposit</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + payOnlineBox + payBankBox + '</div>' +
+    '</div>';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>H.O.M.E Hub - Quote'+q.quoteRef.replace('QT-','')+'</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">' +
+    '<style>*{margin:0;padding:0;box-sizing:border-box;print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}body{font-family:Montserrat,sans-serif;color:#1a1a1a;background:#fff;padding:20px;font-size:11.5px}' +
+    '@media print{body{padding:0}@page{margin:12mm 14mm}}</style></head><body>' +
+    '<div style="background:#006837;padding:14px 22px 12px;border-radius:12px 12px 0 0">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div>' +
+          '<div style="font-family:League Spartan,sans-serif;font-size:22px;font-weight:700;color:white">H.O.M.E Hub CIC</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.75);margin-top:2px;letter-spacing:.08em;text-transform:uppercase">Helping · Overcoming · Motivating · Exploring</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="background:#f58221;color:white;font-size:10px;font-weight:700;padding:3px 11px;border-radius:20px;letter-spacing:.08em;text-transform:uppercase;display:inline-block;margin-bottom:5px">Room Hire Quote</div>' +
+          '<div style="font-size:10px;color:rgba(255,255,255,0.75)">Ref: <strong style="color:white">'+q.quoteRef+'</strong></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="background:#004d25;padding:6px 22px;margin-bottom:10px;border-radius:0 0 12px 12px;display:flex;gap:28px">' +
+      '<div><div style="font-size:8.5px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.08em">Issued</div><div style="font-size:11px;color:white;font-weight:600;margin-top:1px">'+todayStr+'</div></div>' +
+      '<div><div style="font-size:8.5px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.08em">Valid until</div><div style="font-size:11px;color:#f58221;font-weight:700;margin-top:1px">'+validStr+'</div></div>' +
+      (q.quotedByName ? '<div style="margin-left:auto;text-align:right"><div style="font-size:8.5px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:.08em">Quoted by</div><div style="font-size:11px;color:white;font-weight:600;margin-top:1px">'+q.quotedByName+'</div>'+(q.quotedByEmail?'<div style="font-size:9.5px;color:rgba(255,255,255,0.65);margin-top:1px">'+q.quotedByEmail+'</div>':'')+'</div>' : '') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+      '<div style="background:#f8fafc;border-radius:10px;padding:9px 12px">' +
+        '<div style="font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Prepared for</div>' +
+        '<div style="font-size:14px;font-weight:700;color:#0e386a;font-family:League Spartan,sans-serif">'+(q.contactName||'--')+'</div>' +
+        (q.contactEmail?'<div style="font-size:11px;color:#6b7280;margin-top:2px">'+q.contactEmail+'</div>':'') +
+      '</div>' +
+      '<div style="background:#f8fafc;border-radius:10px;padding:9px 12px">' +
+        '<div style="font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">From</div>' +
+        '<div style="font-size:13px;font-weight:700;color:#0e386a;font-family:League Spartan,sans-serif">H.O.M.E Hub CIC</div>' +
+        '<div style="font-size:10.5px;color:#6b7280;margin-top:2px;line-height:1.5">88 Brook Road, South Benfleet<br>Playing Fields, Essex SS7 5JF<br>info@homehub-benfleet.co.uk</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-bottom:10px">' +
+      '<div style="font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Booking breakdown</div>' +
+      '<table style="width:100%;border-collapse:collapse;background:#f8fafc;border-radius:10px;overflow:hidden">' +
+        '<thead><tr style="background:#0e386a"><th style="padding:7px 12px;font-size:9px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.06em;text-align:left">Details</th></tr></thead>' +
+        '<tbody><tr><td style="padding:6px 12px;font-size:11.5px;color:#374151">'+q.dayLine+'</td></tr></tbody>' +
+      '</table>' +
+    '</div>' +
+    '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:9px 12px;margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:5px;border-bottom:1px solid #d1fae5;margin-bottom:5px">' +
+        '<span style="font-size:11.5px;color:#374151">Total room hire</span>' +
+        '<span style="font-size:18px;font-weight:700;color:#006837">£'+total.toFixed(2)+'</span>' +
+      '</div>' +
+      '<div style="font-size:10px;font-weight:700;color:#0e386a;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Payment schedule</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<span style="font-size:11.5px;color:#374151"><strong>Deposit (50%)</strong> — due on booking to secure your date</span>' +
+        '<span style="font-size:12.5px;font-weight:700;color:#006837">£'+deposit+'</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:11.5px;color:#374151"><strong>Balance (50%)</strong> — due 14 days before your event</span>' +
+        '<span style="font-size:12.5px;font-weight:700;color:#006837">£'+balance+'</span>' +
+      '</div>' +
+    '</div>' +
+    payButtonHtml +
+    '<div style="background:#fef9f3;border:1.5px solid #f5d5b3;border-radius:10px;padding:9px 12px;margin-bottom:8px">' +
+      '<div style="font-size:9px;font-weight:700;color:#0e386a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Cancellation policy</div>' +
+      '<div style="font-size:11px;color:#374151;line-height:1.4;margin-bottom:6px">We know plans sometimes change. Here\u2019s how we hold your date and what happens to your deposit and any balance already paid if you need to cancel or move your booking:</div>' +
+      '<div style="display:grid;grid-template-columns:82px 1fr;gap:3px;font-size:11px;line-height:1.5">' +
+        '<span style="font-weight:700;color:#006837">30+ days</span><span style="color:#374151">Full refund of everything paid so far, no questions asked.</span>' +
+        '<span style="font-weight:700;color:#c16e1b">14–29 days</span><span style="color:#374151">50% refund of everything paid so far. We\u2019ll always try to move your date instead if that works better for you.</span>' +
+        '<span style="font-weight:700;color:#991b1b">Under 14 days</span><span style="color:#374151">H.O.M.E Hub may retain the full amount paid, as the room is held exclusively for you and can\u2019t usually be rebooked in time.</span>' +
+      '</div>' +
+      '<div style="font-size:10.5px;color:#92400e;margin-top:6px;line-height:1.4">Life happens — if something\u2019s come up, please just get in touch as early as you can at info@homehub-benfleet.co.uk. We\u2019ll always do what we can to find a fair way forward together. \uD83D\uDC9A</div>' +
+    '</div>' +
+    '<div style="border-left:4px solid #f58221;padding:6px 14px;background:#fff7ed;border-radius:0 8px 8px 0;margin-bottom:10px">' +
+      '<div style="font-size:11px;font-style:italic;color:#92400e;font-weight:600">Every exchange helps support the free programmes we offer our community.</div>' +
+    '</div>' +
+    '<div style="background:#f58221;border-radius:10px;padding:9px 12px;margin-bottom:8px;text-align:center">' +
+      '<div style="font-size:11px;color:white;font-weight:600;line-height:1.5">Please contact us if you have any more questions</div>' +
+      '<div style="font-size:11px;color:white;font-weight:700;margin-top:3px">Honour &amp; Love — H.O.M.E Hub<br>info@homehub-benfleet.co.uk</div>' +
+    '</div>' +
+    '<div style="text-align:center;padding-top:7px;border-top:1px solid #e5e7eb">' +
+      '<div style="font-size:10px;color:#9ca3af">H.O.M.E Hub CIC · Company No. 16104567 · homehub-benfleet.co.uk</div>' +
+      '<div style="font-size:9px;color:#c4c9d4;margin-top:3px">Bringing <span style="color:#f58221">unity</span> back to the <span style="color:#f58221">Community</span></div>' +
+    '</div>' +
+    '</body></html>';
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
 
 /* ============================================================
    FORMS — SHARE SHEET (unchanged behaviour)
