@@ -656,6 +656,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
           <div class="chip active" data-social-kind="session">A session</div>
           <div class="chip" data-social-kind="group">A group</div>
           <div class="chip" data-social-kind="room">A room</div>
+          <div class="chip" data-social-kind="volunteer">Volunteer role</div>
         </div>
       </div>
     </div>
@@ -665,6 +666,13 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
         <select id="socialPickerSelect"><option value="">Loading…</option></select>
       </div>
       <button class="btn-primary" id="socialGenerateBtn" type="button">Generate posts</button>
+    </div>
+    <div class="form-wrap" id="socialVolunteerWrap" style="display:none">
+      <div class="field"><label>Role name</label><input type="text" id="socialRoleName" placeholder="e.g. Café Volunteer"></div>
+      <div class="field"><label>What's involved (optional)</label><textarea id="socialRoleDesc" placeholder="A bit about the role"></textarea></div>
+      <div class="field"><label>Time commitment (optional)</label><input type="text" id="socialRoleTime" placeholder="e.g. A few hours on a Tuesday"></div>
+      <div class="field"><label>How to apply / get in touch (optional)</label><input type="text" id="socialRoleApply" placeholder="e.g. Pop into the Hub or message info@homehub-benfleet.co.uk"></div>
+      <button class="btn-primary" id="socialVolunteerGenerateBtn" type="button">Generate posts</button>
     </div>
     <div id="socialResultWrap" style="display:none"></div>
   </div>
@@ -2106,7 +2114,14 @@ document.querySelectorAll('[data-social-kind]').forEach(function(chip){
     chip.classList.add('active');
     socialKind = chip.getAttribute('data-social-kind');
     document.getElementById('socialResultWrap').style.display = 'none';
-    loadSocialPicker();
+    if(socialKind === 'volunteer'){
+      document.getElementById('socialPickerWrap').style.display = 'none';
+      document.getElementById('socialVolunteerWrap').style.display = 'flex';
+    } else {
+      document.getElementById('socialPickerWrap').style.display = 'flex';
+      document.getElementById('socialVolunteerWrap').style.display = 'none';
+      loadSocialPicker();
+    }
   });
 });
 
@@ -2166,63 +2181,12 @@ function socialRelativeDayLabel(dateStr){
   return weeks <= 1 ? 'in just over a week' : ('in ' + weeks + ' weeks\u2019 time');
 }
 
-document.getElementById('socialGenerateBtn').addEventListener('click', async function(){
-  var id = document.getElementById('socialPickerSelect').value;
-  var kindNoun = socialKind === 'session' ? 'session' : socialKind === 'group' ? 'group' : 'room';
-  if(!id){ showToast('Pick a ' + kindNoun + ' first'); return; }
-  var btn = document.getElementById('socialGenerateBtn');
+async function generateSocialPost(btn, payload){
   btn.disabled = true; btn.textContent = 'Writing something heartfelt…';
   var resultWrap = document.getElementById('socialResultWrap');
   resultWrap.style.display = 'block';
   resultWrap.innerHTML = '<div class="loading-row">Writing something heartfelt…</div>';
-
   try{
-    var payload;
-    if(socialKind === 'session'){
-      var s = socialSessionsCache.find(function(x){ return x.id === id; });
-      socialCurrentRecord = s;
-      var when = s.recurrence_type === 'weekly' ? ('Every ' + (s.day_of_week || ''))
-        : s.recurrence_type === 'fortnightly' ? ('Every other ' + (s.day_of_week || ''))
-        : socialRelativeDayLabel(s.event_date);
-      var bookingUrl = s.public_slug ? ('https://heartwood.homehub-benfleet.co.uk/?book=' + s.public_slug) : '';
-      socialLastLink = bookingUrl;
-      payload = {
-        postType: 'session', name: s.name, facilitatorName: s.facilitator_name,
-        description: s.description, dayLabel: when,
-        timeLabel: s.window_start_time ? fmtTime(s.window_start_time) : '',
-        isFree: s.is_free, price: s.price, bookingUrl: bookingUrl,
-        ctaLabel: "Let us know you're coming"
-      };
-    } else if(socialKind === 'group'){
-      var g = socialGroupsCache.find(function(x){ return x.id === id; });
-      socialCurrentRecord = g;
-      socialLastLink = '';
-      payload = {
-        postType: 'group', name: g.name, facilitatorName: g.facilitator,
-        category: g.category, whenText: g.when_text || g.frequency,
-        description: g.description, isFree: g.price ? false : true, price: g.price
-      };
-    } else {
-      var r = socialRoomsCache.find(function(x){ return x.id === id; });
-      socialCurrentRecord = r;
-      var rateInfo = '';
-      try{
-        var rateRes = await SB('room_rates?room_name=eq.'+encodeURIComponent(r.name)+'&limit=1');
-        var rr = (rateRes.data || [])[0];
-        if(rr){
-          if(rr.offpeak_rate && rr.peak_rate) rateInfo = '£' + rr.offpeak_rate + '/hr off-peak, £' + rr.peak_rate + '/hr peak';
-          else if(rr.rate_per_hour) rateInfo = '£' + rr.rate_per_hour + '/hr';
-        }
-      }catch(e){ /* no rates set — fine, prompt handles it being blank */ }
-      var roomHireUrl = 'https://champions.homehub-benfleet.co.uk/room-hire';
-      socialLastLink = roomHireUrl;
-      payload = {
-        postType: 'room', roomName: r.name, capacity: r.capacity,
-        description: r.notes, rateInfo: rateInfo,
-        contactMethod: 'Enquire here: ' + roomHireUrl
-      };
-    }
-
     var res = await fetch('/api/generate-post', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
@@ -2232,10 +2196,78 @@ document.getElementById('socialGenerateBtn').addEventListener('click', async fun
     socialLastData = data;
     renderSocialResult(data);
   }catch(e){
-    resultWrap.innerHTML = '<div class="error-banner">Couldn\'t write this one — '+e.message+'<br><br><button class="btn-secondary" onclick="document.getElementById(\'socialGenerateBtn\').click()" type="button">Try again</button></div>';
+    resultWrap.innerHTML = '<div class="error-banner">Couldn\'t write this one — '+e.message+'</div>';
   }finally{
     btn.disabled = false; btn.textContent = 'Generate posts';
   }
+}
+
+document.getElementById('socialGenerateBtn').addEventListener('click', async function(){
+  var id = document.getElementById('socialPickerSelect').value;
+  var kindNoun = socialKind === 'session' ? 'session' : socialKind === 'group' ? 'group' : 'room';
+  if(!id){ showToast('Pick a ' + kindNoun + ' first'); return; }
+  var btn = document.getElementById('socialGenerateBtn');
+
+  var payload;
+  if(socialKind === 'session'){
+    var s = socialSessionsCache.find(function(x){ return x.id === id; });
+    socialCurrentRecord = s;
+    var when = s.recurrence_type === 'weekly' ? ('Every ' + (s.day_of_week || ''))
+      : s.recurrence_type === 'fortnightly' ? ('Every other ' + (s.day_of_week || ''))
+      : socialRelativeDayLabel(s.event_date);
+    var bookingUrl = s.public_slug ? ('https://heartwood.homehub-benfleet.co.uk/?book=' + s.public_slug) : '';
+    socialLastLink = bookingUrl;
+    payload = {
+      postType: 'session', name: s.name, facilitatorName: s.facilitator_name,
+      description: s.description, dayLabel: when,
+      timeLabel: s.window_start_time ? fmtTime(s.window_start_time) : '',
+      isFree: s.is_free, price: s.price, bookingUrl: bookingUrl,
+      ctaLabel: "Let us know you're coming"
+    };
+  } else if(socialKind === 'group'){
+    var g = socialGroupsCache.find(function(x){ return x.id === id; });
+    socialCurrentRecord = g;
+    socialLastLink = '';
+    payload = {
+      postType: 'group', name: g.name, facilitatorName: g.facilitator,
+      category: g.category, whenText: g.when_text || g.frequency,
+      description: g.description, isFree: g.price ? false : true, price: g.price
+    };
+  } else {
+    var r = socialRoomsCache.find(function(x){ return x.id === id; });
+    socialCurrentRecord = r;
+    var rateInfo = '';
+    try{
+      var rateRes = await SB('room_rates?room_name=eq.'+encodeURIComponent(r.name)+'&limit=1');
+      var rr = (rateRes.data || [])[0];
+      if(rr){
+        if(rr.offpeak_rate && rr.peak_rate) rateInfo = '£' + rr.offpeak_rate + '/hr off-peak, £' + rr.peak_rate + '/hr peak';
+        else if(rr.rate_per_hour) rateInfo = '£' + rr.rate_per_hour + '/hr';
+      }
+    }catch(e){ /* no rates set — fine, prompt handles it being blank */ }
+    var roomHireUrl = 'https://champions.homehub-benfleet.co.uk/room-hire';
+    socialLastLink = roomHireUrl;
+    payload = {
+      postType: 'room', roomName: r.name, capacity: r.capacity,
+      description: r.notes, rateInfo: rateInfo,
+      contactMethod: 'Enquire here: ' + roomHireUrl
+    };
+  }
+  generateSocialPost(btn, payload);
+});
+
+document.getElementById('socialVolunteerGenerateBtn').addEventListener('click', function(){
+  var roleName = document.getElementById('socialRoleName').value.trim();
+  if(!roleName){ showToast('Pop in a role name first'); return; }
+  socialCurrentRecord = {name: roleName};
+  socialLastLink = '';
+  var payload = {
+    postType: 'volunteer', roleName: roleName,
+    roleDescription: document.getElementById('socialRoleDesc').value.trim() || null,
+    timeCommitment: document.getElementById('socialRoleTime').value.trim() || null,
+    howToApply: document.getElementById('socialRoleApply').value.trim() || null
+  };
+  generateSocialPost(document.getElementById('socialVolunteerGenerateBtn'), payload);
 });
 
 function renderSocialResult(data){
@@ -2291,7 +2323,8 @@ function renderSocialResult(data){
     });
   });
   document.getElementById('socialRegenBtn').addEventListener('click', function(){
-    document.getElementById('socialGenerateBtn').click();
+    var btnId = socialKind === 'volunteer' ? 'socialVolunteerGenerateBtn' : 'socialGenerateBtn';
+    document.getElementById(btnId).click();
   });
   document.getElementById('socialSaveBtn').addEventListener('click', saveSocialPost);
 }
@@ -2311,11 +2344,23 @@ async function saveSocialPost(){
           instagram_text: igEl.value, whatsapp_text: waEl.value, facebook_text: fbEl.value
         })
       });
+    } else if(socialKind === 'volunteer'){
+      await SB('general_social_posts', {
+        method:'POST', headers:{Prefer:'return=minimal'},
+        body: JSON.stringify({
+          post_type: 'volunteer', role_name: socialCurrentRecord.name,
+          role_description: document.getElementById('socialRoleDesc').value.trim() || null,
+          time_commitment: document.getElementById('socialRoleTime').value.trim() || null,
+          how_to_apply: document.getElementById('socialRoleApply').value.trim() || null,
+          instagram_text: igEl.value, whatsapp_text: waEl.value, facebook_text: fbEl.value
+        })
+      });
     } else {
       await SB('general_social_posts', {
         method:'POST', headers:{Prefer:'return=minimal'},
         body: JSON.stringify({
-          post_type: 'promote', topic: socialCurrentRecord.name, details: 'Room hire promotion',
+          post_type: 'promote', topic: socialCurrentRecord.name,
+          details: socialKind === 'group' ? 'Group/programme promotion' : 'Room hire promotion',
           instagram_text: igEl.value, whatsapp_text: waEl.value, facebook_text: fbEl.value
         })
       });
