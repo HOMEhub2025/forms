@@ -668,9 +668,13 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <button class="btn-primary" id="socialGenerateBtn" type="button">Generate posts</button>
     </div>
     <div class="form-wrap" id="socialVolunteerWrap" style="display:none">
-      <div class="field"><label>Role name</label><input type="text" id="socialRoleName" placeholder="e.g. Café Volunteer"></div>
+      <div class="field">
+        <label>Which group or session needs help?</label>
+        <select id="socialVolTarget"><option value="">Loading…</option></select>
+      </div>
+      <div class="helper-text" id="socialVolWhenHint" style="display:none"></div>
+      <div class="field"><label>Role title</label><input type="text" id="socialRoleName" placeholder="e.g. Café support, extra pair of hands"></div>
       <div class="field"><label>What's involved (optional)</label><textarea id="socialRoleDesc" placeholder="A bit about the role"></textarea></div>
-      <div class="field"><label>Time commitment (optional)</label><input type="text" id="socialRoleTime" placeholder="e.g. A few hours on a Tuesday"></div>
       <div class="field"><label>How to apply / get in touch (optional)</label><input type="text" id="socialRoleApply" placeholder="e.g. Pop into the Hub or message info@homehub-benfleet.co.uk"></div>
       <button class="btn-primary" id="socialVolunteerGenerateBtn" type="button">Generate posts</button>
     </div>
@@ -2117,6 +2121,7 @@ document.querySelectorAll('[data-social-kind]').forEach(function(chip){
     if(socialKind === 'volunteer'){
       document.getElementById('socialPickerWrap').style.display = 'none';
       document.getElementById('socialVolunteerWrap').style.display = 'flex';
+      loadVolunteerTargets();
     } else {
       document.getElementById('socialPickerWrap').style.display = 'flex';
       document.getElementById('socialVolunteerWrap').style.display = 'none';
@@ -2256,15 +2261,65 @@ document.getElementById('socialGenerateBtn').addEventListener('click', async fun
   generateSocialPost(btn, payload);
 });
 
+var socialVolTargets = [];
+
+async function loadVolunteerTargets(){
+  var sel = document.getElementById('socialVolTarget');
+  sel.innerHTML = '<option value="">Loading…</option>';
+  try{
+    if(!socialGroupsCache.length){
+      var gRes = await SB('offerings?order=sort_order.asc');
+      socialGroupsCache = gRes.data || [];
+    }
+    if(!socialSessionsCache.length){
+      var sRes = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+      socialSessionsCache = sRes.data || [];
+    }
+    socialVolTargets = [];
+    var groupsHtml = socialGroupsCache.map(function(g){
+      var whenText = g.when_text || g.frequency || '';
+      socialVolTargets.push({key: 'g-'+g.id, name: g.name, whenText: whenText});
+      return '<option value="g-'+g.id+'">'+g.name+'</option>';
+    }).join('');
+    var sessionsHtml = socialSessionsCache.map(function(s){
+      var whenText = s.recurrence_type === 'weekly' ? ('Every ' + (s.day_of_week||''))
+        : s.recurrence_type === 'fortnightly' ? ('Every other ' + (s.day_of_week||''))
+        : (s.event_date ? fmtDateLabel(s.event_date) : '');
+      if(s.window_start_time) whenText += (whenText ? ' · ' : '') + fmtTime(s.window_start_time);
+      socialVolTargets.push({key: 's-'+s.id, name: s.name, whenText: whenText});
+      return '<option value="s-'+s.id+'">'+s.name+'</option>';
+    }).join('');
+    sel.innerHTML = '<option value="">Choose one…</option>' +
+      (groupsHtml ? '<optgroup label="Groups & Programmes">'+groupsHtml+'</optgroup>' : '') +
+      (sessionsHtml ? '<optgroup label="Sessions">'+sessionsHtml+'</optgroup>' : '');
+  }catch(e){ sel.innerHTML = '<option value="">Couldn\'t load — '+e.message+'</option>'; }
+}
+document.getElementById('socialVolTarget').addEventListener('change', function(){
+  var hint = document.getElementById('socialVolWhenHint');
+  var selectedKey = this.value;
+  var target = socialVolTargets.find(function(t){ return t.key === selectedKey; });
+  if(target && target.whenText){
+    hint.textContent = 'Known schedule: ' + target.whenText + ' — this gets used automatically, no need to type it again.';
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+});
+
 document.getElementById('socialVolunteerGenerateBtn').addEventListener('click', function(){
+  var targetKey = document.getElementById('socialVolTarget').value;
   var roleName = document.getElementById('socialRoleName').value.trim();
-  if(!roleName){ showToast('Pop in a role name first'); return; }
+  if(!targetKey){ showToast('Pick which group or session this is for'); return; }
+  if(!roleName){ showToast('Pop in a role title first'); return; }
+  var target = socialVolTargets.find(function(t){ return t.key === targetKey; });
   socialCurrentRecord = {name: roleName};
   socialLastLink = '';
+  var roleDesc = document.getElementById('socialRoleDesc').value.trim();
+  var fullDescription = (roleDesc ? roleDesc + ' ' : '') + 'Supporting ' + target.name + '.';
   var payload = {
     postType: 'volunteer', roleName: roleName,
-    roleDescription: document.getElementById('socialRoleDesc').value.trim() || null,
-    timeCommitment: document.getElementById('socialRoleTime').value.trim() || null,
+    roleDescription: fullDescription,
+    timeCommitment: target.whenText || null,
     howToApply: document.getElementById('socialRoleApply').value.trim() || null
   };
   generateSocialPost(document.getElementById('socialVolunteerGenerateBtn'), payload);
