@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Check-in Register | H.O.M.E Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;
+  --bg:#f5f6fa;--card:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#64748b;--radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:40px}
+input,button{font-family:'Montserrat',sans-serif;font-size:16px}
+.header{background:var(--db);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.header img{height:32px}
+.header h1{font-family:'League Spartan',sans-serif;font-size:.95rem;font-weight:700;color:#fff}
+.hero{background:linear-gradient(135deg,var(--dg),#004d28);padding:20px 20px 18px;text-align:center}
+.hero h2{font-family:'League Spartan',sans-serif;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:4px}
+.hero p{font-size:.8rem;color:rgba(255,255,255,.85);font-weight:500}
+.wrap{max-width:480px;margin:0 auto;padding:16px}
+.count-strip{display:flex;gap:10px;margin-bottom:16px}
+.count-card{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.count-card .num{font-family:'League Spartan',sans-serif;font-size:1.4rem;font-weight:700;color:var(--dg)}
+.count-card .lbl{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:2px}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:8px}
+.row-name{flex:1}
+.row-name strong{display:block;font-size:.9rem;color:var(--text)}
+.row-name span{font-size:.72rem;color:var(--muted);font-weight:500}
+.checkin-btn{background:var(--or);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-size:.78rem;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.checkin-btn.done{background:#f0fdf4;color:var(--dg);border:1.5px solid #bbf7d0}
+.checkin-btn:disabled{opacity:.7}
+.add-row{display:flex;gap:8px;margin-top:16px}
+.add-row input{flex:1;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border)}
+.add-row button{background:var(--db);color:#fff;border:none;border-radius:10px;padding:0 18px;font-weight:700;font-size:.85rem;cursor:pointer;touch-action:manipulation}
+.empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:.82rem}
+.loading{text-align:center;padding:40px 16px;color:var(--muted);font-size:.85rem}
+.footer{text-align:center;padding:24px 16px 6px;font-size:.68rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub">
+  <h1>H.O.M.E Hub — Check-in</h1>
+</div>
+
+<div class="hero">
+  <h2 id="sessionName">Loading…</h2>
+  <p id="sessionDate"></p>
+</div>
+
+<div class="wrap">
+  <div class="count-strip">
+    <div class="count-card"><div class="num" id="countExpected">–</div><div class="lbl">Expected</div></div>
+    <div class="count-card"><div class="num" id="countSignedIn">–</div><div class="lbl">Signed in</div></div>
+  </div>
+
+  <div id="rowsWrap">
+    <div class="loading">Loading the register…</div>
+  </div>
+
+  <div class="add-row">
+    <input type="text" id="walkInName" placeholder="Walk-in name (not pre-booked)">
+    <button type="button" id="walkInBtn">Sign in</button>
+  </div>
+
+  <div class="footer">H.O.M.E Hub CIC · Bringing unity back to the Community</div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+
+var params = new URLSearchParams(window.location.search);
+var sessionId = params.get('id') || '';
+var sessionName = params.get('name') || 'Session';
+var date = params.get('date') || '';
+var kind = params.get('kind') || 'session';
+
+document.getElementById('sessionName').textContent = sessionName;
+document.getElementById('sessionDate').textContent = date ? new Date(date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long'}) : '';
+
+async function sb(path, opts){
+  opts = opts || {};
+  var headers = Object.assign({
+    apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/json'
+  }, opts.headers || {});
+  var res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, opts, {headers: headers}));
+  var text = await res.text();
+  return {ok: res.ok, data: text ? JSON.parse(text) : null};
+}
+
+var expectedRows = [];
+var signedInNames = [];
+
+async function loadRegister(){
+  var wrap = document.getElementById('rowsWrap');
+  try{
+    if(kind === 'session' && sessionId){
+      var res = await sb('session_checkin_view?bookable_session_id=eq.'+sessionId+'&booking_date=eq.'+date+'&status=neq.cancelled&order=slot_start.asc');
+      expectedRows = res.data || [];
+    } else {
+      expectedRows = [];
+    }
+    var signedRes = await sb('sign_ins?session_name=ilike.*'+encodeURIComponent(sessionName)+'*&signed_in_at=gte.'+date+'T00:00:00&signed_in_at=lte.'+date+'T23:59:59&select=visitor_name');
+    signedInNames = (signedRes.data || []).map(function(v){ return v.visitor_name.toLowerCase(); });
+
+    renderRows();
+  }catch(e){
+    wrap.innerHTML = '<div class="empty">Couldn\'t load the register. Please check the link or try again.</div>';
+  }
+}
+
+function renderRows(){
+  var wrap = document.getElementById('rowsWrap');
+  document.getElementById('countExpected').textContent = expectedRows.length;
+  document.getElementById('countSignedIn').textContent = signedInNames.length;
+
+  if(!expectedRows.length){
+    wrap.innerHTML = '<div class="empty">'+(kind === 'group' ? 'This is a drop-in group — use "Walk-in" below to sign people in as they arrive.' : 'Nobody booked in for this date yet.')+'</div>';
+    return;
+  }
+  wrap.innerHTML = expectedRows.map(function(r){
+    var isIn = signedInNames.indexOf(r.client_name.toLowerCase()) !== -1;
+    return '<div class="row">' +
+      '<div class="row-name"><strong>'+r.client_name+'</strong>'+(r.slot_start ? '<span>'+r.slot_start.slice(0,5)+'</span>' : '')+'</div>' +
+      '<button type="button" class="checkin-btn'+(isIn?' done':'')+'" data-name="'+r.client_name.replace(/"/g,'&quot;')+'" '+(isIn?'disabled':'')+'>'+(isIn?'Signed in ✓':'Sign in')+'</button>' +
+    '</div>';
+  }).join('');
+
+  wrap.querySelectorAll('.checkin-btn:not([disabled])').forEach(function(btn){
+    btn.addEventListener('click', function(){ checkIn(btn.getAttribute('data-name'), btn); });
+  });
+}
+
+async function checkIn(name, btn){
+  btn.disabled = true;
+  btn.textContent = '…';
+  try{
+    await sb('sign_ins', {
+      method: 'POST', headers: {Prefer: 'return=minimal'},
+      body: JSON.stringify({
+        visitor_name: name, session_name: sessionName,
+        visit_type: kind === 'group' ? 'group' : 'booked_session',
+        signed_in_at: new Date().toISOString()
+      })
+    });
+    signedInNames.push(name.toLowerCase());
+    btn.classList.add('done');
+    btn.textContent = 'Signed in ✓';
+    document.getElementById('countSignedIn').textContent = signedInNames.length;
+  }catch(e){
+    btn.disabled = false;
+    btn.textContent = 'Try again';
+  }
+}
+
+document.getElementById('walkInBtn').addEventListener('click', function(){
+  var input = document.getElementById('walkInName');
+  var name = input.value.trim();
+  if(!name) return;
+  expectedRows.unshift({client_name: name, slot_start: null});
+  input.value = '';
+  renderRows();
+});
+
+loadRegister();
+</script>
+</body>
+</html>
