@@ -468,9 +468,14 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="cards" id="regSignedInList" style="gap:8px"></div>
 
     <div class="form-wrap">
-      <div class="field"><label>Send to (practitioner's email)</label><input type="email" id="regEmail" placeholder="practitioner@example.com"></div>
+      <button class="btn-primary" id="regCheckinLinkBtn" type="button">Send live check-in link to practitioner</button>
+      <div class="helper-text" style="text-align:center">She opens this on her phone, no login needed — tap a name as each person arrives and it signs them in for real.</div>
+    </div>
+
+    <div class="form-wrap">
+      <div class="field"><label>Or send a static summary to (email)</label><input type="email" id="regEmail" placeholder="practitioner@example.com"></div>
       <div id="regErrorWrap"></div>
-      <button class="btn-primary" id="regSendBtn" type="button">Send register by email</button>
+      <button class="btn-secondary" id="regSendBtn" type="button">Send static register by email</button>
       <button class="btn-secondary" id="regCopyBtn" type="button">Copy register text</button>
     </div>
   </div>
@@ -2673,6 +2678,20 @@ function regBuildText(){
   return lines.join('\n');
 }
 
+document.getElementById('regCheckinLinkBtn').addEventListener('click', function(){
+  if(!regCurrentTarget){ showToast('Build the register first'); return; }
+  var checkinUrl = 'https://champions.homehub-benfleet.co.uk/session-checkin.html' +
+    '?id=' + encodeURIComponent(regCurrentTarget.id) +
+    '&kind=' + encodeURIComponent(regCurrentKind) +
+    '&date=' + encodeURIComponent(regCurrentDate) +
+    '&name=' + encodeURIComponent(regCurrentTarget.name);
+  currentPath = checkinUrl;
+  currentName = regCurrentTarget.name + ' — check-in register';
+  currentKind = 'checkin';
+  document.getElementById('sheet-title').textContent = currentName;
+  overlay.classList.add('open'); sheet.classList.add('open');
+});
+
 document.getElementById('regSendBtn').addEventListener('click', function(){
   var errWrap = document.getElementById('regErrorWrap');
   errWrap.innerHTML = '';
@@ -3143,7 +3162,11 @@ function shareUrl(){
   if(currentPath.indexOf('http') === 0) return currentPath;
   return BASE + '/' + currentPath;
 }
-function shareNoun(){ return currentKind === 'payment' ? 'payment link' : 'form'; }
+function shareNoun(){
+  if(currentKind === 'payment') return 'payment link';
+  if(currentKind === 'checkin') return 'check-in register';
+  return 'form';
+}
 
 document.addEventListener('click', function(e){
   var shareBtn = e.target.closest('[data-share]');
