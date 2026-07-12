@@ -461,7 +461,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
 
   <div id="regResultWrap" style="display:none">
-    <div class="section-label">Booked (session_bookings)</div>
+    <div class="section-label">Booked<span class="label-action" id="regAddWalkinLabel">+ Add a walk-in</span></div>
     <div class="cards" id="regBookedList" style="gap:8px"></div>
 
     <div class="section-label">Signed in that day (visitor data)</div>
@@ -923,6 +923,28 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="field"><label>Internal notes (optional)</label><textarea id="wlAdminNotes"></textarea></div>
     <div id="wlErrorWrap"></div>
     <button class="btn-primary" id="wlSaveBtn" type="button">Save</button>
+  </div>
+</div>
+
+<!-- WALK-IN / EDIT BOOKING SHEET -->
+<div class="overlay" id="regBookingOverlay"></div>
+<div class="sheet" id="regBookingSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name" id="regBookingSheetTitle">Add a walk-in</div>
+  <div class="sheet-subtitle" id="regBookingSheetSub">Name's optional for now — you can fill it in later once you know it</div>
+  <div class="form-wrap">
+    <div class="field"><label>Name (optional for now)</label><input type="text" id="regBookingName" placeholder="Leave blank if you don't know it yet"></div>
+    <div class="field"><label>Email (optional)</label><input type="email" id="regBookingEmail"></div>
+    <div class="field"><label>Phone (optional)</label><input type="tel" id="regBookingPhone"></div>
+    <div class="field">
+      <label>Payment</label>
+      <div class="chip-row">
+        <div class="chip active" data-reg-book-paid="unpaid">Not paid</div>
+        <div class="chip" data-reg-book-paid="paid">Paid</div>
+      </div>
+    </div>
+    <div id="regBookingErrorWrap"></div>
+    <button class="btn-primary" id="regBookingSaveBtn" type="button">Save</button>
   </div>
 </div>
 
@@ -2655,14 +2677,22 @@ function renderBookedList(){
   }
   bookedWrap.innerHTML = regCurrentBooked.map(function(b){
     var isPaid = b.payment_status === 'paid';
-    return '<div class="card accent-green" style="cursor:default">' +
+    var isPlaceholder = !b.client_name || /^Walk-in/i.test(b.client_name);
+    return '<div class="card accent-green" data-reg-edit="'+b.id+'">' +
       '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
-      '<div class="card-body"><div class="card-title">'+b.client_name+'</div>' +
+      '<div class="card-body"><div class="card-title">'+(b.client_name || 'Walk-in — tap to add name')+(isPlaceholder ? ' <span style="color:var(--or);font-weight:600;font-size:.68rem">· needs a name</span>' : '')+'</div>' +
       '<div class="card-desc">'+(b.client_email || b.client_phone || 'No contact given')+'</div></div>' +
       '<button type="button" class="chip'+(isPaid ? ' active' : '')+'" data-reg-paid-toggle="'+b.id+'" style="flex-shrink:0;white-space:nowrap">'+(isPaid ? 'Paid' : 'Not paid')+'</button>' +
       '</div>';
   }).join('');
 
+  bookedWrap.querySelectorAll('[data-reg-edit]').forEach(function(card){
+    card.addEventListener('click', function(e){
+      if(e.target.closest('[data-reg-paid-toggle]')) return;
+      var row = regCurrentBooked.find(function(x){ return x.id === card.getAttribute('data-reg-edit'); });
+      openRegBookingSheet(row);
+    });
+  });
   bookedWrap.querySelectorAll('[data-reg-paid-toggle]').forEach(function(btn){
     btn.addEventListener('click', async function(){
       var rowId = btn.getAttribute('data-reg-paid-toggle');
@@ -2684,6 +2714,98 @@ function renderBookedList(){
     });
   });
 }
+
+var regBookingOverlay = document.getElementById('regBookingOverlay');
+var regBookingSheet = document.getElementById('regBookingSheet');
+var regEditingBookingId = null;
+
+function openRegBookingSheet(existingRow){
+  regEditingBookingId = existingRow ? existingRow.id : null;
+  document.getElementById('regBookingSheetTitle').textContent = existingRow ? 'Edit booking' : 'Add a walk-in';
+  document.getElementById('regBookingSheetSub').textContent = existingRow
+    ? 'Update their name or contact details'
+    : 'Name\'s optional for now — you can fill it in later once you know it';
+  document.getElementById('regBookingName').value = (existingRow && !/^Walk-in/i.test(existingRow.client_name||'')) ? existingRow.client_name : '';
+  document.getElementById('regBookingEmail').value = existingRow ? (existingRow.client_email || '') : '';
+  document.getElementById('regBookingPhone').value = existingRow ? (existingRow.client_phone || '') : '';
+  var isPaid = existingRow && existingRow.payment_status === 'paid';
+  document.querySelectorAll('[data-reg-book-paid]').forEach(function(c){
+    c.classList.toggle('active', c.getAttribute('data-reg-book-paid') === (isPaid ? 'paid' : 'unpaid'));
+  });
+  document.getElementById('regBookingErrorWrap').innerHTML = '';
+  regBookingOverlay.classList.add('open'); regBookingSheet.classList.add('open');
+}
+function closeRegBookingSheet(){ regBookingOverlay.classList.remove('open'); regBookingSheet.classList.remove('open'); }
+regBookingOverlay.addEventListener('click', function(e){ if(e.target===regBookingOverlay) closeRegBookingSheet(); });
+document.querySelectorAll('[data-reg-book-paid]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-reg-book-paid]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+  });
+});
+document.getElementById('regAddWalkinLabel').addEventListener('click', function(){
+  if(!regCurrentTarget || regCurrentKind !== 'session'){ showToast('Build a session register first — walk-ins need a session to attach to'); return; }
+  openRegBookingSheet(null);
+});
+
+document.getElementById('regBookingSaveBtn').addEventListener('click', async function(){
+  var u = getUser();
+  if(!u){ openUserSheet(); return; }
+  var errWrap = document.getElementById('regBookingErrorWrap');
+  errWrap.innerHTML = '';
+  var name = document.getElementById('regBookingName').value.trim();
+  var paidChip = document.querySelector('[data-reg-book-paid].active');
+  var paymentStatus = paidChip ? paidChip.getAttribute('data-reg-book-paid') : 'unpaid';
+  var btn = document.getElementById('regBookingSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try{
+    if(regEditingBookingId){
+      await SB('session_bookings?id=eq.'+regEditingBookingId, {
+        method:'PATCH', headers:{Prefer:'return=minimal'},
+        body: JSON.stringify({
+          client_name: name || null,
+          client_email: document.getElementById('regBookingEmail').value.trim() || null,
+          client_phone: document.getElementById('regBookingPhone').value.trim() || null,
+          payment_status: paymentStatus
+        })
+      });
+      var row = regCurrentBooked.find(function(x){ return x.id === regEditingBookingId; });
+      if(row){
+        row.client_name = name || row.client_name;
+        row.client_email = document.getElementById('regBookingEmail').value.trim() || null;
+        row.client_phone = document.getElementById('regBookingPhone').value.trim() || null;
+        row.payment_status = paymentStatus;
+      }
+      showToast('Updated');
+    } else {
+      var walkinLabel = name || ('Walk-in ' + (regCurrentBooked.length + 1));
+      var s = regCurrentTarget;
+      var insertRes = await SB('session_bookings', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify({
+          bookable_session_id: s.id, booking_date: regCurrentDate,
+          slot_start: s.window_start_time || null, slot_end: s.window_end_time || null,
+          client_name: walkinLabel,
+          client_email: document.getElementById('regBookingEmail').value.trim() || null,
+          client_phone: document.getElementById('regBookingPhone').value.trim() || null,
+          booked_by: u.display_name, status: 'confirmed', payment_status: paymentStatus,
+          notes: 'Walk-in — added via Session Register'
+        })
+      });
+      var newRow = (insertRes.data || [])[0];
+      if(newRow) regCurrentBooked.push(newRow);
+      logAction('add_walkin_booking', 'Session Register', walkinLabel + ' — ' + s.name);
+      showToast('Walk-in added');
+    }
+    closeRegBookingSheet();
+    renderBookedList();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
 
 function regBuildText(){
   var lines = [];
