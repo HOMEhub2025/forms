@@ -2613,11 +2613,7 @@ document.getElementById('regLoadBtn').addEventListener('click', async function()
       bookedWrap.innerHTML = '<div class="loading-row">Loading booked list…</div>';
       var bookedRes = await SB('session_bookings?bookable_session_id=eq.'+targetId+'&booking_date=eq.'+date+'&status=neq.cancelled&order=slot_start.asc');
       regCurrentBooked = bookedRes.data || [];
-      bookedWrap.innerHTML = regCurrentBooked.length ? regCurrentBooked.map(function(b){
-        return '<div class="card accent-green" style="cursor:default"><div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
-          '<div class="card-body"><div class="card-title">'+b.client_name+'</div>' +
-          '<div class="card-desc">'+(b.client_email || b.client_phone || 'No contact given')+' · '+(b.payment_status || 'n/a')+'</div></div></div>';
-      }).join('') : '<div class="agenda-empty">Nobody booked in for this date.</div>';
+      renderBookedList();
     } else {
       regCurrentBooked = [];
       bookedWrap.innerHTML = '<div class="agenda-empty">This is a drop-in group — no advance booking list, just who signed in on the day.</div>';
@@ -2651,6 +2647,44 @@ document.getElementById('regLoadBtn').addEventListener('click', async function()
   }
 });
 
+function renderBookedList(){
+  var bookedWrap = document.getElementById('regBookedList');
+  if(!regCurrentBooked.length){
+    bookedWrap.innerHTML = '<div class="agenda-empty">Nobody booked in for this date.</div>';
+    return;
+  }
+  bookedWrap.innerHTML = regCurrentBooked.map(function(b){
+    var isPaid = b.payment_status === 'paid';
+    return '<div class="card accent-green" style="cursor:default">' +
+      '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>' +
+      '<div class="card-body"><div class="card-title">'+b.client_name+'</div>' +
+      '<div class="card-desc">'+(b.client_email || b.client_phone || 'No contact given')+'</div></div>' +
+      '<button type="button" class="chip'+(isPaid ? ' active' : '')+'" data-reg-paid-toggle="'+b.id+'" style="flex-shrink:0;white-space:nowrap">'+(isPaid ? 'Paid' : 'Not paid')+'</button>' +
+      '</div>';
+  }).join('');
+
+  bookedWrap.querySelectorAll('[data-reg-paid-toggle]').forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      var rowId = btn.getAttribute('data-reg-paid-toggle');
+      var row = regCurrentBooked.find(function(x){ return x.id === rowId; });
+      var newStatus = row.payment_status === 'paid' ? 'unpaid' : 'paid';
+      btn.disabled = true;
+      try{
+        await SB('session_bookings?id=eq.'+rowId, {
+          method:'PATCH', headers:{Prefer:'return=minimal'},
+          body: JSON.stringify({payment_status: newStatus})
+        });
+        row.payment_status = newStatus;
+        logAction('toggle_booking_payment', 'Session Register', row.client_name + ' → ' + newStatus);
+        renderBookedList();
+      }catch(e){
+        showToast('Couldn\'t update — ' + e.message, true);
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
 function regBuildText(){
   var lines = [];
   lines.push('Session Register — ' + (regCurrentTarget ? regCurrentTarget.name : '') + ' — ' + fmtDateLabel(regCurrentDate));
@@ -2658,7 +2692,7 @@ function regBuildText(){
   lines.push('BOOKED (' + regCurrentBooked.length + ')');
   if(regCurrentBooked.length){
     regCurrentBooked.forEach(function(b){
-      lines.push('- ' + b.client_name + (b.client_email ? ' (' + b.client_email + ')' : (b.client_phone ? ' (' + b.client_phone + ')' : '')));
+      lines.push('- ' + b.client_name + (b.client_email ? ' (' + b.client_email + ')' : (b.client_phone ? ' (' + b.client_phone + ')' : '')) + ' — ' + (b.payment_status === 'paid' ? 'PAID' : 'not paid'));
     });
   } else {
     lines.push('- Nobody booked in for this date.');
