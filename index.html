@@ -77,6 +77,32 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 
 /* PIN QUICK-UNLOCK */
 #pinLockScreen{position:fixed;inset:0;z-index:500;background:var(--db);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+#practitionerScreen{position:fixed;inset:0;z-index:600;background:var(--bg);display:none;flex-direction:column;overflow-y:auto}
+.pr-header{background:var(--db);padding:16px;display:flex;align-items:center;justify-content:space-between}
+.pr-header h1{font-family:'League Spartan',sans-serif;font-size:1rem;font-weight:700;color:#fff}
+.pr-signout{background:rgba(255,255,255,.12);border:none;color:#fff;font-size:.72rem;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;touch-action:manipulation}
+.pr-wrap{max-width:480px;margin:0 auto;padding:16px;width:100%;box-sizing:border-box}
+.pr-tile{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;touch-action:manipulation}
+.pr-tile strong{display:block;font-size:.95rem;color:var(--text);font-family:'League Spartan',sans-serif}
+.pr-tile span{font-size:.75rem;color:var(--muted)}
+.pr-back{background:none;border:none;color:var(--dg);font-size:.8rem;font-weight:700;cursor:pointer;margin-bottom:12px;padding:4px 0;touch-action:manipulation}
+.pr-count-strip{display:flex;gap:10px;margin-bottom:16px}
+.pr-count-card{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px;text-align:center}
+.pr-count-card .num{font-family:'League Spartan',sans-serif;font-size:1.4rem;font-weight:700;color:var(--dg)}
+.pr-count-card .lbl{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:2px}
+.pr-row{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:13px 14px;margin-bottom:8px}
+.pr-row-name{flex:1}
+.pr-row-name strong{display:block;font-size:.9rem;color:var(--text)}
+.pr-row-name span{font-size:.72rem;color:var(--muted);font-weight:500}
+.pr-checkin-btn{background:var(--or);color:#fff;border:none;border-radius:10px;padding:11px 16px;font-size:.78rem;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.pr-checkin-btn.done{background:#f0fdf4;color:var(--dg);border:1.5px solid #bbf7d0}
+.pr-add-row{display:flex;gap:8px;margin-top:16px}
+.pr-add-row input{flex:1;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem}
+.pr-add-row button{background:var(--db);color:#fff;border:none;border-radius:10px;padding:0 18px;font-weight:700;font-size:.85rem;cursor:pointer;touch-action:manipulation}
+.pr-date-field{margin-bottom:14px}
+.pr-date-field label{font-size:.72rem;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px}
+.pr-date-field input{padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:.85rem;width:100%;box-sizing:border-box}
+.pr-empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:.82rem}
 .pin-avatar{width:56px;height:56px;border-radius:50%;background:var(--or);color:#fff;font-weight:700;font-family:'League Spartan',sans-serif;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin:0 auto 14px}
 .pin-name{font-family:'League Spartan',sans-serif;font-weight:700;font-size:1.1rem;color:#fff;text-align:center}
 .pin-sub{font-size:.78rem;color:rgba(255,255,255,.7);text-align:center;margin-top:4px;margin-bottom:26px}
@@ -834,6 +860,19 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <button class="pin-use-password" id="pinUsePasswordBtn" type="button">Use password instead</button>
 </div>
 
+<!-- ═══ PRACTITIONER SCREEN — a locked-down home for facilitator accounts.
+     Shows only their own assigned session(s) and a register for each, so
+     the public never has to self-sign-in for a booked class — the
+     practitioner does it live as people arrive, still landing in the same
+     sign_ins table everything else reads from. 💚 ═══ -->
+<div id="practitionerScreen">
+  <div class="pr-header">
+    <h1 id="prHeaderTitle">H.O.M.E Hub</h1>
+    <button class="pr-signout" id="prSignoutBtn" type="button">Sign out</button>
+  </div>
+  <div class="pr-wrap" id="prContent"></div>
+</div>
+
 <!-- SESSION BOOKING SHEET -->
 <div class="overlay" id="sessionOverlay"></div>
 
@@ -1139,17 +1178,17 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async functi
   try{
     var tokenData = await authLogin(email, password);
     saveSession(tokenData);
-    var profRes = await SB('users_internal?user_id=eq.'+tokenData.user.id+'&select=id,display_name,role');
+    var profRes = await SB('users_internal?user_id=eq.'+tokenData.user.id+'&select=id,display_name,role,assigned_sessions');
     var profile = (profRes.data || [])[0];
     if(!profile){
       clearSession();
       errWrap.innerHTML = '<div class="error-banner">That login works, but there\'s no Hub profile linked to it yet — ask an admin to set your users_internal.user_id.</div>';
       return;
     }
-    setUser({id: profile.id, display_name: profile.display_name, role: profile.role});
+    setUser({id: profile.id, display_name: profile.display_name, role: profile.role, assigned_sessions: profile.assigned_sessions||[]});
     closeUserSheet();
     showToast('Signed in as ' + profile.display_name.split(' ')[0]);
-    loadHome();
+    if(profile.role === 'practitioner'){ enterPractitionerMode(); } else { loadHome(); }
   }catch(e){
     errWrap.innerHTML = '<div class="error-banner">'+e.message+'</div>';
   }finally{
@@ -1179,9 +1218,9 @@ async function initAuth(){
   var sess = await ensureSession();
   if(sess && !getUser()){
     try{
-      var profRes = await SB('users_internal?user_id=eq.'+sess.auth_user_id+'&select=id,display_name,role');
+      var profRes = await SB('users_internal?user_id=eq.'+sess.auth_user_id+'&select=id,display_name,role,assigned_sessions');
       var profile = (profRes.data || [])[0];
-      if(profile) setUser({id: profile.id, display_name: profile.display_name, role: profile.role});
+      if(profile) setUser({id: profile.id, display_name: profile.display_name, role: profile.role, assigned_sessions: profile.assigned_sessions||[]});
     }catch(e){ /* stays logged out, will prompt below */ }
   }
 }
@@ -1245,7 +1284,8 @@ function openPinLock(u){
 }
 function closePinLock(){
   pinLockScreen.style.display = 'none';
-  loadHome();
+  var u = getUser();
+  if(u && u.role === 'practitioner'){ enterPractitionerMode(); } else { loadHome(); }
 }
 function renderPinDots(){
   document.querySelectorAll('#pinLockDots .pin-dot').forEach(function(dot, i){
@@ -3379,6 +3419,145 @@ document.getElementById('opt-copy').addEventListener('click', function(){
 });
 
 /* ============================================================
+   PRACTITIONER MODE — a locked-down home for facilitator accounts.
+   They see only their own assigned session(s), can add anyone missing
+   to the register, and sign people in live as they arrive. Everything
+   lands in the same sign_ins table Heartwood reads from, so the public
+   never has to self-sign-in for a booked class. 💚
+   ============================================================ */
+function prEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+var prState = { sessionName:'', date:'', expected:[], signedInNames:[] };
+
+function prTodayISO(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function enterPractitionerMode(){
+  var u = getUser();
+  document.getElementById('practitionerScreen').style.display = 'flex';
+  document.getElementById('prHeaderTitle').textContent = 'Hey, ' + (u.display_name||'').split(' ')[0];
+  var sessions = (u.assigned_sessions||[]).filter(Boolean);
+  if(sessions.length === 1){
+    prOpenSessionRegister(sessions[0]);
+  } else {
+    prRenderSessionList(sessions);
+  }
+}
+
+function prRenderSessionList(sessions){
+  var el = document.getElementById('prContent');
+  if(!sessions.length){
+    el.innerHTML = '<div class="pr-empty">No sessions are assigned to your account yet \u2014 ask an admin to set this up.</div>';
+    return;
+  }
+  el.innerHTML = sessions.map(function(s){
+    return '<div class="pr-tile" data-session="'+prEsc(s)+'"><strong>'+prEsc(s)+'</strong><span>Tap to open the register</span></div>';
+  }).join('');
+  el.querySelectorAll('.pr-tile').forEach(function(t){
+    t.addEventListener('click', function(){ prOpenSessionRegister(t.getAttribute('data-session')); });
+  });
+}
+
+function prOpenSessionRegister(sessionName){
+  prState.sessionName = sessionName;
+  prState.date = prTodayISO();
+  var u = getUser();
+  var multi = (u.assigned_sessions||[]).filter(Boolean).length > 1;
+  var el = document.getElementById('prContent');
+  el.innerHTML =
+    (multi ? '<button class="pr-back" id="prBackBtn" type="button">\u2190 My sessions</button>' : '') +
+    '<div class="pr-date-field"><label>Date</label><input type="date" id="prDateInput" value="'+prState.date+'"></div>' +
+    '<div class="pr-count-strip"><div class="pr-count-card"><div class="num" id="prCountExpected">\u2013</div><div class="lbl">Expected</div></div><div class="pr-count-card"><div class="num" id="prCountSignedIn">\u2013</div><div class="lbl">Signed in</div></div></div>' +
+    '<div id="prRowsWrap"><div class="pr-empty">Loading the register\u2026</div></div>' +
+    '<div class="pr-add-row"><input type="text" id="prWalkInName" placeholder="Walk-in name (not pre-booked)"><button type="button" id="prWalkInBtn">Sign in</button></div>';
+  if(multi){ document.getElementById('prBackBtn').addEventListener('click', function(){ prRenderSessionList((getUser().assigned_sessions||[]).filter(Boolean)); }); }
+  document.getElementById('prDateInput').addEventListener('change', function(){ prState.date = this.value || prTodayISO(); prLoadRegister(); });
+  document.getElementById('prWalkInBtn').addEventListener('click', prAddWalkIn);
+  prLoadRegister();
+}
+
+async function prLoadRegister(){
+  var wrap = document.getElementById('prRowsWrap');
+  wrap.innerHTML = '<div class="pr-empty">Loading the register\u2026</div>';
+  try{
+    var expected = [];
+    // Older/manual booking pathway (e.g. classes booked via New Class Booking)
+    var pbRes = await SB('public_bookings?programme_name=eq.'+encodeURIComponent(prState.sessionName)+'&session_date=eq.'+prState.date+'&select=booker_name');
+    (pbRes.data||[]).forEach(function(r){ if(r.booker_name) expected.push({name:r.booker_name, time:null}); });
+    // Newer online booking pathway \u2014 wrapped separately since not every
+    // session will exist in bookable_sessions
+    try{
+      var bsRes = await SB('bookable_sessions?name=eq.'+encodeURIComponent(prState.sessionName)+'&select=id');
+      var bsId = (bsRes.data||[])[0] ? (bsRes.data||[])[0].id : null;
+      if(bsId){
+        var sbRes = await SB('session_bookings?bookable_session_id=eq.'+bsId+'&booking_date=eq.'+prState.date+'&status=neq.cancelled&order=slot_start.asc&select=client_name,slot_start');
+        (sbRes.data||[]).forEach(function(r){ if(r.client_name) expected.push({name:r.client_name, time:r.slot_start}); });
+      }
+    }catch(e2){ /* fine \u2014 this session may only use the older pathway */ }
+    prState.expected = expected;
+
+    var signedRes = await SB('sign_ins?session_name=ilike.*'+encodeURIComponent(prState.sessionName)+'*&signed_in_at=gte.'+prState.date+'T00:00:00&signed_in_at=lte.'+prState.date+'T23:59:59&select=visitor_name');
+    prState.signedInNames = (signedRes.data||[]).map(function(v){ return v.visitor_name.toLowerCase(); });
+
+    prRenderRows();
+  }catch(e){
+    wrap.innerHTML = '<div class="pr-empty">Could not load the register \u2014 please try again.</div>';
+  }
+}
+
+function prRenderRows(){
+  var wrap = document.getElementById('prRowsWrap');
+  document.getElementById('prCountExpected').textContent = prState.expected.length;
+  document.getElementById('prCountSignedIn').textContent = prState.signedInNames.length;
+  if(!prState.expected.length){
+    wrap.innerHTML = '<div class="pr-empty">Nobody booked in for this date yet \u2014 use "Walk-in" below to sign people in as they arrive.</div>';
+    return;
+  }
+  wrap.innerHTML = prState.expected.map(function(r){
+    var isIn = prState.signedInNames.indexOf(r.name.toLowerCase()) !== -1;
+    return '<div class="pr-row"><div class="pr-row-name"><strong>'+prEsc(r.name)+'</strong>'+(r.time?'<span>'+prEsc(r.time.slice(0,5))+'</span>':'')+'</div>' +
+      '<button type="button" class="pr-checkin-btn'+(isIn?' done':'')+'" data-name="'+prEsc(r.name)+'" '+(isIn?'disabled':'')+'>'+(isIn?'Signed in \u2713':'Sign in')+'</button></div>';
+  }).join('');
+  wrap.querySelectorAll('.pr-checkin-btn:not([disabled])').forEach(function(btn){
+    btn.addEventListener('click', function(){ prCheckIn(btn.getAttribute('data-name'), btn); });
+  });
+}
+
+async function prCheckIn(name, btn){
+  btn.disabled = true; btn.textContent = '\u2026';
+  try{
+    var signedInAt = (prState.date === prTodayISO()) ? new Date().toISOString() : new Date(prState.date+'T12:00:00').toISOString();
+    await SB('sign_ins', { method:'POST', headers:{Prefer:'return=minimal'}, body: JSON.stringify({
+      visitor_name: name, session_name: prState.sessionName, visit_type: 'booked_session',
+      signed_in_at: signedInAt
+    })});
+    prState.signedInNames.push(name.toLowerCase());
+    btn.classList.add('done'); btn.textContent = 'Signed in \u2713';
+    document.getElementById('prCountSignedIn').textContent = prState.signedInNames.length;
+  }catch(e){
+    btn.disabled = false; btn.textContent = 'Try again';
+  }
+}
+
+function prAddWalkIn(){
+  var input = document.getElementById('prWalkInName');
+  var name = input.value.trim();
+  if(!name) return;
+  prState.expected.unshift({name:name, time:null});
+  input.value = '';
+  prRenderRows();
+}
+
+document.getElementById('prSignoutBtn').addEventListener('click', function(){
+  clearSession(); clearPinHash(); localStorage.removeItem('hh_user');
+  document.getElementById('practitionerScreen').style.display = 'none';
+  renderUserChip();
+  showToast('Logged out');
+  loadHome();
+});
+
+/* ============================================================
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async function(){
@@ -3392,6 +3571,8 @@ document.addEventListener('DOMContentLoaded', async function(){
   } else if(!u){
     openUserSheet();
     loadHome();
+  } else if(u.role === 'practitioner'){
+    enterPractitionerMode();
   } else {
     loadHome();
   }
