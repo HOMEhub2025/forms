@@ -160,6 +160,21 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .tag-session{background:#f0fdf4;color:var(--dg)}
 .tag-meeting{background:#eff6ff;color:var(--db)}
 .agenda-empty{text-align:center;padding:30px 20px;color:var(--muted);font-size:.8rem;font-weight:500}
+.tx-group{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.tx-group-header{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;touch-action:manipulation}
+.tx-group-header .chevron{transition:transform .2s;flex-shrink:0;color:var(--muted)}
+.tx-group-header .chevron svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tx-group.open .tx-group-header .chevron{transform:rotate(90deg)}
+.tx-group-title{flex:1;font-size:.82rem;font-weight:600;color:var(--text)}
+.tx-group-count{font-size:.68rem;color:var(--muted);font-weight:500}
+.tx-group-total{font-size:.85rem;font-weight:700;flex-shrink:0}
+.tx-group-body{display:none;padding:0 14px 10px;border-top:1px solid var(--border)}
+.tx-group.open .tx-group-body{display:block}
+.tx-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:.76rem}
+.tx-row:last-child{border-bottom:none}
+.tx-row-desc{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx-row-date{color:var(--muted);font-size:.68rem;flex-shrink:0}
+.tx-row-amount{font-weight:700;flex-shrink:0;white-space:nowrap}
 
 /* DATE NAV */
 .date-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;gap:10px}
@@ -726,6 +741,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="section-label">Recent cash-ups</div>
     <div class="cards" id="finCashups" style="gap:8px">
       <div class="loading-row">Loading recent cash-ups…</div>
+    </div>
+
+    <div class="section-label">Transaction History<span class="label-action" id="finTxToggleAll">Expand all</span></div>
+    <div id="finTxGroups" style="display:flex;flex-direction:column;gap:8px">
+      <div class="loading-row">Loading transaction history…</div>
     </div>
   </div>
 
@@ -2060,7 +2080,7 @@ document.querySelectorAll('[data-mg-tab]').forEach(function(tab){
 
 function gbp(n){
   var num = Number(n || 0);
-  return '£' + num.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  return '£' + num.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 async function loadFinancials(){
   var statsWrap = document.getElementById('finStats');
@@ -2132,7 +2152,71 @@ async function loadFinancials(){
   }catch(e){
     cashWrap.innerHTML = '<div class="error-banner">Couldn\'t load cash-ups — '+e.message+'</div>';
   }
+
+  loadTransactionHistory();
 }
+
+/* Grouped, collapsible transaction history — tap a category to expand */
+var finTxAllExpanded = false;
+async function loadTransactionHistory(){
+  var wrap = document.getElementById('finTxGroups');
+  try{
+    var res = await SB('financial_transactions?order=tx_date.desc');
+    var rows = res.data || [];
+    if(!rows.length){
+      wrap.innerHTML = '<div class="agenda-empty">No transactions on record yet.</div>';
+      return;
+    }
+    var groups = {};
+    var order = [];
+    rows.forEach(function(t){
+      var cat = t.category || 'Uncategorised';
+      if(!groups[cat]){ groups[cat] = []; order.push(cat); }
+      groups[cat].push(t);
+    });
+    order.sort(function(a,b){
+      var totalA = groups[a].reduce(function(s,t){ return s + (t.type==='expenditure' ? -(parseFloat(t.amount)||0) : (parseFloat(t.amount)||0)); }, 0);
+      var totalB = groups[b].reduce(function(s,t){ return s + (t.type==='expenditure' ? -(parseFloat(t.amount)||0) : (parseFloat(t.amount)||0)); }, 0);
+      return Math.abs(totalB) - Math.abs(totalA);
+    });
+
+    wrap.innerHTML = order.map(function(cat){
+      var items = groups[cat];
+      var net = items.reduce(function(s,t){ return s + (t.type==='expenditure' ? -(parseFloat(t.amount)||0) : (parseFloat(t.amount)||0)); }, 0);
+      var netColor = net >= 0 ? 'var(--dg)' : '#dc2626';
+      var rowsHtml = items.map(function(t){
+        var isExp = t.type === 'expenditure';
+        return '<div class="tx-row">' +
+          '<div style="min-width:0;flex:1"><div class="tx-row-desc">'+(t.description||'(no description)')+'</div><div class="tx-row-date">'+(t.tx_date||'')+'</div></div>' +
+          '<div class="tx-row-amount" style="color:'+(isExp?'#C16E1B':'var(--dg)')+'">'+(isExp?'−':'')+'£'+(parseFloat(t.amount)||0).toFixed(2)+'</div>' +
+        '</div>';
+      }).join('');
+      return '<div class="tx-group" data-tx-cat="'+cat.replace(/"/g,'&quot;')+'">' +
+        '<div class="tx-group-header" data-tx-toggle>' +
+          '<div class="chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+          '<div class="tx-group-title">'+cat+' <span class="tx-group-count">('+items.length+')</span></div>' +
+          '<div class="tx-group-total" style="color:'+netColor+'">'+(net<0?'−':'')+'£'+Math.abs(net).toFixed(2)+'</div>' +
+        '</div>' +
+        '<div class="tx-group-body">'+rowsHtml+'</div>' +
+      '</div>';
+    }).join('');
+
+    wrap.querySelectorAll('[data-tx-toggle]').forEach(function(header){
+      header.addEventListener('click', function(){
+        header.closest('.tx-group').classList.toggle('open');
+      });
+    });
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load transaction history — '+e.message+'</div>';
+  }
+}
+document.getElementById('finTxToggleAll').addEventListener('click', function(){
+  finTxAllExpanded = !finTxAllExpanded;
+  document.querySelectorAll('.tx-group').forEach(function(g){
+    g.classList.toggle('open', finTxAllExpanded);
+  });
+  this.textContent = finTxAllExpanded ? 'Collapse all' : 'Expand all';
+});
 
 /* ============================================================
    WAITLIST — demand-by-day view for closed/referral classes
@@ -3080,10 +3164,10 @@ function renderQuotesView(){
   var totalValue = qtData.reduce(function(s,r){ return s + Number(r.estimated_cost||0); }, 0);
 
   document.getElementById('qtStats').innerHTML =
-    '<div class="stat-card"><div class="num" style="color:var(--or)">'+buckets.quote.count+'</div><div class="lbl">Pending · £'+buckets.quote.total.toFixed(0)+'</div></div>' +
-    '<div class="stat-card"><div class="num" style="color:var(--dg)">'+buckets.confirmed.count+'</div><div class="lbl">Confirmed · £'+buckets.confirmed.total.toFixed(0)+'</div></div>' +
-    '<div class="stat-card"><div class="num" style="color:#dc2626">'+buckets.cancelled.count+'</div><div class="lbl">Lost · £'+buckets.cancelled.total.toFixed(0)+'</div></div>' +
-    '<div class="stat-card"><div class="num">'+totalCount+'</div><div class="lbl">Total · £'+totalValue.toFixed(0)+'</div></div>';
+    '<div class="stat-card"><div class="num" style="color:var(--or)">'+buckets.quote.count+'</div><div class="lbl">Pending · £'+buckets.quote.total.toFixed(2)+'</div></div>' +
+    '<div class="stat-card"><div class="num" style="color:var(--dg)">'+buckets.confirmed.count+'</div><div class="lbl">Confirmed · £'+buckets.confirmed.total.toFixed(2)+'</div></div>' +
+    '<div class="stat-card"><div class="num" style="color:#dc2626">'+buckets.cancelled.count+'</div><div class="lbl">Lost · £'+buckets.cancelled.total.toFixed(2)+'</div></div>' +
+    '<div class="stat-card"><div class="num">'+totalCount+'</div><div class="lbl">Total · £'+totalValue.toFixed(2)+'</div></div>';
 
   var listWrap = document.getElementById('qtList');
   if(!filtered.length){
