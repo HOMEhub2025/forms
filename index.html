@@ -334,6 +334,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Daily Cash-Up</div><div class="card-desc">Log today's takings — cash, card, SumUp</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
+    <div class="card accent-blue" data-goto="screen-docs">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="card-body"><div class="card-title">Invoices &amp; Purchase Orders</div><div class="card-desc">Every one on record, grouped by status</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-orange" data-goto="screen-manage" data-mg-open="board">
       <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
       <div class="card-body"><div class="card-title">Bookings Overview</div><div class="card-desc">Day, week or month — everything on the board</div></div>
@@ -487,6 +492,29 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="helper-text" id="cuVarianceDisplay" style="display:none;font-weight:600"></div>
     <div id="cuErrorWrap"></div>
     <button class="btn-primary" id="cuSubmitBtn" type="button">Submit cash-up</button>
+  </div>
+</div>
+
+<!-- ============ INVOICES & PURCHASE ORDERS ============ -->
+<div class="screen" id="screen-docs">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Invoices &amp; <span>Purchase Orders</span></h2>
+    <p>Everything on record, grouped by status — tap to open.</p>
+  </div>
+  <div class="subtabs">
+    <div class="subtab active" data-doc-tab="invoices">Invoices</div>
+    <div class="subtab" data-doc-tab="pos">Purchase Orders</div>
+  </div>
+  <div id="docInvoicesPanel">
+    <div class="cards" id="docInvoicesGroups" style="gap:8px;margin-top:14px">
+      <div class="loading-row">Loading invoices…</div>
+    </div>
+  </div>
+  <div id="docPOPanel" style="display:none">
+    <div class="cards" id="docPOGroups" style="gap:8px;margin-top:14px">
+      <div class="loading-row">Loading purchase orders…</div>
+    </div>
   </div>
 </div>
 
@@ -2751,6 +2779,92 @@ async function loadCashUp(){
   }catch(e){ /* datalist just stays empty, not critical */ }
 }
 screenLoaders['screen-cashup'] = loadCashUp;
+
+/* ============================================================
+   INVOICES & PURCHASE ORDERS — grouped by status, same
+   collapsible accordion pattern as Transaction History.
+   ============================================================ */
+function renderStatusGroups(wrap, rows, statusKey, totalKey, buildRowHtml, statusOrder){
+  if(!rows.length){
+    wrap.innerHTML = '<div class="agenda-empty">Nothing on record yet.</div>';
+    return;
+  }
+  var groups = {};
+  var order = [];
+  rows.forEach(function(r){
+    var s = (r[statusKey] || 'unknown');
+    if(!groups[s]){ groups[s] = []; order.push(s); }
+    groups[s].push(r);
+  });
+  if(statusOrder){
+    order.sort(function(a,b){
+      var ia = statusOrder.indexOf(a); var ib = statusOrder.indexOf(b);
+      if(ia===-1) ia = 999; if(ib===-1) ib = 999;
+      return ia - ib;
+    });
+  }
+  var statusColors = {paid:'var(--dg)', unpaid:'#C16E1B', overdue:'#dc2626', draft:'var(--muted)', sent:'var(--db)', received:'var(--dg)', cancelled:'#dc2626'};
+  wrap.innerHTML = order.map(function(s){
+    var items = groups[s];
+    var total = items.reduce(function(sum,r){ return sum + (parseFloat(r[totalKey])||0); }, 0);
+    var color = statusColors[s.toLowerCase()] || 'var(--db)';
+    var rowsHtml = items.map(buildRowHtml).join('');
+    return '<div class="tx-group">' +
+      '<div class="tx-group-header" data-tx-toggle>' +
+        '<div class="chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+        '<div class="tx-group-title" style="text-transform:capitalize">'+s+' <span class="tx-group-count">('+items.length+')</span></div>' +
+        '<div class="tx-group-total" style="color:'+color+'">£'+total.toFixed(2)+'</div>' +
+      '</div>' +
+      '<div class="tx-group-body">'+rowsHtml+'</div>' +
+    '</div>';
+  }).join('');
+  wrap.querySelectorAll('[data-tx-toggle]').forEach(function(header){
+    header.addEventListener('click', function(){ header.closest('.tx-group').classList.toggle('open'); });
+  });
+}
+
+async function loadDocsScreen(){
+  var invWrap = document.getElementById('docInvoicesGroups');
+  invWrap.innerHTML = '<div class="loading-row">Loading invoices…</div>';
+  try{
+    var res = await SB('invoices?order=issued_date.desc');
+    var rows = res.data || [];
+    renderStatusGroups(invWrap, rows, 'status', 'total', function(i){
+      return '<div class="tx-row">' +
+        '<div style="min-width:0;flex:1"><div class="tx-row-desc">'+(i.customer_name||i.client_name||'(no name)')+'</div><div class="tx-row-date">'+(i.invoice_number||'')+' · '+(i.issued_date||'')+'</div></div>' +
+        '<div class="tx-row-amount">£'+(parseFloat(i.total)||0).toFixed(2)+'</div>' +
+      '</div>';
+    }, ['unpaid','overdue','paid']);
+  }catch(e){
+    invWrap.innerHTML = '<div class="error-banner">Couldn\'t load invoices — '+e.message+'</div>';
+  }
+
+  var poWrap = document.getElementById('docPOGroups');
+  poWrap.innerHTML = '<div class="loading-row">Loading purchase orders…</div>';
+  try{
+    var res2 = await SB('purchase_orders?order=order_date.desc');
+    var rows2 = res2.data || [];
+    renderStatusGroups(poWrap, rows2, 'status', 'total_amount', function(p){
+      return '<div class="tx-row">' +
+        '<div style="min-width:0;flex:1"><div class="tx-row-desc">'+(p.supplier_name||'(no supplier)')+'</div><div class="tx-row-date">'+(p.po_number||'')+' · '+(p.order_date||'')+'</div></div>' +
+        '<div class="tx-row-amount">£'+(parseFloat(p.total_amount)||0).toFixed(2)+'</div>' +
+      '</div>';
+    }, ['draft','sent','received','cancelled']);
+  }catch(e){
+    poWrap.innerHTML = '<div class="error-banner">Couldn\'t load purchase orders — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-docs'] = loadDocsScreen;
+
+document.querySelectorAll('[data-doc-tab]').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('[data-doc-tab]').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var which = tab.getAttribute('data-doc-tab');
+    document.getElementById('docInvoicesPanel').style.display = which === 'invoices' ? 'block' : 'none';
+    document.getElementById('docPOPanel').style.display = which === 'pos' ? 'block' : 'none';
+  });
+});
 
 function updateCashUpVariance(){
   var cash = parseFloat(document.getElementById('cuCash').value)||0;
