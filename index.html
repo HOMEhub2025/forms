@@ -314,6 +314,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>Oversight tools — bookings, money, and quotes.</p>
   </div>
   <div class="cards" style="margin-top:16px">
+    <div class="card accent-green" data-goto="screen-cashup">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
+      <div class="card-body"><div class="card-title">Daily Cash-Up</div><div class="card-desc">Log today's takings — cash, card, SumUp</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-orange" data-goto="screen-manage" data-mg-open="board">
       <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
       <div class="card-body"><div class="card-title">Bookings Overview</div><div class="card-desc">Day, week or month — everything on the board</div></div>
@@ -441,6 +446,32 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div id="qbErrorWrap"></div>
     <button class="btn-primary" id="qbGenerateBtn" type="button">Generate quote</button>
     <div class="helper-text" style="text-align:center">Opens a printable quote in a new tab — save as PDF or print straight from your phone.</div>
+  </div>
+</div>
+
+<!-- ============ CASH UP ============ -->
+<div class="screen" id="screen-cashup">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Daily <span>Cash-Up</span></h2>
+    <p>Same record Heartwood uses — this lands straight in the real ledger.</p>
+  </div>
+  <div class="form-wrap">
+    <div class="field"><label>Date</label><input type="date" id="cuDate"></div>
+    <div class="field"><label>What's this takings from (optional)</label><input type="text" id="cuSource" list="cuSourceOptions" placeholder="e.g. Astrology Workshop, Room Hire"><datalist id="cuSourceOptions"></datalist></div>
+    <div class="field-row">
+      <div class="field"><label>Cash</label><input type="text" inputmode="decimal" id="cuCash" placeholder="0.00"></div>
+      <div class="field"><label>Float held back</label><input type="text" inputmode="decimal" id="cuFloat" placeholder="0.00"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Card</label><input type="text" inputmode="decimal" id="cuCard" placeholder="0.00"></div>
+      <div class="field"><label>Card reference (optional)</label><input type="text" id="cuCardRef"></div>
+    </div>
+    <div class="field"><label>SumUp</label><input type="text" inputmode="decimal" id="cuSumup" placeholder="0.00"></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="cuNotes"></textarea></div>
+    <div class="helper-text" id="cuVarianceDisplay" style="display:none;font-weight:600"></div>
+    <div id="cuErrorWrap"></div>
+    <button class="btn-primary" id="cuSubmitBtn" type="button">Submit cash-up</button>
   </div>
 </div>
 
@@ -2035,22 +2066,35 @@ async function loadFinancials(){
   var statsWrap = document.getElementById('finStats');
   statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>';
   try{
-    var allRes = await SB('financial_transactions?select=tx_date,type,amount');
-    var all = allRes.data || [];
-    var incomeAll = all.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
-    var spendAll = all.filter(function(t){ return t.type==='expenditure'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
-    var currentBalance = incomeAll - spendAll;
+    // Matches Heartwood's real hwGetTakingsForRange "reconciled" money —
+    // cash-ups (excluding soft-deleted), paid invoices, and income
+    // transactions. This is genuinely confirmed money, not a forecast.
+    var cuRes = await SB('cash_ups?deleted_at=is.null&select=gross_total,cashup_date');
+    var invRes = await SB('invoices?status=eq.paid&select=total,issued_date');
+    var txRes = await SB('financial_transactions?select=tx_date,type,amount');
+    var cashups = cuRes.data || [];
+    var invoices = invRes.data || [];
+    var transactions = txRes.data || [];
+
+    var cashAll = cashups.reduce(function(s,c){ return s+(parseFloat(c.gross_total)||0); }, 0);
+    var invAll = invoices.reduce(function(s,i){ return s+(parseFloat(i.total)||0); }, 0);
+    var txIncomeAll = transactions.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
+    var spendAll = transactions.filter(function(t){ return t.type==='expenditure'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
+    var reconciledAll = cashAll + invAll + txIncomeAll;
+    var currentBalance = reconciledAll - spendAll;
 
     var now = new Date();
     var monthStart = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
-    var thisMonth = all.filter(function(t){ return t.tx_date >= monthStart; });
-    var incomeMonth = thisMonth.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
-    var spendMonth = thisMonth.filter(function(t){ return t.type==='expenditure'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
+    var cashMonth = cashups.filter(function(c){ return c.cashup_date >= monthStart; }).reduce(function(s,c){ return s+(parseFloat(c.gross_total)||0); }, 0);
+    var invMonth = invoices.filter(function(i){ return i.issued_date >= monthStart; }).reduce(function(s,i){ return s+(parseFloat(i.total)||0); }, 0);
+    var txThisMonth = transactions.filter(function(t){ return t.tx_date >= monthStart; });
+    var txIncomeMonth = txThisMonth.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
+    var incomeMonth = cashMonth + invMonth + txIncomeMonth;
+    var spendMonth = txThisMonth.filter(function(t){ return t.type==='expenditure'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
 
     var thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
     var thirtyDaysAgoStr = toISODate(thirtyDaysAgo);
-    var last30 = all.filter(function(t){ return t.tx_date >= thirtyDaysAgoStr && t.type==='expenditure'; });
-    var spend30 = last30.reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
+    var spend30 = transactions.filter(function(t){ return t.tx_date >= thirtyDaysAgoStr && t.type==='expenditure'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
     var avgDailySpend = spend30 / 30;
     var runRateDays = avgDailySpend > 0 ? Math.round(currentBalance / avgDailySpend) : null;
 
@@ -2598,6 +2642,97 @@ async function loadQuoteBuilder(){
   }catch(e){ sel.innerHTML = '<option value="">Couldn\'t load rooms</option>'; }
 }
 screenLoaders['screen-quote-builder'] = loadQuoteBuilder;
+
+/* ============================================================
+   CASH UP — matches Heartwood's real submitCashUp exactly:
+   gross_total = cash+card+sumup, net_cash_banking = cash-float.
+   ============================================================ */
+async function loadCashUp(){
+  document.getElementById('cuDate').value = toISODate(new Date());
+  ['cuSource','cuCash','cuFloat','cuCard','cuCardRef','cuSumup','cuNotes'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('cuErrorWrap').innerHTML = '';
+  document.getElementById('cuVarianceDisplay').style.display = 'none';
+  try{
+    var res = await SB('cash_ups?deleted_at=is.null&income_source=not.is.null&select=income_source&order=created_at.desc&limit=200');
+    var seen = {}; var options = [];
+    (res.data||[]).forEach(function(r){
+      var v = (r.income_source||'').trim();
+      if(v && !seen[v]){ seen[v] = true; options.push(v); }
+    });
+    document.getElementById('cuSourceOptions').innerHTML = options.map(function(o){
+      return '<option value="'+o.replace(/"/g,'&quot;')+'">';
+    }).join('');
+  }catch(e){ /* datalist just stays empty, not critical */ }
+}
+screenLoaders['screen-cashup'] = loadCashUp;
+
+function updateCashUpVariance(){
+  var cash = parseFloat(document.getElementById('cuCash').value)||0;
+  var card = parseFloat(document.getElementById('cuCard').value)||0;
+  var sumup = parseFloat(document.getElementById('cuSumup').value)||0;
+  var fl = parseFloat(document.getElementById('cuFloat').value)||0;
+  var gross = cash + card + sumup;
+  var el = document.getElementById('cuVarianceDisplay');
+  if(cash>0 || card>0 || sumup>0){
+    el.style.display = 'block';
+    el.textContent = 'Gross takings: £'+gross.toFixed(2)+' · Net cash banking: £'+(cash-fl).toFixed(2)+' · Card: £'+card.toFixed(2);
+  } else {
+    el.style.display = 'none';
+  }
+}
+['cuCash','cuCard','cuSumup','cuFloat'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', updateCashUpVariance);
+});
+
+document.getElementById('cuSubmitBtn').addEventListener('click', async function(){
+  var u = getUser();
+  if(!u){ openUserSheet(); return; }
+  var errWrap = document.getElementById('cuErrorWrap');
+  errWrap.innerHTML = '';
+
+  var cash = parseFloat(document.getElementById('cuCash').value)||0;
+  var card = parseFloat(document.getElementById('cuCard').value)||0;
+  var sumup = parseFloat(document.getElementById('cuSumup').value)||0;
+  var fl = parseFloat(document.getElementById('cuFloat').value)||0;
+  var gross = cash + card + sumup;
+  if(gross <= 0){ errWrap.innerHTML = '<div class="error-banner">Enter at least one amount before submitting.</div>'; return; }
+
+  var cuDate = document.getElementById('cuDate').value || toISODate(new Date());
+  var btn = document.getElementById('cuSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Checking…';
+
+  try{
+    var existing = await SB('cash_ups?cashup_date=eq.'+cuDate+'&deleted_at=is.null&select=id&limit=1');
+    if((existing.data||[]).length){
+      if(!confirm('There\'s already a cash-up recorded for '+cuDate+'. Save another one for the same date?')){
+        btn.disabled = false; btn.textContent = 'Submit cash-up';
+        return;
+      }
+    }
+
+    btn.textContent = 'Saving…';
+    await SB('cash_ups', {
+      method:'POST', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({
+        cash_amount: cash, card_amount: card, sumup_amount: sumup, float_amount: fl,
+        card_reference: document.getElementById('cuCardRef').value.trim() || null,
+        notes: document.getElementById('cuNotes').value.trim() || null,
+        gross_total: gross, net_cash_banking: cash - fl,
+        cashup_date: cuDate, income_source: document.getElementById('cuSource').value.trim() || null,
+        completed_by: u.display_name, created_at: new Date().toISOString()
+      })
+    });
+    logAction('submit_cashup', 'Cash Up', '£' + gross.toFixed(2) + ' gross for ' + cuDate);
+    showToast('Cash-up saved — £' + gross.toFixed(2) + ' gross');
+    goBack();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Submit cash-up';
+  }
+});
 
 /* ============================================================
    BOOKINGS & QUOTES — every quote created via the Quote Builder,
