@@ -2117,14 +2117,28 @@ async function loadFinancials(){
     // Matches Heartwood's real hwGetTakingsForRange "reconciled" money —
     // cash-ups (excluding soft-deleted), paid invoices, and income
     // transactions. This is genuinely confirmed money, not a forecast.
-    var cuRes = await SB('cash_ups?deleted_at=is.null&select=gross_total,cashup_date');
-    var invRes = await SB('invoices?status=eq.paid&select=total,issued_date');
+    //
+    // Two fixes applied here to match Heartwood exactly:
+    // 1. Invoices matched to a cash-up (matched_cashup_id set) are excluded
+    //    — that money's already counted via the cash-up's card_amount, so
+    //    counting the invoice too was double-counting the same payment.
+    // 2. Cash-ups are split: card_amount + sumup_amount (always bank-real)
+    //    count as Reconciled; the cash portion only counts as Reconciled
+    //    once banked_at is set. Until then it's Cash in Hand — real money,
+    //    just not yet verifiable against the bank statement.
+    var cuRes = await SB('cash_ups?deleted_at=is.null&select=cashup_date,card_amount,sumup_amount,net_cash_banking,banked_at');
+    var invRes = await SB('invoices?status=eq.paid&select=total,issued_date,matched_cashup_id');
     var txRes = await SB('financial_transactions?select=tx_date,type,amount');
     var cashups = cuRes.data || [];
-    var invoices = invRes.data || [];
+    var invoices = (invRes.data || []).filter(function(i){ return !i.matched_cashup_id; });
     var transactions = txRes.data || [];
 
-    var cashAll = cashups.reduce(function(s,c){ return s+(parseFloat(c.gross_total)||0); }, 0);
+    function cashBankedPortion(c){ return c.banked_at ? (parseFloat(c.net_cash_banking)||0) : 0; }
+    function cashUnbankedPortion(c){ return c.banked_at ? 0 : (parseFloat(c.net_cash_banking)||0); }
+    function cashCardSumup(c){ return (parseFloat(c.card_amount)||0) + (parseFloat(c.sumup_amount)||0); }
+
+    var cashAll = cashups.reduce(function(s,c){ return s+cashCardSumup(c)+cashBankedPortion(c); }, 0);
+    var cashInHandAll = cashups.reduce(function(s,c){ return s+cashUnbankedPortion(c); }, 0);
     var invAll = invoices.reduce(function(s,i){ return s+(parseFloat(i.total)||0); }, 0);
     var txIncomeAll = transactions.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
     var spendAll = transactions.filter(function(t){ return t.type==='expenditure'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
@@ -2133,7 +2147,8 @@ async function loadFinancials(){
 
     var now = new Date();
     var monthStart = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
-    var cashMonth = cashups.filter(function(c){ return c.cashup_date >= monthStart; }).reduce(function(s,c){ return s+(parseFloat(c.gross_total)||0); }, 0);
+    var cashMonth = cashups.filter(function(c){ return c.cashup_date >= monthStart; }).reduce(function(s,c){ return s+cashCardSumup(c)+cashBankedPortion(c); }, 0);
+    var cashInHandMonth = cashups.filter(function(c){ return c.cashup_date >= monthStart; }).reduce(function(s,c){ return s+cashUnbankedPortion(c); }, 0);
     var invMonth = invoices.filter(function(i){ return i.issued_date >= monthStart; }).reduce(function(s,i){ return s+(parseFloat(i.total)||0); }, 0);
     var txThisMonth = transactions.filter(function(t){ return t.tx_date >= monthStart; });
     var txIncomeMonth = txThisMonth.filter(function(t){ return t.type==='income'; }).reduce(function(s,t){ return s+(parseFloat(t.amount)||0); }, 0);
@@ -2150,7 +2165,9 @@ async function loadFinancials(){
       '<div class="stat-card"><div class="num">'+gbp(currentBalance)+'</div><div class="lbl">Current balance</div></div>' +
       '<div class="stat-card"><div class="num">'+gbp(incomeMonth)+'</div><div class="lbl">Income this month</div></div>' +
       '<div class="stat-card"><div class="num">'+gbp(spendMonth)+'</div><div class="lbl">Spend this month</div></div>' +
-      '<div class="stat-card"><div class="num">'+(runRateDays != null ? runRateDays : '–')+'</div><div class="lbl">Run rate (days)</div></div>';
+      '<div class="stat-card"><div class="num">'+(runRateDays != null ? runRateDays : '–')+'</div><div class="lbl">Run rate (days)</div></div>' +
+      '<div class="stat-card"><div class="num">'+gbp(cashInHandAll)+'</div><div class="lbl">Cash in hand (unbanked)</div></div>' +
+      '<div class="stat-card"><div class="num">'+gbp(cashInHandMonth)+'</div><div class="lbl">Cash in hand this month</div></div>';
   }catch(e){
     statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Couldn\'t load</div></div>';
   }
