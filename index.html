@@ -812,6 +812,18 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
         <label id="socialPickerLabel">Which session</label>
         <select id="socialPickerSelect"><option value="">Loading…</option></select>
       </div>
+      <div id="socialFacilitatorWrap"></div>
+      <div class="field" id="socialCtaWrap" style="display:none">
+        <label id="socialCtaLabel">What do you want people to do?</label>
+        <select id="socialCtaSelect"></select>
+        <div style="margin-top:6px">
+          <button type="button" id="socialCtaAddToggle" style="background:none;border:none;padding:0;color:var(--dg);font-weight:700;text-decoration:underline;cursor:pointer;font-size:.8rem">+ Add your own option</button>
+          <div id="socialCtaAddRow" class="field-row" style="display:none;gap:8px;margin-top:8px">
+            <input id="socialCtaNew" type="text" placeholder="e.g. Message us to reserve a place" style="flex:1">
+            <button type="button" id="socialCtaAddBtn" class="btn-secondary">Add</button>
+          </div>
+        </div>
+      </div>
       <button class="btn-primary" id="socialGenerateBtn" type="button">Generate posts</button>
     </div>
     <div class="form-wrap" id="socialVolunteerWrap" style="display:none">
@@ -2458,7 +2470,139 @@ async function loadSocialPicker(){
       }).join('');
     }catch(e){ select.innerHTML = '<option value="">Couldn\'t load rooms</option>'; }
   }
+  select.onchange = socialOnItemChange;
+  await socialRenderCtaOptions();
+  socialRenderFacilitatorField('');
 }
+
+function socialOnItemChange(){
+  var id = document.getElementById('socialPickerSelect').value;
+  var rec = null;
+  if(socialKind === 'session') rec = socialSessionsCache.find(function(x){ return x.id === id; });
+  else if(socialKind === 'group') rec = socialGroupsCache.find(function(x){ return x.id === id; });
+  else if(socialKind === 'room') rec = socialRoomsCache.find(function(x){ return x.id === id; });
+  var currentName = rec ? (rec.facilitator_name || rec.facilitator || '') : '';
+  socialRenderFacilitatorField(currentName);
+}
+
+/* ---------- Facilitator picker — same practitioners directory Heartwood
+   uses, so a name picked here matches what's already on file. Rooms don't
+   have a facilitator so the wrap stays empty for that kind. 💚 ---------- */
+var socialPractitionersCache = null;
+async function socialLoadFacilitators(){
+  if(socialPractitionersCache) return socialPractitionersCache;
+  try{
+    var res = await SB('practitioners?select=id,display_name,full_name&status=in.(approved,pending)&order=display_name.asc');
+    socialPractitionersCache = res.data || [];
+  }catch(e){ socialPractitionersCache = []; }
+  return socialPractitionersCache;
+}
+
+async function socialRenderFacilitatorField(currentName){
+  var wrap = document.getElementById('socialFacilitatorWrap');
+  if(!wrap) return;
+  if(socialKind === 'room'){ wrap.innerHTML = ''; return; }
+  var practitioners = await socialLoadFacilitators();
+  var match = practitioners.find(function(p){ return (p.display_name||p.full_name)===currentName; });
+  var options = practitioners.map(function(p){
+    var label = p.display_name || p.full_name || 'Unnamed';
+    return '<option value="'+p.id+'"'+(match&&match.id===p.id?' selected':'')+'>'+label+'</option>';
+  }).join('');
+  wrap.innerHTML = practitioners.length
+    ? '<div class="field">'
+      +'<label>Facilitator</label>'
+      +'<select id="socialFacilitatorSelect" onchange="socialToggleFacilitatorOther()">'
+        +'<option value=""'+(!currentName?' selected':'')+'>H.O.M.E Hub (no named facilitator)</option>'
+        +options
+        +'<option value="__other__"'+(currentName && !match ? ' selected':'')+'>Not listed \u2014 type a name</option>'
+      +'</select>'
+      +'</div>'
+      +'<div class="field" id="socialFacilitatorOtherWrap" style="'+((currentName && !match) ? '' : 'display:none')+'">'
+        +'<input id="socialFacilitatorOther" type="text" value="'+((currentName && !match) ? currentName : '')+'" placeholder="e.g. a guest facilitator">'
+      +'</div>'
+    : '<div class="field"><label>Facilitator (optional)</label><input id="socialFacilitatorOther" type="text" value="'+(currentName||'')+'" placeholder="e.g. Teresa"></div>'
+      +'<input type="hidden" id="socialFacilitatorSelect" value="__other__">';
+}
+
+function socialToggleFacilitatorOther(){
+  var sel = document.getElementById('socialFacilitatorSelect');
+  var wrap = document.getElementById('socialFacilitatorOtherWrap');
+  if(wrap) wrap.style.display = (sel && sel.value==='__other__') ? '' : 'none';
+}
+
+function socialGetFacilitatorOverride(fallback){
+  var sel = document.getElementById('socialFacilitatorSelect');
+  if(!sel) return fallback || null;
+  if(sel.value === '__other__'){
+    return (document.getElementById('socialFacilitatorOther')||{}).value.trim() || null;
+  }
+  if(!sel.value) return null;
+  var p = (socialPractitionersCache||[]).find(function(pp){ return pp.id === sel.value; });
+  return p ? (p.display_name||p.full_name) : null;
+}
+
+/* ---------- Growable "what do you want people to do" list — same shared
+   social_cta_options table Heartwood writes to, so an option added in
+   either app shows up in both. 💚 ---------- */
+var socialCtaCustomCache = {};
+async function socialLoadCtaCustom(cat){
+  if(socialCtaCustomCache[cat]) return socialCtaCustomCache[cat];
+  try{
+    var res = await SB('social_cta_options?category=eq.'+cat+'&order=created_at.asc');
+    socialCtaCustomCache[cat] = res.data || [];
+  }catch(e){ socialCtaCustomCache[cat] = []; }
+  return socialCtaCustomCache[cat];
+}
+
+async function socialRenderCtaOptions(){
+  var wrap = document.getElementById('socialCtaWrap');
+  var sel = document.getElementById('socialCtaSelect');
+  if(!wrap || !sel) return;
+  if(socialKind === 'volunteer'){ wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  var builtIns;
+  if(socialKind === 'room'){
+    builtIns = [{value:'enquire', label:'Get in touch to enquire'}];
+  } else if(socialKind === 'group'){
+    builtIns = [{value:'comealong', label:'Just come along'}];
+  } else {
+    builtIns = [
+      {value:'register', label:'Let us know you\u2019re coming (free RSVP)'},
+      {value:'waitlist', label:'Join the waitlist \u2014 it\u2019s full right now'},
+      {value:'book',     label:'Book your spot'}
+    ];
+  }
+  var custom = await socialLoadCtaCustom(socialKind);
+  sel.innerHTML = builtIns.map(function(o){ return '<option value="'+o.value+'">'+o.label+'</option>'; }).join('')
+    + custom.map(function(o){ return '<option value="custom:'+o.id+'">'+o.label+'</option>'; }).join('');
+}
+
+document.getElementById('socialCtaAddToggle').addEventListener('click', function(){
+  var row = document.getElementById('socialCtaAddRow');
+  row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+  if(row.style.display === 'flex') document.getElementById('socialCtaNew').focus();
+});
+
+document.getElementById('socialCtaAddBtn').addEventListener('click', async function(){
+  var inp = document.getElementById('socialCtaNew');
+  var label = inp.value.trim();
+  if(!label){ showToast('Type an option first'); return; }
+  try{
+    var res = await SB('social_cta_options', {
+      method:'POST', headers:{Prefer:'return=representation'},
+      body: JSON.stringify({category: socialKind, label: label})
+    });
+    var newRow = (res.data||[])[0];
+    socialCtaCustomCache[socialKind] = (socialCtaCustomCache[socialKind]||[]).concat(newRow ? [newRow] : []);
+    await socialRenderCtaOptions();
+    if(newRow) document.getElementById('socialCtaSelect').value = 'custom:'+newRow.id;
+    inp.value = '';
+    document.getElementById('socialCtaAddRow').style.display = 'none';
+    showToast('Added \u2014 saved for next time too');
+  }catch(e){
+    showToast('Could not save \u2014 ' + (e.message.indexOf('does not exist')>-1 ? 'run the social_cta_options SQL in Supabase first' : e.message), true);
+  }
+});
 
 function socialRelativeDayLabel(dateStr){
   if(!dateStr) return 'Date TBC';
@@ -2504,29 +2648,40 @@ document.getElementById('socialGenerateBtn').addEventListener('click', async fun
   var btn = document.getElementById('socialGenerateBtn');
 
   var payload;
+  var ctaChoice = (document.getElementById('socialCtaSelect')||{}).value || '';
+  var isCustomCta = ctaChoice.indexOf('custom:') === 0;
+  var customCtaLabel = isCustomCta
+    ? ((socialCtaCustomCache[socialKind]||[]).find(function(o){ return 'custom:'+o.id === ctaChoice; })||{}).label
+    : null;
+
   if(socialKind === 'session'){
     var s = socialSessionsCache.find(function(x){ return x.id === id; });
     socialCurrentRecord = s;
     var when = s.recurrence_type === 'weekly' ? ('Every ' + (s.day_of_week || ''))
       : s.recurrence_type === 'fortnightly' ? ('Every other ' + (s.day_of_week || ''))
       : socialRelativeDayLabel(s.event_date);
-    var bookingUrl = s.public_slug ? ('https://heartwood.homehub-benfleet.co.uk/?book=' + s.public_slug) : '';
+    var ctaLabelMap = {register:'Let us know you\u2019re coming \u2014 free, no booking needed', waitlist:'Join the waitlist \u2014 this one\u2019s full right now', book:'Book your spot'};
+    var useRegister = ctaChoice === 'register' && !!s.register_slug;
+    var linkSlug = useRegister ? s.register_slug : s.public_slug;
+    var bookingUrl = linkSlug ? ('https://heartwood.homehub-benfleet.co.uk/?' + (useRegister?'register=':'book=') + linkSlug) : '';
+    if(ctaChoice === 'register' && !s.register_slug && s.public_slug) showToast('No register link set up yet \u2014 using the booking link instead');
     socialLastLink = bookingUrl;
     payload = {
-      postType: 'session', name: s.name, facilitatorName: s.facilitator_name,
+      postType: 'session', name: s.name, facilitatorName: socialGetFacilitatorOverride(s.facilitator_name),
       description: s.description, dayLabel: when,
       timeLabel: s.window_start_time ? fmtTime(s.window_start_time) : '',
       isFree: s.is_free, price: s.price, bookingUrl: bookingUrl,
-      ctaLabel: "Let us know you're coming"
+      ctaLabel: isCustomCta ? (customCtaLabel || 'Book your spot') : (ctaLabelMap[ctaChoice] || "Let us know you're coming")
     };
   } else if(socialKind === 'group'){
     var g = socialGroupsCache.find(function(x){ return x.id === id; });
     socialCurrentRecord = g;
     socialLastLink = '';
     payload = {
-      postType: 'group', name: g.name, facilitatorName: g.facilitator,
+      postType: 'group', name: g.name, facilitatorName: socialGetFacilitatorOverride(g.facilitator),
       category: g.category, whenText: g.when_text || g.frequency,
-      description: g.description, isFree: g.price ? false : true, price: g.price
+      description: g.description, isFree: g.price ? false : true, price: g.price,
+      ctaLabel: isCustomCta ? customCtaLabel : null
     };
   } else {
     var r = socialRoomsCache.find(function(x){ return x.id === id; });
@@ -2545,7 +2700,7 @@ document.getElementById('socialGenerateBtn').addEventListener('click', async fun
     payload = {
       postType: 'room', roomName: r.name, capacity: r.capacity,
       description: r.notes, rateInfo: rateInfo,
-      contactMethod: 'Enquire here: ' + roomHireUrl
+      contactMethod: (isCustomCta && customCtaLabel ? customCtaLabel + ': ' : 'Enquire here: ') + roomHireUrl
     };
   }
   generateSocialPost(btn, payload);
