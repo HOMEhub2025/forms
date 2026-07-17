@@ -74,14 +74,14 @@ Never invent details not provided.`;
       userPrompt = `Write a general community post set about this:\n\nTopic: ${topic}\nExtra details: ${details || '(none given — keep it simple and warm)'}\nCall to action / link (if any): ${callToAction || '(none given — no need to force one)'}`;
 
     } else if (postType === 'group') {
-      const { name, facilitatorName, category, whenText, description, isFree, price } = body;
+      const { name, facilitatorName, category, whenText, description, isFree, price, ctaLabel } = body;
       if (!name) { res.status(400).json({ error: 'Group name is required' }); return; }
 
       const priceLine = isFree ? 'This is completely free to attend.' : (price ? `This costs \u00a3${Number(price).toFixed(2)}.` : '');
 
-      systemPrompt = baseVoice + `\n\nThis is one of H.O.M.E Hub's ONGOING COMMUNITY GROUPS or programmes — not a one-off event, something that runs regularly (weekly, drop-in, or similar) and people can just turn up to, or come back to again and again. It should read like a warm invitation to join an existing, welcoming circle of people, not a countdown to a single date. Mention when it runs if given. There's no online booking for these — always invite people to just come along, or get in touch if they'd like to know more first.`;
+      systemPrompt = baseVoice + `\n\nThis is one of H.O.M.E Hub's ONGOING COMMUNITY GROUPS or programmes — not a one-off event, something that runs regularly (weekly, drop-in, or similar) and people can just turn up to, or come back to again and again. It should read like a warm invitation to join an existing, welcoming circle of people, not a countdown to a single date. Mention when it runs if given. There's no online booking for these — the call to action below tells you how to phrase the invitation; follow it rather than defaulting to generic "come along" wording if something more specific is given.`;
 
-      userPrompt = `Write a social media post set for this community group:\n\nName: ${name}\nRun by: ${facilitatorName || 'H.O.M.E Hub'}\nCategory: ${category || '(not specified)'}\nWhen: ${whenText || '(not specified — keep it simple, just invite people to ask)'}\nDescription: ${description || '(no extra description given — keep it warm and welcoming)'}\n${priceLine}`;
+      userPrompt = `Write a social media post set for this community group:\n\nName: ${name}\nRun by: ${facilitatorName || 'H.O.M.E Hub'}\nCategory: ${category || '(not specified)'}\nWhen: ${whenText || '(not specified — keep it simple, just invite people to ask)'}\nDescription: ${description || '(no extra description given — keep it warm and welcoming)'}\n${priceLine}\nCall to action: ${ctaLabel || 'Just come along, or get in touch first if unsure'}`;
 
     } else if (postType === 'room') {
       const { roomName, capacity, description, rateInfo, contactMethod } = body;
