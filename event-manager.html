@@ -816,6 +816,13 @@ function showToast(msg, dur) {
 // ════════════════════════════════════════════════════════════════════
 // EVENT LIST
 // ════════════════════════════════════════════════════════════════════
+// Local YYYY-MM-DD for "today" — never new Date().toISOString().slice(0,10),
+// which silently shifts a day during BST. Matches Heartwood's todayISO(). 💚
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 async function loadEventList() {
   var container = document.getElementById('event-list-container');
   var kpis = document.getElementById('list-kpis');
@@ -826,7 +833,7 @@ async function loadEventList() {
 
     // KPIs
     var total    = events.length;
-    var upcoming = events.filter(function(e){ return e.event_date >= new Date().toISOString().slice(0,10); }).length;
+    var upcoming = events.filter(function(e){ return e.event_date >= todayISO(); }).length;
     var planned  = events.filter(function(e){ return e.status === 'planned'; }).length;
     var complete = events.filter(function(e){ return e.status === 'complete'; }).length;
     kpis.innerHTML =
