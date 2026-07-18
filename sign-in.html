@@ -660,6 +660,13 @@ function SB(path, opts){
     .then(function(r){ return r.json().then(function(d){ return {data:d, ok:r.ok, status:r.status}; }); });
 }
 
+// Local YYYY-MM-DD for "today" — never new Date().toISOString().slice(0,10),
+// which silently shifts a day during BST. Matches Heartwood's todayISO(). 💚
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
 function makeTile(label, value, container, stateKey, full){
   var d = document.createElement('div');
   d.className = 'tile'+(full?' full':'');
@@ -964,7 +971,7 @@ async function submitNew(){
       postcode:S.newPostcode||null, age_group:S.selectedAge||null, gender:S.selectedGender||null,
       newsletter_consent:S.newsletterConsent, whatsapp_consent:S.whatsappConsent,
       anon_reporting_consent:S.anonConsent, is_co_creator:false,
-      first_visit_date:new Date().toISOString().slice(0,10)
+      first_visit_date:todayISO()
     })});
     var newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
     var autoOut=await calcAutoSignOut(newV,'community');
