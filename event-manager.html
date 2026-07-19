@@ -1212,6 +1212,15 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Safely embed a string as a single-quoted JS argument inside an
+// onclick="..." HTML attribute — escapes backslashes/quotes for JS,
+// then HTML-escapes so the result sits safely inside a double-quoted
+// attribute. Returns the value already wrapped in quotes, ready to drop
+// straight into a concatenated onclick call.
+function escJsAttr(v) {
+  return "'" + String(v==null?'':v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + "'";
+}
+
 function hdr(d, docType) {
   return '<h1>H.O.M.E Hub CIC — ' + esc(docType) + '</h1>' +
     '<p><strong>Event: </strong>' + esc(d.title) + '</p>' +
@@ -2091,7 +2100,7 @@ function addCustomFinRow(type) {
   row.id = 'custom-row-' + id;
   row.innerHTML = '<input class="fin-custom-label" placeholder="Label (e.g. Donations)" id="fl-' + id + '" oninput="calcFinSummary()"/>' +
     '<input class="fin-row-input" type="number" min="0" step="0.01" placeholder="0.00" id="' + prefix + id + '" oninput="calcFinSummary()"/>' +
-    '<button class="fin-remove" onclick="removeCustomRow('' + type + '',' + id + ')">×</button>';
+    '<button class="fin-remove" onclick="removeCustomRow(\'' + type + '\',' + id + ')">×</button>';
   container.appendChild(row);
 }
 
@@ -2259,7 +2268,7 @@ async function loadLessons(eventId) {
       return '<div style="display:flex;align-items:center;gap:8px;background:white;border-radius:8px;padding:8px 10px;font-size:12px">' +
         '<span>' + (r.category==='went_well'?'✅':'⚠️') + ' ' + r.item + '</span>' +
         '<span style="font-size:10px;color:var(--mut)">from ' + (r.event_name||'previous event') + '</span>' +
-        '<button onclick="importLesson('' + r.category + '','' + r.item.replace(/'/g,"\'") + '')" style="margin-left:auto;padding:4px 10px;border:none;border-radius:6px;background:var(--db);color:white;font-size:10px;font-weight:700;cursor:pointer">Import</button>' +
+        '<button onclick="importLesson(' + escJsAttr(r.category) + ',' + escJsAttr(r.item) + ')" style="margin-left:auto;padding:4px 10px;border:none;border-radius:6px;background:var(--db);color:white;font-size:10px;font-weight:700;cursor:pointer">Import</button>' +
         '</div>';
     }).join('');
   }
@@ -2349,7 +2358,7 @@ function renderLessonsOverview() {
       '<div class="lesson-top">' +
       '<span class="lesson-tag ' + (l.category === 'went_well' ? 'lesson-ww' : 'lesson-ti') + '">' + (l.category === 'went_well' ? '✅' : '⚠️') + '</span>' +
       '<span class="lesson-text">' + l.item + '</span>' +
-      '<select class="lesson-status-sel" onchange="updateOverviewLessonStatus('' + l.id + '',this.value)" style="border-color:' + statusCol + ';color:' + statusCol + '">' +
+      '<select class="lesson-status-sel" onchange="updateOverviewLessonStatus(' + l.id + ',this.value)" style="border-color:' + statusCol + ';color:' + statusCol + '">' +
       '<option value="open"' + (l.status==='open'?' selected':'') + '>Open</option>' +
       '<option value="in_progress"' + (l.status==='in_progress'?' selected':'') + '>In Progress</option>' +
       '<option value="actioned"' + (l.status==='actioned'?' selected':'') + '>Actioned ✓</option>' +
