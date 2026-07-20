@@ -187,7 +187,17 @@ function SB(path, opts){
   var h = {apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, 'Content-Type':'application/json'};
   var extra = (opts && opts.headers) ? opts.headers : {};
   return fetch(SUPABASE_URL+'/rest/v1/'+path, Object.assign({},opts,{headers:Object.assign({},h,extra)}))
-    .then(function(r){ return r.json().then(function(d){ return {data:d, ok:r.ok, status:r.status}; }); });
+    .then(function(r){
+      // Read as text first — an empty body (e.g. from Prefer: return=minimal
+      // on an insert) is valid and common, but calling .json() directly on
+      // it throws "Unexpected end of JSON input" and aborts the whole call.
+      // This was the root cause of intermittent sign-in failures. 💚
+      return r.text().then(function(txt){
+        var d = null;
+        if(txt){ try { d = JSON.parse(txt); } catch(e){ d = null; } }
+        return {data:d, ok:r.ok, status:r.status};
+      });
+    });
 }
 
 function todayISO(){
