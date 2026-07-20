@@ -579,20 +579,30 @@ document.getElementById('btn-signin').addEventListener('click', async function()
   try {
     var visitorId = S.visitor.id;
     if(!visitorId){
-      var vRes = await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
-        full_name:S.visitor.full_name, email:S.visitor.email||null, mobile:S.visitor.mobile||null,
-        postcode:S.visitor.postcode||null, age_group:S.visitor.age_group||null,
-        is_co_creator:false,
-        anon_reporting_consent:S.visitor.anon_reporting_consent!==false,
-        newsletter_consent:!!S.visitor.newsletter_consent, whatsapp_consent:false,
-        first_visit_date:todayISO()
-      })});
-      if(!vRes.ok){
-        throw new Error('Could not save this visitor — ' + (vRes.data && vRes.data.message ? vRes.data.message : 'error '+vRes.status));
-      }
-      visitorId = (vRes.data||[])[0] ? vRes.data[0].id : null;
-      if(!visitorId){
-        throw new Error('Visitor record didn\u2019t save properly — nothing came back from the database.');
+      // Case-insensitive check first — stops a staff member accidentally
+      // creating a second record for someone who's already in the
+      // system under slightly different capitalisation. 💚
+      var existingRes = await SB('visitors?full_name=ilike.'+encodeURIComponent(S.visitor.full_name)+'&limit=1');
+      var existing = (existingRes.data||[])[0];
+      if(existing){
+        visitorId = existing.id;
+        S.visitor.full_name = existing.full_name;
+      } else {
+        var vRes = await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
+          full_name:S.visitor.full_name, email:S.visitor.email||null, mobile:S.visitor.mobile||null,
+          postcode:S.visitor.postcode||null, age_group:S.visitor.age_group||null,
+          is_co_creator:false,
+          anon_reporting_consent:S.visitor.anon_reporting_consent!==false,
+          newsletter_consent:!!S.visitor.newsletter_consent, whatsapp_consent:false,
+          first_visit_date:todayISO()
+        })});
+        if(!vRes.ok){
+          throw new Error('Could not save this visitor — ' + (vRes.data && vRes.data.message ? vRes.data.message : 'error '+vRes.status));
+        }
+        visitorId = (vRes.data||[])[0] ? vRes.data[0].id : null;
+        if(!visitorId){
+          throw new Error('Visitor record didn\u2019t save properly — nothing came back from the database.');
+        }
       }
     }
 
