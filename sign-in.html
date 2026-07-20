@@ -429,10 +429,22 @@ input::placeholder{color:#b0b7c0;font-weight:400}
       <div class="card-icon blue"><svg><use href="#icon-heart"/></svg></div>
       <div><div class="card-title">What brings you in today?</div><div class="card-sub">Choose the reason that feels most right</div></div>
     </div>
+    <div id="ret-usual-reasons-wrap" style="display:none">
+      <div class="section-label">Your usual reasons</div>
+      <div class="tiles" id="ret-usual-reason-tiles"></div>
+    </div>
+    <div class="section-label" id="ret-reason-all-label" style="display:none">All reasons</div>
     <div class="tiles" id="ret-reason-tiles"></div>
     <div class="validation-prompt" id="ret-reason-error" style="margin-top:10px">
       <div class="validation-prompt-text">Please choose a reason to continue</div>
       <div class="validation-prompt-hint">There's no wrong answer — just pick what feels closest to why you're here today</div>
+    </div>
+    <div class="toggle-row" id="ret-volunteer-row" style="margin-top:14px">
+      <div class="toggle-text">
+        <div class="toggle-label-text">I'm volunteering today</div>
+        <div class="toggle-sub-text">Helping out rather than attending as a visitor</div>
+      </div>
+      <button class="toggle" id="ret-volunteer-toggle" aria-label="Volunteering today"></button>
     </div>
     <div style="margin-top:20px">
       <div class="btn" id="btn-ret-signin">Sign me in</div>
@@ -566,6 +578,13 @@ input::placeholder{color:#b0b7c0;font-weight:400}
       <div class="validation-prompt-text">Please choose a reason to continue</div>
       <div class="validation-prompt-hint">Just pick what feels closest to why you're here today</div>
     </div>
+    <div class="toggle-row" id="new-volunteer-row" style="margin-top:14px">
+      <div class="toggle-text">
+        <div class="toggle-label-text">I'm volunteering today</div>
+        <div class="toggle-sub-text">Helping out rather than attending as a visitor</div>
+      </div>
+      <button class="toggle" id="new-volunteer-toggle" aria-label="Volunteering today"></button>
+    </div>
     <div style="margin-top:20px">
       <div class="btn" id="btn-session-signin">Sign me in</div>
       <div class="btn-ghost" id="btn-session-back">Go back</div>
@@ -628,7 +647,7 @@ var S = {
   selectedSession:'', selectedReason:'',
   selectedAge:'', selectedGender:'',
   newName:'', newEmail:'', newMobile:'', newPostcode:'',
-  newsletterConsent:false, whatsappConsent:false, anonConsent:true,
+  newsletterConsent:false, whatsappConsent:false, anonConsent:true, isVolunteering:false,
   sessions:[], todaySessions:[], reasons:[]
 };
 
@@ -851,26 +870,40 @@ async function buildReturningScreen(v){
     missingCard.style.display='none';
   }
 
-  // Previous sessions (last 3 months)
-  S.selectedSession=''; S.selectedReason='';
+  // Previous sessions + reasons (last 3 months) — shortlisted per person to make it faster
+  S.selectedSession=''; S.selectedReason=''; S.isVolunteering=false;
   var usualWrap = document.getElementById('ret-usual-wrap');
   var usualTiles = document.getElementById('ret-usual-tiles');
-  usualTiles.innerHTML='';
+  var usualReasonsWrap = document.getElementById('ret-usual-reasons-wrap');
+  var usualReasonTiles = document.getElementById('ret-usual-reason-tiles');
+  var reasonAllLabel = document.getElementById('ret-reason-all-label');
+  usualTiles.innerHTML=''; usualReasonTiles.innerHTML='';
 
   try {
     var threeAgo = new Date(); threeAgo.setMonth(threeAgo.getMonth()-3);
-    var pr = await SB('sign_ins?visitor_id=eq.'+v.id+'&signed_in_at=gte.'+threeAgo.toISOString()+'&select=session_name&order=signed_in_at.desc&limit=40');
+    var pr = await SB('sign_ins?visitor_id=eq.'+v.id+'&signed_in_at=gte.'+threeAgo.toISOString()+'&select=session_name,reason_for_attending&order=signed_in_at.desc&limit=40');
     var seen={}; var prev=[];
-    (pr.data||[]).forEach(function(r){ if(r.session_name && !seen[r.session_name]){ seen[r.session_name]=true; prev.push(r.session_name); } });
+    var seenReasons={}; var prevReasons=[];
+    (pr.data||[]).forEach(function(r){
+      if(r.session_name && !seen[r.session_name]){ seen[r.session_name]=true; prev.push(r.session_name); }
+      if(r.reason_for_attending && !seenReasons[r.reason_for_attending]){ seenReasons[r.reason_for_attending]=true; prevReasons.push(r.reason_for_attending); }
+    });
     if(prev.length){
       usualWrap.style.display='block';
       prev.slice(0,4).forEach(function(s){ makeTile(s,s,usualTiles,'selectedSession'); });
-      document.getElementById('ret-today-label').textContent = 'On today — '+getTodayName();
     } else {
       usualWrap.style.display='none';
-      document.getElementById('ret-today-label').textContent = 'On today — '+getTodayName();
     }
-  } catch(e){ usualWrap.style.display='none'; }
+    document.getElementById('ret-today-label').textContent = 'On today — '+getTodayName();
+    if(prevReasons.length){
+      usualReasonsWrap.style.display='block';
+      reasonAllLabel.style.display='block';
+      prevReasons.slice(0,4).forEach(function(r){ makeTile(r,r,usualReasonTiles,'selectedReason'); });
+    } else {
+      usualReasonsWrap.style.display='none';
+      reasonAllLabel.style.display='none';
+    }
+  } catch(e){ usualWrap.style.display='none'; usualReasonsWrap.style.display='none'; }
 
   // Today + all sessions
   buildSessionTiles('ret-today-tiles','ret-all-tiles','ret-show-more','ret-all-sessions-wrap','ret-today-label');
@@ -879,6 +912,28 @@ async function buildReturningScreen(v){
   var reasonEl = document.getElementById('ret-reason-tiles');
   reasonEl.innerHTML='';
   S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
+
+  // Volunteer toggle — reset each time this screen builds, auto-picks the "Volunteering" reason tile when switched on
+  setupToggle('ret-volunteer-toggle','isVolunteering',false);
+  document.getElementById('ret-volunteer-toggle').addEventListener('click', function(){
+    if(S.isVolunteering) autoSelectVolunteerReason('ret-reason-tiles','ret-usual-reason-tiles');
+  });
+}
+
+function autoSelectVolunteerReason(){
+  for(var i=0;i<arguments.length;i++){
+    var container = document.getElementById(arguments[i]);
+    if(!container) continue;
+    var tiles = container.querySelectorAll('.tile');
+    for(var j=0;j<tiles.length;j++){
+      if(tiles[j].getAttribute('data-value') === 'Volunteering'){
+        document.querySelectorAll('#ret-usual-reason-tiles .tile, #ret-reason-tiles .tile, #reason-tiles .tile').forEach(function(c){ c.classList.remove('selected'); });
+        tiles[j].classList.add('selected');
+        S.selectedReason = 'Volunteering';
+        return;
+      }
+    }
+  }
 }
 
 document.getElementById('btn-ret-signin').addEventListener('click', submitReturning);
@@ -904,11 +959,11 @@ async function submitReturning(){
     if(S.newsletterConsent) updates.newsletter_consent=true;
     if(S.whatsappConsent) updates.whatsapp_consent=true;
     if(Object.keys(updates).length) await SB('visitors?id=eq.'+S.visitor.id,{method:'PATCH',body:JSON.stringify(updates)});
-    var autoOut = await calcAutoSignOut(S.visitor, S.visitType);
+    var autoOut = await calcAutoSignOut(S.visitor, S.visitType, S.isVolunteering);
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
       visitor_id:S.visitor.id, visitor_name:S.visitor.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
-      visit_type:S.visitType||'community',
+      visit_type:S.isVolunteering ? 'volunteer' : (S.visitType||'community'),
       signed_out_at:autoOut.toISOString(), auto_signed_out:true
     })});
     await doThankYou(S.visitor.full_name);
@@ -947,11 +1002,16 @@ document.getElementById('btn-new-back').addEventListener('click', function(){ sh
 
 // ── SCREEN 5: SESSION ────────────────────────────────────────────
 function buildSessionScreen(){
-  S.selectedSession=''; S.selectedReason='';
+  S.selectedSession=''; S.selectedReason=''; S.isVolunteering=false;
   buildSessionTiles('new-today-tiles','new-all-tiles','new-show-more','new-all-sessions-wrap','new-today-label');
   var reasonEl=document.getElementById('reason-tiles');
   reasonEl.innerHTML='';
   S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
+
+  setupToggle('new-volunteer-toggle','isVolunteering',false);
+  document.getElementById('new-volunteer-toggle').addEventListener('click', function(){
+    if(S.isVolunteering) autoSelectVolunteerReason('reason-tiles');
+  });
 }
 
 document.getElementById('btn-session-signin').addEventListener('click', submitNew);
@@ -974,20 +1034,20 @@ async function submitNew(){
       first_visit_date:todayISO()
     })});
     var newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
-    var autoOut=await calcAutoSignOut(newV,'community');
+    var autoOut=await calcAutoSignOut(newV,'community',S.isVolunteering);
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
       visitor_id:newV.id, visitor_name:S.newName,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
-      visit_type:'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
+      visit_type:S.isVolunteering ? 'volunteer' : 'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
     })});
     await doThankYou(S.newName);
   } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
 }
 
 // ── AUTO SIGN-OUT ────────────────────────────────────────────────
-async function calcAutoSignOut(visitor, visitType){
+async function calcAutoSignOut(visitor, visitType, isVolunteering){
   var now=new Date();
-  if(visitor && visitor.id && visitType==='co_creator'){
+  if(visitor && visitor.id && (visitType==='co_creator' || isVolunteering)){
     var days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
     var today=days[now.getDay()];
     try {
