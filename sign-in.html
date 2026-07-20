@@ -1215,7 +1215,7 @@ async function doThankYou(name, email){
 // ── COMMUNITY CHAMPION PROMPT ─────────────────────────────────────
 // A light, entirely optional "would you like to help support the
 // Hub?" ask on the thank-you screen. Logs interest into the same
-// patron_interests table the full Champions form uses, so James/Mark
+// champions_interests table the full Champions form uses, so James/Mark
 // see it in one place — but doesn't force anyone through that whole
 // tier-selection form mid sign-in. 💚
 function resetChampionPrompt(name, email){
@@ -1262,13 +1262,14 @@ document.getElementById('btn-champion-send').addEventListener('click', async fun
     var lastN = nameParts.slice(1).join(' ') || '';
     var payload = {
       first_name: firstN, last_name: lastN, email: email, phone: null,
-      tier: null, tier_label: null, payment_preference: null, explorer_amount: null,
+      tier: 'undecided', tier_label: 'Interest expressed at sign-in \u2014 no tier chosen yet',
+      payment_preference: null, explorer_amount: null,
       is_commercial: false, organisation_name: null, organisation_website: null,
       how_heard: 'Sign-in thank-you prompt',
       consent_contact: true, consent_newsletter: false, consent_stats: false,
       status: 'interest', created_at: new Date().toISOString()
     };
-    var res = await SB('patron_interests', {method:'POST', headers:{Prefer:'return=minimal'}, body:JSON.stringify(payload)});
+    var res = await SB('champions_interests', {method:'POST', headers:{Prefer:'return=minimal'}, body:JSON.stringify(payload)});
     if(!res.ok){
       throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status);
     }
