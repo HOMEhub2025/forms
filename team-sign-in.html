@@ -453,15 +453,9 @@ function overallReasonCounts(history){
 function buildReasonPicker(containerId, sessionName, onPick){
   var el = document.getElementById(containerId);
   el.innerHTML = '';
-  var history = S.visitorHistory || {};
-  var sessionReasons = (sessionName && history[sessionName]) ? history[sessionName] : null;
-  var topReasons = sessionReasons ? Object.keys(sessionReasons).sort(function(a,b){ return sessionReasons[b]-sessionReasons[a]; }) : [];
-  var overallTop = topReasons.length ? [] : overallReasonCounts(history);
-  var primary = topReasons.length ? topReasons : overallTop;
-  var rest = S.reasons.filter(function(r){ return primary.indexOf(r)===-1; });
 
-  // Contractor company-name field — appears only when "Contractor" is
-  // the picked reason. 💚
+  // Contractor company-name field — built up front so both the normal
+  // picker and the Contractor shortcut below can use it. 💚
   S.contractorCompany = '';
   var companyWrap = document.createElement('div');
   companyWrap.style.cssText = 'display:none;margin-top:12px';
@@ -469,6 +463,31 @@ function buildReasonPicker(containerId, sessionName, onPick){
     '<label class="field-label" for="contractor-company-input">Company name</label>' +
     '<input type="text" id="contractor-company-input" placeholder="e.g. Waites Ltd" autocomplete="organization">';
   companyWrap.querySelector('input').addEventListener('input', function(){ S.contractorCompany = this.value; });
+
+  // Contractors, Trustees and Partners aren't attending a group session
+  // — the reason is implied by which "H.O.M.E Hub -" option was picked,
+  // so skip the reason picker entirely. 💚
+  if(sessionName === 'H.O.M.E Hub - Contractors'){
+    onPick('Contractor');
+    companyWrap.style.display = 'block';
+    el.appendChild(companyWrap);
+    return;
+  }
+  if(sessionName === 'H.O.M.E Hub - Trustees' || sessionName === 'H.O.M.E Hub - Partners'){
+    onPick('Attending a Meeting');
+    var autoNote = document.createElement('div');
+    autoNote.style.cssText = 'font-size:13px;color:var(--muted);font-weight:500;padding:4px 0';
+    autoNote.textContent = 'Reason: Attending a Meeting';
+    el.appendChild(autoNote);
+    return;
+  }
+
+  var history = S.visitorHistory || {};
+  var sessionReasons = (sessionName && history[sessionName]) ? history[sessionName] : null;
+  var topReasons = sessionReasons ? Object.keys(sessionReasons).sort(function(a,b){ return sessionReasons[b]-sessionReasons[a]; }) : [];
+  var overallTop = topReasons.length ? [] : overallReasonCounts(history);
+  var primary = topReasons.length ? topReasons : overallTop;
+  var rest = S.reasons.filter(function(r){ return primary.indexOf(r)===-1; });
 
   function pick(label){
     onPick(label);
