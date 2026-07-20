@@ -1061,13 +1061,14 @@ async function submitReturning(){
     if(S.whatsappConsent) updates.whatsapp_consent=true;
     if(Object.keys(updates).length) await SB('visitors?id=eq.'+S.visitor.id,{method:'PATCH',body:JSON.stringify(updates)});
     var autoOut = await calcAutoSignOut(S.visitor, S.visitType, S.isVolunteering);
-    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+    var signInPayload = {
       visitor_id:S.visitor.id, visitor_name:S.visitor.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
-      company_name:S.selectedReason==='Contractor' ? S.contractorCompany.trim() : null,
       visit_type:S.isVolunteering ? 'volunteer' : (S.visitType||'community'),
       signed_out_at:autoOut.toISOString(), auto_signed_out:true
-    })});
+    };
+    if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
+    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
     await doThankYou(S.visitor.full_name);
   } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
 }
@@ -1145,12 +1146,13 @@ async function submitNew(){
       newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
     }
     var autoOut=await calcAutoSignOut(newV,'community',S.isVolunteering);
-    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+    var signInPayload = {
       visitor_id:newV.id, visitor_name:newV.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
-      company_name:S.selectedReason==='Contractor' ? S.contractorCompany.trim() : null,
       visit_type:S.isVolunteering ? 'volunteer' : 'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
-    })});
+    };
+    if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
+    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
     await doThankYou(newV.full_name);
   } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
 }
