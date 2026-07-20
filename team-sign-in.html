@@ -121,6 +121,25 @@ input:focus{outline:none;border-color:var(--dg)}
     <input type="email" id="new-email" placeholder="their@email.com">
     <label class="field-label" for="new-mobile">Mobile <span style="text-transform:none;font-weight:500">(optional)</span></label>
     <input type="tel" id="new-mobile" placeholder="07700 000000">
+    <label class="field-label" for="new-postcode">Postcode <span style="text-transform:none;font-weight:500">(first part only, optional)</span></label>
+    <input type="text" id="new-postcode" placeholder="SS7" maxlength="6" style="text-transform:uppercase">
+    <label class="field-label" for="new-age">Age group <span style="text-transform:none;font-weight:500">(optional)</span></label>
+    <select id="new-age" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px">
+      <option value="">Prefer not to say</option>
+      <option>Under 18</option><option>18–24</option><option>25–34</option>
+      <option>35–44</option><option>45–54</option><option>55–64</option><option>65+</option>
+    </select>
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:.7rem;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px">GDPR &amp; consent</div>
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--text);cursor:pointer;padding:4px 0;font-weight:500">
+        <input type="checkbox" id="new-anon" checked style="width:16px;height:16px;accent-color:var(--dg);margin-top:1px;flex-shrink:0">
+        Happy for anonymised data to be used in funder reports
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.78rem;color:var(--text);cursor:pointer;padding:4px 0;font-weight:500">
+        <input type="checkbox" id="new-newsletter" style="width:16px;height:16px;accent-color:var(--dg);margin-top:1px;flex-shrink:0">
+        Happy to receive the newsletter &amp; updates
+      </label>
+    </div>
     <div class="err" id="new-name-err">Please enter a name to continue</div>
     <div class="btn" id="btn-new-continue">Continue</div>
     <div class="btn-ghost" id="btn-new-back">Go back</div>
@@ -136,25 +155,10 @@ input:focus{outline:none;border-color:var(--dg)}
       <button type="button" class="change-btn" id="btn-change-person">Change</button>
     </div>
 
-    <div id="usual-sessions-wrap" class="hidden">
-      <div class="section-label">Usual sessions</div>
-      <div class="tiles" id="usual-session-tiles"></div>
-    </div>
-    <div class="section-label" id="today-sessions-label">On today</div>
-    <div class="tiles" id="today-session-tiles"></div>
-    <div class="show-more-btn" id="show-more-sessions">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      See all sessions
-    </div>
-    <div class="all-wrap" id="all-sessions-wrap"><div class="tiles" id="all-session-tiles"></div></div>
+    <div id="sessions-container"></div>
     <div class="err" id="session-err">Please choose a session or group</div>
 
-    <div id="usual-reasons-wrap" class="hidden">
-      <div class="section-label">Usual reasons</div>
-      <div class="tiles" id="usual-reason-tiles"></div>
-    </div>
-    <div class="section-label" id="reasons-all-label">Reason for attending</div>
-    <div class="tiles" id="reason-tiles"></div>
+    <div id="reasons-container"></div>
     <div class="err" id="reason-err">Please choose a reason</div>
 
     <div class="toggle-row" id="volunteer-row" style="display:none">
@@ -166,6 +170,7 @@ input:focus{outline:none;border-color:var(--dg)}
     </div>
 
     <div class="btn" id="btn-signin">Sign in</div>
+    <div class="err" id="submit-err" style="text-align:center;margin-top:10px;background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:10px 12px"></div>
     <div class="btn-ghost" id="btn-signin-back">Change person</div>
   </div>
 
@@ -298,9 +303,15 @@ document.getElementById('add-new-row').addEventListener('click', function(){
   document.getElementById('new-name').value = titleCase(S.typedName);
   document.getElementById('new-email').value='';
   document.getElementById('new-mobile').value='';
+  document.getElementById('new-postcode').value='';
+  document.getElementById('new-age').value='';
+  document.getElementById('new-anon').checked=true;
+  document.getElementById('new-newsletter').checked=false;
   document.getElementById('card-search').classList.add('hidden');
   document.getElementById('card-new-details').classList.remove('hidden');
 });
+
+document.getElementById('new-postcode').addEventListener('input', function(){ this.value = this.value.toUpperCase(); });
 
 document.getElementById('btn-new-back').addEventListener('click', function(){
   document.getElementById('card-new-details').classList.add('hidden');
@@ -316,6 +327,10 @@ document.getElementById('btn-new-continue').addEventListener('click', function()
     id:null, full_name:titleCase(nameVal),
     email:document.getElementById('new-email').value.trim()||null,
     mobile:document.getElementById('new-mobile').value.trim()||null,
+    postcode:document.getElementById('new-postcode').value.trim()||null,
+    age_group:document.getElementById('new-age').value||null,
+    anon_reporting_consent:document.getElementById('new-anon').checked,
+    newsletter_consent:document.getElementById('new-newsletter').checked,
     is_co_creator:false
   };
   document.getElementById('card-new-details').classList.add('hidden');
@@ -343,62 +358,182 @@ function selectExisting(v){
 });
 
 // ── STEP 3: SESSION + REASON ─────────────────────────────────────
+// ── SHARED PERSONALISED PICKERS ──────────────────────────────────
+// Same logic as Heartwood's sign-in and the public QR page: pin
+// groups this person has actually attended, fold everything else
+// behind one toggle, pre-pick their usual reason. 💚
+function buildSessionPicker(containerId, onPick){
+  var el = document.getElementById(containerId);
+  el.innerHTML = '';
+  var history = S.visitorHistory || {};
+  var historySessions = Object.keys(history);
+  var pinnedSeen = {}; historySessions.forEach(function(s){ pinnedSeen[s]=true; });
+  var todaySeen = {}; S.todaySessions.forEach(function(s){ todaySeen[s]=true; });
+  var allOthers = S.sessions.filter(function(s){ return !todaySeen[s] && !pinnedSeen[s]; });
+  var todayNotPinned = S.todaySessions.filter(function(s){ return !pinnedSeen[s]; });
+
+  function makePill(label, container){
+    var d = document.createElement('div');
+    d.className = 'tile';
+    d.textContent = label;
+    d.setAttribute('data-value', label);
+    d.addEventListener('click', function(){
+      el.querySelectorAll('.tile').forEach(function(c){ c.classList.remove('selected'); });
+      d.classList.add('selected');
+      onPick(label);
+    });
+    container.appendChild(d);
+  }
+
+  function addToggleSection(items, toggleLabel){
+    var btn = document.createElement('div');
+    btn.className = 'show-more-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> '+toggleLabel;
+    var wrap = document.createElement('div');
+    wrap.className = 'all-wrap';
+    var grid = document.createElement('div');
+    grid.className = 'tiles';
+    wrap.appendChild(grid);
+    items.forEach(function(s){ makePill(s, grid); });
+    btn.addEventListener('click', function(){
+      var open = wrap.style.display === 'block';
+      wrap.style.display = open ? 'none' : 'block';
+      btn.lastChild.textContent = ' ' + (open ? toggleLabel : 'Hide full list');
+    });
+    el.appendChild(btn);
+    el.appendChild(wrap);
+  }
+
+  if(historySessions.length){
+    var histLabel = document.createElement('div');
+    histLabel.className = 'section-label'; histLabel.style.margin='0 0 8px';
+    histLabel.textContent = "Groups you've attended before";
+    el.appendChild(histLabel);
+    var histGrid = document.createElement('div');
+    histGrid.className = 'tiles';
+    el.appendChild(histGrid);
+    historySessions.forEach(function(s){ makePill(s, histGrid); });
+
+    var combinedOthers = todayNotPinned.concat(allOthers);
+    if(combinedOthers.length) addToggleSection(combinedOthers, 'Join a new group');
+    return;
+  }
+
+  if(S.todaySessions.length){
+    var todayLabel = document.createElement('div');
+    todayLabel.className = 'section-label'; todayLabel.style.margin='0 0 8px';
+    todayLabel.textContent = 'On today — ' + getTodayName();
+    el.appendChild(todayLabel);
+    var todayGrid = document.createElement('div');
+    todayGrid.className = 'tiles';
+    el.appendChild(todayGrid);
+    S.todaySessions.forEach(function(s){ makePill(s, todayGrid); });
+  }
+  if(allOthers.length) addToggleSection(allOthers, 'See all sessions');
+}
+
+function overallReasonCounts(history){
+  var counts = {};
+  Object.keys(history||{}).forEach(function(s){
+    Object.keys(history[s]).forEach(function(r){ counts[r] = (counts[r]||0)+history[s][r]; });
+  });
+  return Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+}
+
+function buildReasonPicker(containerId, sessionName, onPick){
+  var el = document.getElementById(containerId);
+  el.innerHTML = '';
+  var history = S.visitorHistory || {};
+  var sessionReasons = (sessionName && history[sessionName]) ? history[sessionName] : null;
+  var topReasons = sessionReasons ? Object.keys(sessionReasons).sort(function(a,b){ return sessionReasons[b]-sessionReasons[a]; }) : [];
+  var overallTop = topReasons.length ? [] : overallReasonCounts(history);
+  var primary = topReasons.length ? topReasons : overallTop;
+  var rest = S.reasons.filter(function(r){ return primary.indexOf(r)===-1; });
+
+  function makePill(label, preselect, container){
+    var d = document.createElement('div');
+    d.className = 'tile' + (preselect ? ' selected' : '');
+    d.textContent = label;
+    d.setAttribute('data-value', label);
+    if(preselect) onPick(label);
+    d.addEventListener('click', function(){
+      el.querySelectorAll('.tile').forEach(function(c){ c.classList.remove('selected'); });
+      d.classList.add('selected');
+      onPick(label);
+    });
+    container.appendChild(d);
+  }
+
+  if(primary.length){
+    var label = document.createElement('div');
+    label.className = 'section-label'; label.style.margin='0 0 8px';
+    label.textContent = 'Usually';
+    el.appendChild(label);
+    var quickGrid = document.createElement('div');
+    quickGrid.className = 'tiles';
+    el.appendChild(quickGrid);
+    makePill(primary[0], true, quickGrid);
+
+    var restReasons = primary.slice(1).concat(rest);
+    if(restReasons.length){
+      var btn = document.createElement('div');
+      btn.className = 'show-more-btn';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> Change reason';
+      var wrap = document.createElement('div');
+      wrap.className = 'all-wrap';
+      var grid = document.createElement('div');
+      grid.className = 'tiles';
+      wrap.appendChild(grid);
+      restReasons.forEach(function(r){ makePill(r, false, grid); });
+      btn.addEventListener('click', function(){
+        var open = wrap.style.display === 'block';
+        wrap.style.display = open ? 'none' : 'block';
+        btn.lastChild.textContent = open ? ' Change reason' : ' Hide full list';
+      });
+      el.appendChild(btn);
+      el.appendChild(wrap);
+    }
+  } else {
+    var label2 = document.createElement('div');
+    label2.className = 'section-label'; label2.style.margin='0 0 8px';
+    label2.textContent = 'Reason for attending';
+    el.appendChild(label2);
+    var grid2 = document.createElement('div');
+    grid2.className = 'tiles';
+    el.appendChild(grid2);
+    S.reasons.forEach(function(r){ makePill(r, false, grid2); });
+  }
+}
+
 async function buildSigninCard(){
   var v = S.visitor;
   document.getElementById('sel-name').textContent = v.full_name;
   document.getElementById('sel-meta').textContent = v.id ? (v.is_co_creator ? 'Co-Creator · Existing visitor' : 'Existing visitor') : 'New visitor';
 
-  S.selectedSession=''; S.selectedReason=''; S.isVolunteering=false;
+  S.selectedSession=''; S.selectedReason=''; S.isVolunteering=false; S.visitorHistory={};
   document.getElementById('volunteer-toggle').classList.remove('on');
-
-  var usualSessWrap = document.getElementById('usual-sessions-wrap');
-  var usualSessTiles = document.getElementById('usual-session-tiles');
-  var usualReasonWrap = document.getElementById('usual-reasons-wrap');
-  var usualReasonTiles = document.getElementById('usual-reason-tiles');
-  var reasonsAllLabel = document.getElementById('reasons-all-label');
-  usualSessTiles.innerHTML=''; usualReasonTiles.innerHTML='';
-  usualSessWrap.classList.add('hidden'); usualReasonWrap.classList.add('hidden');
-  reasonsAllLabel.textContent = 'Reason for attending';
 
   if(v.id){
     try {
       var threeAgo = new Date(); threeAgo.setMonth(threeAgo.getMonth()-3);
       var pr = await SB('sign_ins?visitor_id=eq.'+v.id+'&signed_in_at=gte.'+threeAgo.toISOString()+'&select=session_name,reason_for_attending&order=signed_in_at.desc&limit=40');
-      var seenS={}, prevS=[], seenR={}, prevR=[];
-      (pr.data||[]).forEach(function(r){
-        if(r.session_name && !seenS[r.session_name]){ seenS[r.session_name]=true; prevS.push(r.session_name); }
-        if(r.reason_for_attending && !seenR[r.reason_for_attending]){ seenR[r.reason_for_attending]=true; prevR.push(r.reason_for_attending); }
+      var history = {};
+      (pr.data||[]).forEach(function(row){
+        var s = (row.session_name||'').trim();
+        var reason = (row.reason_for_attending||'').trim();
+        if(!s) return;
+        if(!history[s]) history[s] = {};
+        if(reason) history[s][reason] = (history[s][reason]||0)+1;
       });
-      if(prevS.length){
-        usualSessWrap.classList.remove('hidden');
-        prevS.slice(0,4).forEach(function(s){ makeTile(s,s,usualSessTiles,'selectedSession'); });
-      }
-      if(prevR.length){
-        usualReasonWrap.classList.remove('hidden');
-        reasonsAllLabel.textContent = 'All reasons';
-        prevR.slice(0,4).forEach(function(r){ makeTile(r,r,usualReasonTiles,'selectedReason'); });
-      }
-    } catch(e){}
+      S.visitorHistory = history;
+    } catch(e){ S.visitorHistory = {}; }
   }
 
-  var todayEl = document.getElementById('today-session-tiles');
-  var allEl = document.getElementById('all-session-tiles');
-  var allWrap = document.getElementById('all-sessions-wrap');
-  var showMoreBtn = document.getElementById('show-more-sessions');
-  todayEl.innerHTML=''; allEl.innerHTML=''; allWrap.style.display='none';
-  document.getElementById('today-sessions-label').textContent = 'On today — '+getTodayName();
-  S.todaySessions.forEach(function(s){ makeTile(s,s,todayEl,'selectedSession'); });
-  var todaySeen={}; S.todaySessions.forEach(function(s){ todaySeen[s]=true; });
-  S.sessions.forEach(function(s){ if(!todaySeen[s]) makeTile(s,s,allEl,'selectedSession'); });
-  showMoreBtn.onclick = function(){
-    var open = allWrap.style.display === 'block';
-    allWrap.style.display = open ? 'none' : 'block';
-    showMoreBtn.lastChild.textContent = open ? ' See all sessions' : ' Hide full list';
-  };
-
-  var reasonEl = document.getElementById('reason-tiles');
-  reasonEl.innerHTML='';
-  S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
+  buildSessionPicker('sessions-container', function(sessionName){
+    S.selectedSession = sessionName;
+    buildReasonPicker('reasons-container', sessionName, function(r){ S.selectedReason = r; });
+  });
+  buildReasonPicker('reasons-container', null, function(r){ S.selectedReason = r; });
 
   var volToggle = document.getElementById('volunteer-toggle');
   var volRow = document.getElementById('volunteer-row');
@@ -411,11 +546,12 @@ async function buildSigninCard(){
     S.isVolunteering = !S.isVolunteering;
     volToggle.classList.toggle('on', S.isVolunteering);
     if(S.isVolunteering){
-      var allReasonTiles = document.querySelectorAll('#usual-reason-tiles .tile, #reason-tiles .tile');
-      for(var i=0;i<allReasonTiles.length;i++){
-        if(allReasonTiles[i].getAttribute('data-value') === 'Volunteering'){
-          document.querySelectorAll('#usual-reason-tiles .tile, #reason-tiles .tile').forEach(function(c){ c.classList.remove('selected'); });
-          allReasonTiles[i].classList.add('selected');
+      var container = document.getElementById('reasons-container');
+      var tiles = container.querySelectorAll('.tile');
+      for(var i=0;i<tiles.length;i++){
+        if(tiles[i].getAttribute('data-value') === 'Volunteering'){
+          tiles.forEach(function(c){ c.classList.remove('selected'); });
+          tiles[i].classList.add('selected');
           S.selectedReason = 'Volunteering';
           break;
         }
@@ -432,9 +568,10 @@ async function buildSigninCard(){
 document.getElementById('btn-signin').addEventListener('click', async function(){
   var sErr = document.getElementById('session-err');
   var rErr = document.getElementById('reason-err');
-  sErr.style.display='none'; rErr.style.display='none';
-  if(!S.selectedSession){ sErr.style.display='block'; return; }
-  if(!S.selectedReason){ rErr.style.display='block'; return; }
+  var subErr = document.getElementById('submit-err');
+  sErr.style.display='none'; rErr.style.display='none'; subErr.style.display='none';
+  if(!S.selectedSession){ sErr.style.display='block'; sErr.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(!S.selectedReason){ rErr.style.display='block'; rErr.scrollIntoView({behavior:'smooth',block:'center'}); return; }
 
   var btn = this;
   btn.textContent = 'Signing in…'; btn.disabled = true;
@@ -444,10 +581,19 @@ document.getElementById('btn-signin').addEventListener('click', async function()
     if(!visitorId){
       var vRes = await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
         full_name:S.visitor.full_name, email:S.visitor.email||null, mobile:S.visitor.mobile||null,
-        is_co_creator:false, anon_reporting_consent:true, newsletter_consent:false, whatsapp_consent:false,
+        postcode:S.visitor.postcode||null, age_group:S.visitor.age_group||null,
+        is_co_creator:false,
+        anon_reporting_consent:S.visitor.anon_reporting_consent!==false,
+        newsletter_consent:!!S.visitor.newsletter_consent, whatsapp_consent:false,
         first_visit_date:todayISO()
       })});
+      if(!vRes.ok){
+        throw new Error('Could not save this visitor — ' + (vRes.data && vRes.data.message ? vRes.data.message : 'error '+vRes.status));
+      }
       visitorId = (vRes.data||[])[0] ? vRes.data[0].id : null;
+      if(!visitorId){
+        throw new Error('Visitor record didn\u2019t save properly — nothing came back from the database.');
+      }
     }
 
     var autoOut = new Date(); autoOut.setHours(autoOut.getHours()+4);
@@ -465,21 +611,50 @@ document.getElementById('btn-signin').addEventListener('click', async function()
       } catch(e){}
     }
 
-    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
       visitor_id:visitorId, visitor_name:S.visitor.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
       visit_type:S.isVolunteering ? 'volunteer' : 'community',
       signed_out_at:autoOut.toISOString(), auto_signed_out:true,
       source:'team_signin'
     })});
+    if(!signInRes.ok){
+      throw new Error('Visitor saved, but the sign-in itself didn\u2019t — ' + (signInRes.data && signInRes.data.message ? signInRes.data.message : 'error '+signInRes.status));
+    }
 
-    showToast(S.visitor.full_name+' is signed in ✓');
+    showSignedInConfirmation(S.visitor.full_name);
     loadTodayCount();
-    resetForNextPerson();
   } catch(e){
-    btn.textContent = 'Try again'; btn.disabled = false;
+    console.error('Team sign-in failed:', e);
+    btn.textContent = 'Sign in'; btn.disabled = false;
+    subErr.textContent = e.message || 'Something went wrong and this sign-in did not save. Please try again.';
+    subErr.style.display='block';
+    subErr.scrollIntoView({behavior:'smooth',block:'center'});
   }
 });
+
+// Unmissable confirmation — swaps the whole card to a clear success state
+// for a couple of seconds before resetting, rather than relying on a toast
+// someone might not be looking at. 💚
+function showSignedInConfirmation(name){
+  var card = document.getElementById('card-signin');
+  var holder = document.createElement('div');
+  holder.id = 'signin-confirmation';
+  holder.style.cssText = 'text-align:center;padding:30px 10px';
+  holder.innerHTML =
+    '<div style="width:56px;height:56px;border-radius:50%;background:#f0fdf4;border:2px solid var(--dg);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">' +
+      '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--dg)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+    '</div>' +
+    '<div style="font-family:\'League Spartan\',sans-serif;font-size:1.15rem;font-weight:700;color:var(--dg)">'+name+' is signed in</div>' +
+    '<div style="font-size:.8rem;color:var(--muted);margin-top:4px;font-weight:500">Ready for the next person…</div>';
+  card.parentNode.insertBefore(holder, card);
+  card.classList.add('hidden');
+  showToast(name+' is signed in ✓');
+  setTimeout(function(){
+    holder.remove();
+    resetForNextPerson();
+  }, 1800);
+}
 
 function resetForNextPerson(){
   var btn = document.getElementById('btn-signin');
@@ -487,6 +662,7 @@ function resetForNextPerson(){
   document.getElementById('card-signin').classList.add('hidden');
   document.getElementById('card-new-details').classList.add('hidden');
   document.getElementById('card-search').classList.remove('hidden');
+  document.getElementById('submit-err').style.display='none';
   var input = document.getElementById('search-input');
   input.value=''; document.getElementById('search-results').innerHTML='';
   document.getElementById('add-new-row').style.display='none';
