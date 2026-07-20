@@ -584,6 +584,26 @@ input::placeholder{color:#b0b7c0;font-weight:400}
       Thank you for being part of H.O.M.E Hub today. You don't just attend — you belong here. What you bring to this community matters more than you know.
     </div>
   </div>
+
+  <div class="card" id="champion-prompt-card" style="text-align:center;padding:22px 24px">
+    <div style="font-size:15px;color:var(--mid);line-height:1.6;font-weight:500;margin-bottom:16px">
+      Want to know how you can help support H.O.M.E Hub? You could become a <strong style="color:var(--dg)">Community Champion</strong>.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center" id="champion-prompt-buttons">
+      <div class="btn" id="btn-champion-yes" style="flex:1;max-width:180px">Yes, tell me more</div>
+      <div class="btn-ghost" id="btn-champion-no" style="flex:1;max-width:140px">No thanks</div>
+    </div>
+    <div id="champion-email-wrap" style="display:none;margin-top:16px;text-align:left">
+      <label class="field-label" for="champion-email">Your email address</label>
+      <input type="email" id="champion-email" placeholder="your@email.com" autocomplete="email" inputmode="email">
+      <div class="btn" id="btn-champion-send" style="margin-top:12px">Send my interest</div>
+      <div class="err-text" id="champion-error" style="display:none;color:#dc2626;font-size:13px;font-weight:600;margin-top:8px;text-align:center"></div>
+    </div>
+    <div id="champion-thanks" style="display:none;text-align:center;color:var(--dg);font-weight:600;font-size:14px">
+      Thank you — someone from the team will be in touch. 💚
+    </div>
+  </div>
+
   <div class="ty-footer">
     <div class="ty-home-name">H.<span>O.</span>M.E</div>
     <div class="ty-acronym">Helping&nbsp;&bull;&nbsp;Overcoming&nbsp;&bull;&nbsp;Motivating&nbsp;&bull;&nbsp;Exploring</div>
@@ -1069,7 +1089,7 @@ async function submitReturning(){
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
-    await doThankYou(S.visitor.full_name);
+    await doThankYou(S.visitor.full_name, S.visitor.email);
   } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
 }
 
@@ -1153,7 +1173,7 @@ async function submitNew(){
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
-    await doThankYou(newV.full_name);
+    await doThankYou(newV.full_name, newV.email || S.newEmail);
   } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
 }
 
@@ -1178,7 +1198,7 @@ async function calcAutoSignOut(visitor, visitType, isVolunteering){
 }
 
 // ── THANK YOU ────────────────────────────────────────────────────
-async function doThankYou(name){
+async function doThankYou(name, email){
   var quote='\u201cEvery community is built one connection at a time. Today, you are that connection.\u201d';
   try {
     var qr=await SB('daily_quotes?select=quote&limit=50');
@@ -1188,8 +1208,79 @@ async function doThankYou(name){
   document.getElementById('ty-quote').textContent=quote;
   var fn=firstName(name);
   document.getElementById('ty2-body').textContent='Thank you for being part of H.O.M.E Hub today, '+fn+'. You don\u2019t just attend \u2014 you belong here. What you bring to this community matters more than you know.';
+  resetChampionPrompt(name, email);
   showScreen('screen-ty1');
 }
+
+// ── COMMUNITY CHAMPION PROMPT ─────────────────────────────────────
+// A light, entirely optional "would you like to help support the
+// Hub?" ask on the thank-you screen. Logs interest into the same
+// patron_interests table the full Champions form uses, so James/Mark
+// see it in one place — but doesn't force anyone through that whole
+// tier-selection form mid sign-in. 💚
+function resetChampionPrompt(name, email){
+  document.getElementById('champion-prompt-card').style.display='block';
+  document.getElementById('champion-prompt-buttons').style.display='flex';
+  document.getElementById('champion-email-wrap').style.display='none';
+  document.getElementById('champion-thanks').style.display='none';
+  document.getElementById('champion-error').style.display='none';
+  document.getElementById('champion-email').value = email || '';
+  document.getElementById('champion-email').disabled = false;
+  var sendBtn = document.getElementById('btn-champion-send');
+  sendBtn.textContent = 'Send my interest'; sendBtn.style.opacity='1'; sendBtn.style.pointerEvents='auto';
+  document.getElementById('champion-prompt-card').setAttribute('data-name', name || '');
+}
+
+document.getElementById('btn-champion-yes').addEventListener('click', function(){
+  document.getElementById('champion-prompt-buttons').style.display='none';
+  document.getElementById('champion-email-wrap').style.display='block';
+  document.getElementById('champion-email').focus();
+});
+
+document.getElementById('btn-champion-no').addEventListener('click', function(){
+  document.getElementById('champion-prompt-card').style.display='none';
+});
+
+document.getElementById('btn-champion-send').addEventListener('click', async function(){
+  var emailEl = document.getElementById('champion-email');
+  var errEl = document.getElementById('champion-error');
+  var email = emailEl.value.trim();
+  errEl.style.display='none';
+  if(!email || !email.includes('@')){
+    errEl.textContent = 'Please pop in a valid email address.';
+    errEl.style.display='block';
+    emailEl.focus();
+    return;
+  }
+  var btn = this;
+  btn.textContent = 'Sending\u2026'; btn.style.opacity='0.7'; btn.style.pointerEvents='none';
+  emailEl.disabled = true;
+  try {
+    var fullName = document.getElementById('champion-prompt-card').getAttribute('data-name') || '';
+    var nameParts = fullName.trim().split(' ');
+    var firstN = nameParts[0] || '';
+    var lastN = nameParts.slice(1).join(' ') || '';
+    var payload = {
+      first_name: firstN, last_name: lastN, email: email, phone: null,
+      tier: null, tier_label: null, payment_preference: null, explorer_amount: null,
+      is_commercial: false, organisation_name: null, organisation_website: null,
+      how_heard: 'Sign-in thank-you prompt',
+      consent_contact: true, consent_newsletter: false, consent_stats: false,
+      status: 'interest', created_at: new Date().toISOString()
+    };
+    var res = await SB('patron_interests', {method:'POST', headers:{Prefer:'return=minimal'}, body:JSON.stringify(payload)});
+    if(!res.ok){
+      throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status);
+    }
+    document.getElementById('champion-email-wrap').style.display='none';
+    document.getElementById('champion-thanks').style.display='block';
+  } catch(e){
+    errEl.textContent = 'Something went wrong sending that — please try again, or let a team member know.';
+    errEl.style.display='block';
+    btn.textContent = 'Send my interest'; btn.style.opacity='1'; btn.style.pointerEvents='auto';
+    emailEl.disabled = false;
+  }
+});
 
 document.getElementById('btn-ty1-next').addEventListener('click', function(){ showScreen('screen-ty2'); });
 document.getElementById('btn-done').addEventListener('click', resetFlow);
