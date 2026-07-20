@@ -864,6 +864,18 @@ async function doSearch(q){
   var noMatch = document.getElementById('name-no-match');
   try {
     var r = await SB('visitors?full_name=ilike.*'+encodeURIComponent(q)+'*&order=full_name&limit=8');
+    if(!r.ok){
+      // The request itself failed (RLS, network, bad key, anything) —
+      // this is NOT the same as "no match found" and must never be
+      // shown as the friendly "we haven't met yet" message, or a real
+      // outage looks identical to a first-time visitor. 💚
+      console.error('Visitor search failed:', r.status, r.data);
+      res.style.display='none';
+      noMatch.style.display='block';
+      noMatch.querySelector('.search-no-match-title').textContent = 'Something went wrong searching';
+      noMatch.querySelector('.search-no-match-text').innerHTML = 'We couldn\u2019t reach the visitor list just now (error '+r.status+'). Please try again in a moment, or let a team member know if this keeps happening.';
+      return;
+    }
     var matches = r.data||[];
     res.innerHTML='';
     if(matches.length){
@@ -880,8 +892,16 @@ async function doSearch(q){
     } else {
       res.style.display='none';
       noMatch.style.display='block';
+      noMatch.querySelector('.search-no-match-title').textContent = 'We haven\u2019t met yet — how brilliant!';
+      noMatch.querySelector('.search-no-match-text').textContent = 'If you\u2019re new, tap the gold banner above to register your first visit. If you\u2019ve been before, check the spelling of your name — try a nickname or just your first name.';
     }
-  } catch(e){ noMatch.style.display='block'; }
+  } catch(e){
+    console.error('Visitor search error:', e);
+    res.style.display='none';
+    noMatch.style.display='block';
+    noMatch.querySelector('.search-no-match-title').textContent = 'Something went wrong searching';
+    noMatch.querySelector('.search-no-match-text').textContent = 'Please try again in a moment, or let a team member know if this keeps happening.';
+  }
 }
 
 document.getElementById('btn-first-visit').addEventListener('click', function(){
