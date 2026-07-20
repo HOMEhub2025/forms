@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign Someone In | H.O.M.E Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;
+  --bg:#f5f6fa;--card:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#64748b;--radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:50px}
+input,button{font-family:'Montserrat',sans-serif;font-size:16px}
+.header{background:var(--db);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.header img{height:32px}
+.header h1{font-family:'League Spartan',sans-serif;font-size:.95rem;font-weight:700;color:#fff}
+.hero{background:linear-gradient(135deg,var(--dg),#004d28);padding:20px 20px 18px;text-align:center}
+.hero h2{font-family:'League Spartan',sans-serif;font-size:1.15rem;font-weight:700;color:#fff;margin-bottom:4px}
+.hero p{font-size:.8rem;color:rgba(255,255,255,.85);font-weight:500}
+.wrap{max-width:480px;margin:0 auto;padding:16px}
+.count-strip{display:flex;gap:10px;margin-bottom:16px}
+.count-card{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.count-card .num{font-family:'League Spartan',sans-serif;font-size:1.4rem;font-weight:700;color:var(--dg)}
+.count-card .lbl{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:2px}
+
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-title{font-family:'League Spartan',sans-serif;font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:3px}
+.card-sub{font-size:.75rem;color:var(--muted);font-weight:500;margin-bottom:12px}
+
+.field-label{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em;display:block;margin-bottom:6px}
+input[type=text],input[type=email],input[type=tel],input[type=search]{
+  width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px;
+}
+input:focus{outline:none;border-color:var(--dg)}
+
+.search-results{margin-top:2px}
+.search-result{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;touch-action:manipulation;background:#fafbfc}
+.search-result:active{background:#f0fdf4;border-color:var(--lg)}
+.search-result strong{font-size:.88rem;color:var(--text);display:block}
+.search-result span{font-size:.7rem;color:var(--muted);font-weight:500}
+.search-result svg{width:16px;height:16px;stroke:var(--dg);flex-shrink:0}
+
+.add-new-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px dashed var(--or);border-radius:10px;cursor:pointer;touch-action:manipulation;color:var(--or);font-weight:700;font-size:.85rem;margin-top:4px}
+.add-new-row svg{width:18px;height:18px;stroke:var(--or)}
+
+.selected-visitor{display:flex;align-items:center;justify-content:space-between;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.selected-visitor strong{font-size:.92rem;color:var(--dg);display:block}
+.selected-visitor span{font-size:.72rem;color:var(--muted);font-weight:500}
+.change-btn{background:none;border:none;color:var(--db);font-size:.75rem;font-weight:700;cursor:pointer;text-decoration:underline}
+
+.section-label{font-size:.68rem;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.03em;margin:12px 0 8px}
+.section-label:first-child{margin-top:0}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.tile{background:#fafbfc;border:1.5px solid var(--border);border-radius:10px;padding:9px 13px;font-size:.8rem;font-weight:600;color:var(--text);cursor:pointer;touch-action:manipulation}
+.tile.selected{background:var(--dg);border-color:var(--dg);color:#fff}
+.show-more-btn{display:flex;align-items:center;gap:6px;font-size:.75rem;font-weight:700;color:var(--db);cursor:pointer;touch-action:manipulation;margin:6px 0 4px}
+.show-more-btn svg{width:14px;height:14px;stroke:var(--db)}
+.all-wrap{display:none;margin-top:6px}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.toggle-text{flex:1}
+.toggle-label-text{font-size:.85rem;font-weight:700;color:var(--text)}
+.toggle-sub-text{font-size:.7rem;color:var(--muted);margin-top:2px;font-weight:500}
+.toggle{width:46px;height:26px;background:#d1d5db;border-radius:100px;position:relative;flex-shrink:0;transition:background .2s;cursor:pointer;border:none}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on{background:var(--dg)}
+.toggle.on::after{transform:translateX(20px)}
+
+.btn{background:var(--dg);color:#fff;border:none;border-radius:10px;padding:14px;font-weight:700;font-size:.9rem;cursor:pointer;touch-action:manipulation;width:100%;margin-top:16px;text-align:center}
+.btn:disabled{opacity:.6}
+.btn-ghost{background:none;border:none;color:var(--muted);font-size:.78rem;font-weight:600;cursor:pointer;text-align:center;width:100%;margin-top:10px;padding:6px}
+
+.err{display:none;color:#dc2626;font-size:.72rem;font-weight:600;margin:-4px 0 10px}
+
+.toast{position:fixed;left:16px;right:16px;bottom:20px;max-width:448px;margin:0 auto;background:var(--dg);color:#fff;border-radius:12px;padding:14px 16px;font-size:.85rem;font-weight:600;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateY(0)}
+
+.footer{text-align:center;padding:24px 16px 6px;font-size:.68rem;color:var(--muted)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub" onerror="this.style.display='none'">
+  <h1>H.O.M.E Hub — Sign Someone In</h1>
+</div>
+
+<div class="hero">
+  <h2>Team Sign-In</h2>
+  <p>For staff and Co-Creators — book a visitor, group or volunteer in from here</p>
+</div>
+
+<div class="wrap">
+  <div class="count-strip">
+    <div class="count-card"><div class="num" id="countToday">–</div><div class="lbl">Signed in today</div></div>
+  </div>
+
+  <!-- STEP 1: SEARCH -->
+  <div class="card" id="card-search">
+    <div class="card-title">Who's coming in?</div>
+    <div class="card-sub">Start typing a name — existing visitors will show up straight away</div>
+    <label class="field-label" for="search-input">Name</label>
+    <input type="search" id="search-input" placeholder="e.g. Sarah Johnson" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="search-results" id="search-results"></div>
+    <div class="add-new-row" id="add-new-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span id="add-new-label">Add as a new visitor</span>
+    </div>
+  </div>
+
+  <!-- STEP 2: NEW VISITOR DETAILS (only shown for new people) -->
+  <div class="card hidden" id="card-new-details">
+    <div class="card-title">A few quick details</div>
+    <div class="card-sub">Just the name is required — the rest is optional</div>
+    <label class="field-label" for="new-name">Full name</label>
+    <input type="text" id="new-name">
+    <label class="field-label" for="new-email">Email <span style="text-transform:none;font-weight:500">(optional)</span></label>
+    <input type="email" id="new-email" placeholder="their@email.com">
+    <label class="field-label" for="new-mobile">Mobile <span style="text-transform:none;font-weight:500">(optional)</span></label>
+    <input type="tel" id="new-mobile" placeholder="07700 000000">
+    <div class="err" id="new-name-err">Please enter a name to continue</div>
+    <div class="btn" id="btn-new-continue">Continue</div>
+    <div class="btn-ghost" id="btn-new-back">Go back</div>
+  </div>
+
+  <!-- STEP 3: SESSION + REASON + SIGN IN -->
+  <div class="card hidden" id="card-signin">
+    <div class="selected-visitor">
+      <div>
+        <strong id="sel-name"></strong>
+        <span id="sel-meta"></span>
+      </div>
+      <button type="button" class="change-btn" id="btn-change-person">Change</button>
+    </div>
+
+    <div id="usual-sessions-wrap" class="hidden">
+      <div class="section-label">Usual sessions</div>
+      <div class="tiles" id="usual-session-tiles"></div>
+    </div>
+    <div class="section-label" id="today-sessions-label">On today</div>
+    <div class="tiles" id="today-session-tiles"></div>
+    <div class="show-more-btn" id="show-more-sessions">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      See all sessions
+    </div>
+    <div class="all-wrap" id="all-sessions-wrap"><div class="tiles" id="all-session-tiles"></div></div>
+    <div class="err" id="session-err">Please choose a session or group</div>
+
+    <div id="usual-reasons-wrap" class="hidden">
+      <div class="section-label">Usual reasons</div>
+      <div class="tiles" id="usual-reason-tiles"></div>
+    </div>
+    <div class="section-label" id="reasons-all-label">Reason for attending</div>
+    <div class="tiles" id="reason-tiles"></div>
+    <div class="err" id="reason-err">Please choose a reason</div>
+
+    <div class="toggle-row" id="volunteer-row" style="display:none">
+      <div class="toggle-text">
+        <div class="toggle-label-text">Volunteering today</div>
+        <div class="toggle-sub-text">Helping out rather than attending as a visitor</div>
+      </div>
+      <button type="button" class="toggle" id="volunteer-toggle" aria-label="Volunteering today"></button>
+    </div>
+
+    <div class="btn" id="btn-signin">Sign in</div>
+    <div class="btn-ghost" id="btn-signin-back">Change person</div>
+  </div>
+
+  <div class="footer">H.O.M.E Hub CIC · Bringing unity back to the Community</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2MDgwOTYsImV4cCI6MjA1OTE4NDA5Nn0.oH3wEVz_4GWkHNFdnzq-vIBN8leFmLg3PZwLilqUGpQ';
+
+function SB(path, opts){
+  var h = {apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY, 'Content-Type':'application/json'};
+  var extra = (opts && opts.headers) ? opts.headers : {};
+  return fetch(SUPABASE_URL+'/rest/v1/'+path, Object.assign({},opts,{headers:Object.assign({},h,extra)}))
+    .then(function(r){ return r.json().then(function(d){ return {data:d, ok:r.ok, status:r.status}; }); });
+}
+
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function getTodayName(){
+  return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+}
+function titleCase(str){
+  if(!str) return '';
+  return str.trim().replace(/\w+/g, function(word, offset){
+    var lw = word.toLowerCase();
+    if(lw.startsWith('mc') && word.length > 2) return 'Mc'+word[2].toUpperCase()+word.slice(3).toLowerCase();
+    if(lw.startsWith('mac') && word.length > 3) return 'Mac'+word[3].toUpperCase()+word.slice(4).toLowerCase();
+    if(word.includes("'")) return word.split("'").map(function(p){return p.charAt(0).toUpperCase()+p.slice(1).toLowerCase();}).join("'");
+    if(['and','the','of','in','at','by'].includes(lw) && offset > 0) return lw;
+    return word.charAt(0).toUpperCase()+word.slice(1).toLowerCase();
+  });
+}
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+var S = {
+  typedName:'', visitor:null, isNew:false,
+  sessions:[], todaySessions:[], reasons:[],
+  selectedSession:'', selectedReason:'', isVolunteering:false,
+  signedInCount:0
+};
+
+// ── LOAD CONFIG ──────────────────────────────────────────────────
+async function loadConfig(){
+  var today = getTodayName();
+  try {
+    var sr = await SB('sign_in_sessions?is_active=eq.true&order=sort_order');
+    var all = (sr.data||[]).map(function(s){ return s.name; });
+    var todayOnly = (sr.data||[]).filter(function(s){
+      if(!s.days_of_week || !s.days_of_week.length) return false;
+      return s.days_of_week.some(function(d){ return d.toLowerCase() === today.toLowerCase(); });
+    }).map(function(s){ return s.name; });
+    S.sessions = all;
+    S.todaySessions = todayOnly.length ? todayOnly : all;
+    var rr = await SB('sign_in_reasons?is_active=eq.true&order=sort_order');
+    S.reasons = (rr.data||[]).map(function(r){ return r.name; });
+  } catch(e){
+    S.sessions = ['Coffee Morning','Community Drop In','T.I.M.E Men\'s Group','Pilates with Donna','Canasta Card Group','Benfleet Book Club','Connect 4 Youth Club','Ann\'s Crystal Healing','Drum Circle','Breathwork','Soul Led','Adults with Individual Needs Programme'];
+    S.todaySessions = S.sessions;
+    S.reasons = ['Social Connection','Personal Development','Mental Wellbeing','Learning a New Skill','Routine & Structure','Support During a Difficult Time','Attending a Meeting','Group Facilitator','Volunteering','Prefer Not to Say'];
+  }
+}
+
+async function loadTodayCount(){
+  try {
+    var r = await SB('sign_ins?signed_in_at=gte.'+todayISO()+'T00:00:00&signed_in_at=lte.'+todayISO()+'T23:59:59&select=id');
+    document.getElementById('countToday').textContent = (r.data||[]).length;
+  } catch(e){ document.getElementById('countToday').textContent = '–'; }
+}
+
+function makeTile(label, value, container, stateKey){
+  var d = document.createElement('div');
+  d.className = 'tile';
+  d.textContent = label;
+  d.setAttribute('data-value', value||label);
+  d.addEventListener('click', function(){
+    document.querySelectorAll('#usual-session-tiles .tile,#today-session-tiles .tile,#all-session-tiles .tile,#usual-reason-tiles .tile,#reason-tiles .tile').forEach(function(c){
+      if(c.closest('#usual-session-tiles,#today-session-tiles,#all-session-tiles') && stateKey === 'selectedSession') c.classList.remove('selected');
+      if(c.closest('#usual-reason-tiles,#reason-tiles') && stateKey === 'selectedReason') c.classList.remove('selected');
+    });
+    d.classList.add('selected');
+    S[stateKey] = value||label;
+  });
+  container.appendChild(d);
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────
+var searchTimer = null;
+document.getElementById('search-input').addEventListener('input', function(){
+  var val = this.value.trim();
+  S.typedName = val;
+  clearTimeout(searchTimer);
+  var res = document.getElementById('search-results');
+  var addRow = document.getElementById('add-new-row');
+  res.innerHTML = '';
+  if(val.length < 2){ addRow.style.display='none'; return; }
+  document.getElementById('add-new-label').textContent = 'Add "'+val+'" as a new visitor';
+  addRow.style.display='flex';
+  searchTimer = setTimeout(function(){ doSearch(val); }, 350);
+});
+
+async function doSearch(q){
+  var res = document.getElementById('search-results');
+  try {
+    var r = await SB('visitors?full_name=ilike.*'+encodeURIComponent(q)+'*&order=full_name&limit=8');
+    var matches = r.data||[];
+    res.innerHTML = '';
+    matches.forEach(function(v){
+      var d = document.createElement('div');
+      d.className = 'search-result';
+      d.innerHTML = '<div><strong>'+v.full_name+'</strong><span>'+(v.is_co_creator?'Co-Creator':'Visited before')+'</span></div>' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+      d.addEventListener('click', function(){ selectExisting(v); });
+      res.appendChild(d);
+    });
+  } catch(e){ res.innerHTML=''; }
+}
+
+document.getElementById('add-new-row').addEventListener('click', function(){
+  S.isNew = true; S.visitor = null;
+  document.getElementById('new-name').value = titleCase(S.typedName);
+  document.getElementById('new-email').value='';
+  document.getElementById('new-mobile').value='';
+  document.getElementById('card-search').classList.add('hidden');
+  document.getElementById('card-new-details').classList.remove('hidden');
+});
+
+document.getElementById('btn-new-back').addEventListener('click', function(){
+  document.getElementById('card-new-details').classList.add('hidden');
+  document.getElementById('card-search').classList.remove('hidden');
+});
+
+document.getElementById('btn-new-continue').addEventListener('click', function(){
+  var nameVal = document.getElementById('new-name').value.trim();
+  var err = document.getElementById('new-name-err');
+  err.style.display='none';
+  if(!nameVal){ err.style.display='block'; return; }
+  S.visitor = {
+    id:null, full_name:titleCase(nameVal),
+    email:document.getElementById('new-email').value.trim()||null,
+    mobile:document.getElementById('new-mobile').value.trim()||null,
+    is_co_creator:false
+  };
+  document.getElementById('card-new-details').classList.add('hidden');
+  buildSigninCard();
+});
+
+function selectExisting(v){
+  S.isNew = false; S.visitor = v;
+  document.getElementById('card-search').classList.add('hidden');
+  buildSigninCard();
+}
+
+['btn-change-person','btn-signin-back'].forEach(function(id){
+  document.getElementById(id).addEventListener('click', function(){
+    document.getElementById('card-signin').classList.add('hidden');
+    if(S.isNew){
+      document.getElementById('card-new-details').classList.remove('hidden');
+    } else {
+      document.getElementById('card-search').classList.remove('hidden');
+      document.getElementById('search-input').value='';
+      document.getElementById('search-results').innerHTML='';
+      document.getElementById('add-new-row').style.display='none';
+    }
+  });
+});
+
+// ── STEP 3: SESSION + REASON ─────────────────────────────────────
+async function buildSigninCard(){
+  var v = S.visitor;
+  document.getElementById('sel-name').textContent = v.full_name;
+  document.getElementById('sel-meta').textContent = v.id ? (v.is_co_creator ? 'Co-Creator · Existing visitor' : 'Existing visitor') : 'New visitor';
+
+  S.selectedSession=''; S.selectedReason=''; S.isVolunteering=false;
+  document.getElementById('volunteer-toggle').classList.remove('on');
+
+  var usualSessWrap = document.getElementById('usual-sessions-wrap');
+  var usualSessTiles = document.getElementById('usual-session-tiles');
+  var usualReasonWrap = document.getElementById('usual-reasons-wrap');
+  var usualReasonTiles = document.getElementById('usual-reason-tiles');
+  var reasonsAllLabel = document.getElementById('reasons-all-label');
+  usualSessTiles.innerHTML=''; usualReasonTiles.innerHTML='';
+  usualSessWrap.classList.add('hidden'); usualReasonWrap.classList.add('hidden');
+  reasonsAllLabel.textContent = 'Reason for attending';
+
+  if(v.id){
+    try {
+      var threeAgo = new Date(); threeAgo.setMonth(threeAgo.getMonth()-3);
+      var pr = await SB('sign_ins?visitor_id=eq.'+v.id+'&signed_in_at=gte.'+threeAgo.toISOString()+'&select=session_name,reason_for_attending&order=signed_in_at.desc&limit=40');
+      var seenS={}, prevS=[], seenR={}, prevR=[];
+      (pr.data||[]).forEach(function(r){
+        if(r.session_name && !seenS[r.session_name]){ seenS[r.session_name]=true; prevS.push(r.session_name); }
+        if(r.reason_for_attending && !seenR[r.reason_for_attending]){ seenR[r.reason_for_attending]=true; prevR.push(r.reason_for_attending); }
+      });
+      if(prevS.length){
+        usualSessWrap.classList.remove('hidden');
+        prevS.slice(0,4).forEach(function(s){ makeTile(s,s,usualSessTiles,'selectedSession'); });
+      }
+      if(prevR.length){
+        usualReasonWrap.classList.remove('hidden');
+        reasonsAllLabel.textContent = 'All reasons';
+        prevR.slice(0,4).forEach(function(r){ makeTile(r,r,usualReasonTiles,'selectedReason'); });
+      }
+    } catch(e){}
+  }
+
+  var todayEl = document.getElementById('today-session-tiles');
+  var allEl = document.getElementById('all-session-tiles');
+  var allWrap = document.getElementById('all-sessions-wrap');
+  var showMoreBtn = document.getElementById('show-more-sessions');
+  todayEl.innerHTML=''; allEl.innerHTML=''; allWrap.style.display='none';
+  document.getElementById('today-sessions-label').textContent = 'On today — '+getTodayName();
+  S.todaySessions.forEach(function(s){ makeTile(s,s,todayEl,'selectedSession'); });
+  var todaySeen={}; S.todaySessions.forEach(function(s){ todaySeen[s]=true; });
+  S.sessions.forEach(function(s){ if(!todaySeen[s]) makeTile(s,s,allEl,'selectedSession'); });
+  showMoreBtn.onclick = function(){
+    var open = allWrap.style.display === 'block';
+    allWrap.style.display = open ? 'none' : 'block';
+    showMoreBtn.lastChild.textContent = open ? ' See all sessions' : ' Hide full list';
+  };
+
+  var reasonEl = document.getElementById('reason-tiles');
+  reasonEl.innerHTML='';
+  S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
+
+  var volToggle = document.getElementById('volunteer-toggle');
+  var volRow = document.getElementById('volunteer-row');
+  if(v.id && v.is_co_creator){
+    volRow.style.display='flex';
+  } else {
+    volRow.style.display='none';
+  }
+  volToggle.onclick = function(){
+    S.isVolunteering = !S.isVolunteering;
+    volToggle.classList.toggle('on', S.isVolunteering);
+    if(S.isVolunteering){
+      var allReasonTiles = document.querySelectorAll('#usual-reason-tiles .tile, #reason-tiles .tile');
+      for(var i=0;i<allReasonTiles.length;i++){
+        if(allReasonTiles[i].getAttribute('data-value') === 'Volunteering'){
+          document.querySelectorAll('#usual-reason-tiles .tile, #reason-tiles .tile').forEach(function(c){ c.classList.remove('selected'); });
+          allReasonTiles[i].classList.add('selected');
+          S.selectedReason = 'Volunteering';
+          break;
+        }
+      }
+    }
+  };
+
+  document.getElementById('session-err').style.display='none';
+  document.getElementById('reason-err').style.display='none';
+  document.getElementById('card-signin').classList.remove('hidden');
+}
+
+// ── SIGN IN ──────────────────────────────────────────────────────
+document.getElementById('btn-signin').addEventListener('click', async function(){
+  var sErr = document.getElementById('session-err');
+  var rErr = document.getElementById('reason-err');
+  sErr.style.display='none'; rErr.style.display='none';
+  if(!S.selectedSession){ sErr.style.display='block'; return; }
+  if(!S.selectedReason){ rErr.style.display='block'; return; }
+
+  var btn = this;
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+
+  try {
+    var visitorId = S.visitor.id;
+    if(!visitorId){
+      var vRes = await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
+        full_name:S.visitor.full_name, email:S.visitor.email||null, mobile:S.visitor.mobile||null,
+        is_co_creator:false, anon_reporting_consent:true, newsletter_consent:false, whatsapp_consent:false,
+        first_visit_date:todayISO()
+      })});
+      visitorId = (vRes.data||[])[0] ? vRes.data[0].id : null;
+    }
+
+    var autoOut = new Date(); autoOut.setHours(autoOut.getHours()+4);
+    if(visitorId && (S.visitor.is_co_creator || S.isVolunteering)){
+      try {
+        var days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        var today=days[new Date().getDay()];
+        var sr = await SB('volunteer_shifts?volunteer_id=eq.'+visitorId+'&day_of_week=ilike.'+today+'&limit=1');
+        var shift = (sr.data||[])[0];
+        if(shift && shift.end_time){
+          var parts = shift.end_time.split(':');
+          var so = new Date(); so.setHours(parseInt(parts[0]),parseInt(parts[1]||0),0,0);
+          if(so > new Date()) autoOut = so;
+        }
+      } catch(e){}
+    }
+
+    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+      visitor_id:visitorId, visitor_name:S.visitor.full_name,
+      session_name:S.selectedSession, reason_for_attending:S.selectedReason,
+      visit_type:S.isVolunteering ? 'volunteer' : 'community',
+      signed_out_at:autoOut.toISOString(), auto_signed_out:true,
+      source:'team_signin'
+    })});
+
+    showToast(S.visitor.full_name+' is signed in ✓');
+    loadTodayCount();
+    resetForNextPerson();
+  } catch(e){
+    btn.textContent = 'Try again'; btn.disabled = false;
+  }
+});
+
+function resetForNextPerson(){
+  var btn = document.getElementById('btn-signin');
+  btn.textContent = 'Sign in'; btn.disabled = false;
+  document.getElementById('card-signin').classList.add('hidden');
+  document.getElementById('card-new-details').classList.add('hidden');
+  document.getElementById('card-search').classList.remove('hidden');
+  var input = document.getElementById('search-input');
+  input.value=''; document.getElementById('search-results').innerHTML='';
+  document.getElementById('add-new-row').style.display='none';
+  S.visitor=null; S.isNew=false; S.typedName='';
+  input.focus();
+}
+
+loadConfig();
+loadTodayCount();
+</script>
+</body>
+</html>
