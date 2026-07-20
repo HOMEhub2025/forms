@@ -832,22 +832,13 @@ function buildReasonPicker(containerId, sessionName, onPick){
     '<input type="text" id="contractor-company-input" placeholder="e.g. Waites Ltd" autocomplete="organization">';
   companyWrap.querySelector('input').addEventListener('input', function(){ S.contractorCompany = this.value; });
 
-  // Contractors, Trustees and Partners aren't attending a group session
-  // — the reason is implied by which "H.O.M.E Hub -" option they picked,
-  // so skip the reason picker entirely rather than ask a question that's
-  // already answered. 💚
+  // A Contractor isn't attending a group session and their "reason" is
+  // just the fact they're a contractor — so skip straight to asking for
+  // the company name rather than a reason nobody needs to pick. 💚
   if(sessionName === 'H.O.M.E Hub - Contractors'){
     onPick('Contractor');
     companyWrap.style.display = 'block';
     el.appendChild(companyWrap);
-    return;
-  }
-  if(sessionName === 'H.O.M.E Hub - Trustees' || sessionName === 'H.O.M.E Hub - Partners'){
-    onPick('Attending a Meeting');
-    var autoNote = document.createElement('div');
-    autoNote.style.cssText = 'font-size:13px;color:var(--mid);font-weight:500;padding:4px 0';
-    autoNote.textContent = 'Reason: Attending a Meeting';
-    el.appendChild(autoNote);
     return;
   }
 
@@ -856,6 +847,14 @@ function buildReasonPicker(containerId, sessionName, onPick){
   var topReasons = sessionReasons ? Object.keys(sessionReasons).sort(function(a,b){ return sessionReasons[b]-sessionReasons[a]; }) : [];
   var overallTop = topReasons.length ? [] : overallReasonCounts(history);
   var primary = topReasons.length ? topReasons : overallTop;
+
+  // Trustees/Partners default softly to "Attending a Meeting" — pre-picked
+  // for speed, same as any personalised default, but still one tap away
+  // from changing if that's genuinely not why they're here today. 💚
+  if(sessionName === 'H.O.M.E Hub - Trustees' || sessionName === 'H.O.M.E Hub - Partners'){
+    primary = ['Attending a Meeting'];
+  }
+
   var rest = S.reasons.filter(function(r){ return primary.indexOf(r)===-1; });
 
   function pick(label){
