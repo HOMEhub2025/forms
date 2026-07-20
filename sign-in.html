@@ -796,16 +796,37 @@ function buildReasonPicker(containerId, sessionName, onPick){
   var primary = topReasons.length ? topReasons : overallTop;
   var rest = S.reasons.filter(function(r){ return primary.indexOf(r)===-1; });
 
+  // Contractor company-name field — appears only when "Contractor" is
+  // the picked reason, and clears itself if they change their mind. 💚
+  S.contractorCompany = '';
+  var companyWrap = document.createElement('div');
+  companyWrap.style.cssText = 'display:none;margin-top:12px';
+  companyWrap.innerHTML =
+    '<label class="field-label" for="contractor-company-input">Company name</label>' +
+    '<input type="text" id="contractor-company-input" placeholder="e.g. Waites Ltd" autocomplete="organization">';
+  companyWrap.querySelector('input').addEventListener('input', function(){ S.contractorCompany = this.value; });
+
+  function pick(label){
+    onPick(label);
+    if(label === 'Contractor'){
+      companyWrap.style.display = 'block';
+    } else {
+      companyWrap.style.display = 'none';
+      S.contractorCompany = '';
+      companyWrap.querySelector('input').value = '';
+    }
+  }
+
   function makePill(label, preselect, container){
     var d = document.createElement('div');
     d.className = 'tile' + (preselect ? ' selected' : '');
     d.textContent = label;
     d.setAttribute('data-value', label);
-    if(preselect) onPick(label);
+    if(preselect) pick(label);
     d.addEventListener('click', function(){
       el.querySelectorAll('.tile').forEach(function(c){ c.classList.remove('selected'); });
       d.classList.add('selected');
-      onPick(label);
+      pick(label);
     });
     container.appendChild(d);
   }
@@ -842,6 +863,8 @@ function buildReasonPicker(containerId, sessionName, onPick){
   } else {
     S.reasons.forEach(function(r){ makePill(r, false, el); });
   }
+
+  el.appendChild(companyWrap);
 }
 
 // ── SCREEN 1: NAME SEARCH ────────────────────────────────────────
@@ -1029,8 +1052,16 @@ async function submitReturning(){
   var sErr=document.getElementById('ret-session-error');
   var rErr=document.getElementById('ret-reason-error');
   sErr.style.display='none'; rErr.style.display='none';
+  rErr.querySelector('.validation-prompt-text').textContent='Please choose a reason to continue';
   if(!S.selectedSession){ sErr.style.display='block'; return; }
   if(!S.selectedReason){ rErr.style.display='block'; return; }
+  if(S.selectedReason==='Contractor' && !(S.contractorCompany||'').trim()){
+    var ci=document.getElementById('contractor-company-input');
+    if(ci) ci.focus();
+    rErr.style.display='block';
+    rErr.querySelector('.validation-prompt-text').textContent='Please add your company name to continue';
+    return;
+  }
   var btn = document.getElementById('btn-ret-signin');
   btn.innerHTML='<span class="spinner"></span> Signing you in...'; btn.disabled=true;
   try {
@@ -1046,6 +1077,7 @@ async function submitReturning(){
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
       visitor_id:S.visitor.id, visitor_name:S.visitor.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
+      company_name:S.selectedReason==='Contractor' ? S.contractorCompany.trim() : null,
       visit_type:S.isVolunteering ? 'volunteer' : (S.visitType||'community'),
       signed_out_at:autoOut.toISOString(), auto_signed_out:true
     })});
@@ -1097,8 +1129,16 @@ async function submitNew(){
   var sErr=document.getElementById('session-error');
   var rErr=document.getElementById('reason-error');
   sErr.style.display='none'; rErr.style.display='none';
+  rErr.querySelector('.validation-prompt-text').textContent='Please choose a reason to continue';
   if(!S.selectedSession){ sErr.style.display='block'; return; }
   if(!S.selectedReason){ rErr.style.display='block'; return; }
+  if(S.selectedReason==='Contractor' && !(S.contractorCompany||'').trim()){
+    var ci=document.getElementById('contractor-company-input');
+    if(ci) ci.focus();
+    rErr.style.display='block';
+    rErr.querySelector('.validation-prompt-text').textContent='Please add your company name to continue';
+    return;
+  }
   var btn=document.getElementById('btn-session-signin');
   btn.innerHTML='<span class="spinner"></span> Signing you in...'; btn.disabled=true;
   try {
@@ -1121,6 +1161,7 @@ async function submitNew(){
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
       visitor_id:newV.id, visitor_name:newV.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
+      company_name:S.selectedReason==='Contractor' ? S.contractorCompany.trim() : null,
       visit_type:S.isVolunteering ? 'volunteer' : 'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
     })});
     await doThankYou(newV.full_name);
