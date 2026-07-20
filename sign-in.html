@@ -439,7 +439,7 @@ input::placeholder{color:#b0b7c0;font-weight:400}
       <div class="validation-prompt-text">Please choose a reason to continue</div>
       <div class="validation-prompt-hint">There's no wrong answer — just pick what feels closest to why you're here today</div>
     </div>
-    <div class="toggle-row" id="ret-volunteer-row" style="margin-top:14px">
+    <div class="toggle-row" id="ret-volunteer-row" style="margin-top:14px;display:none">
       <div class="toggle-text">
         <div class="toggle-label-text">I'm volunteering today</div>
         <div class="toggle-sub-text">Helping out rather than attending as a visitor</div>
@@ -577,13 +577,6 @@ input::placeholder{color:#b0b7c0;font-weight:400}
     <div class="validation-prompt" id="reason-error" style="margin-top:10px">
       <div class="validation-prompt-text">Please choose a reason to continue</div>
       <div class="validation-prompt-hint">Just pick what feels closest to why you're here today</div>
-    </div>
-    <div class="toggle-row" id="new-volunteer-row" style="margin-top:14px">
-      <div class="toggle-text">
-        <div class="toggle-label-text">I'm volunteering today</div>
-        <div class="toggle-sub-text">Helping out rather than attending as a visitor</div>
-      </div>
-      <button class="toggle" id="new-volunteer-toggle" aria-label="Volunteering today"></button>
     </div>
     <div style="margin-top:20px">
       <div class="btn" id="btn-session-signin">Sign me in</div>
@@ -913,11 +906,18 @@ async function buildReturningScreen(v){
   reasonEl.innerHTML='';
   S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
 
-  // Volunteer toggle — reset each time this screen builds, auto-picks the "Volunteering" reason tile when switched on
-  setupToggle('ret-volunteer-toggle','isVolunteering',false);
-  document.getElementById('ret-volunteer-toggle').addEventListener('click', function(){
-    if(S.isVolunteering) autoSelectVolunteerReason('ret-reason-tiles','ret-usual-reason-tiles');
-  });
+  // Volunteer toggle — only shown for people already recognised as Co-Creators/volunteers,
+  // never asked of general community visitors. Reset each time this screen builds.
+  var volRow = document.getElementById('ret-volunteer-row');
+  if(v.is_co_creator){
+    volRow.style.display='flex';
+    setupToggle('ret-volunteer-toggle','isVolunteering',false);
+    document.getElementById('ret-volunteer-toggle').addEventListener('click', function(){
+      if(S.isVolunteering) autoSelectVolunteerReason('ret-reason-tiles','ret-usual-reason-tiles');
+    });
+  } else {
+    volRow.style.display='none';
+  }
 }
 
 function autoSelectVolunteerReason(){
@@ -1007,11 +1007,6 @@ function buildSessionScreen(){
   var reasonEl=document.getElementById('reason-tiles');
   reasonEl.innerHTML='';
   S.reasons.forEach(function(r){ makeTile(r,r,reasonEl,'selectedReason'); });
-
-  setupToggle('new-volunteer-toggle','isVolunteering',false);
-  document.getElementById('new-volunteer-toggle').addEventListener('click', function(){
-    if(S.isVolunteering) autoSelectVolunteerReason('reason-tiles');
-  });
 }
 
 document.getElementById('btn-session-signin').addEventListener('click', submitNew);
