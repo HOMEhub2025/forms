@@ -970,24 +970,11 @@ async function buildReturningScreen(v){
   document.getElementById('ret-name').textContent = 'Great to see you, '+fn+'!';
   document.getElementById('ret-sub').textContent = 'Wonderful to have you back with us today';
 
-  // Missing contact prompt
-  var missingCard = document.getElementById('ret-missing-card');
-  var hasMissingEmail = !v.email;
-  var hasMissingMobile = !v.mobile;
-  if(hasMissingEmail || hasMissingMobile){
-    var parts = [];
-    if(hasMissingEmail) parts.push('email address');
-    if(hasMissingMobile) parts.push('mobile number');
-    document.getElementById('ret-missing-sub').textContent = 'Would you like to share your '+parts.join(' and ')+' so we can keep you in the loop? Completely your choice — no pressure at all.';
-    if(hasMissingEmail) document.getElementById('ret-email-field').style.display='block';
-    if(hasMissingMobile) document.getElementById('ret-mobile-field').style.display='block';
-    document.getElementById('ret-consents').style.display='block';
-    missingCard.style.display='block';
-    setupToggle('ret-newsletter-toggle','newsletterConsent',false);
-    setupToggle('ret-whatsapp-toggle','whatsappConsent',false);
-  } else {
-    missingCard.style.display='none';
-  }
+  // No contact/GDPR prompt here — that's captured once, at registration,
+  // in the new-visitor flow. A returning visitor shouldn't be asked
+  // again every time just because that data isn't in the system yet
+  // (e.g. anyone brought in through a historic import). 💚
+  document.getElementById('ret-missing-card').style.display='none';
 
   // This person's real sign-in history — which groups they attend and
   // what reason they usually give for each — drives both pickers below. 💚
