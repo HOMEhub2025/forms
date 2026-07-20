@@ -1082,21 +1082,28 @@ async function submitNew(){
   var btn=document.getElementById('btn-session-signin');
   btn.innerHTML='<span class="spinner"></span> Signing you in...'; btn.disabled=true;
   try {
-    var vRes=await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
-      full_name:S.newName, email:S.newEmail||null, mobile:S.newMobile||null,
-      postcode:S.newPostcode||null, age_group:S.selectedAge||null, gender:S.selectedGender||null,
-      newsletter_consent:S.newsletterConsent, whatsapp_consent:S.whatsappConsent,
-      anon_reporting_consent:S.anonConsent, is_co_creator:false,
-      first_visit_date:todayISO()
-    })});
-    var newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
+    // Case-insensitive check first — "Sarah Jones" and "sarah jones" are
+    // the same person, and we never want to silently create a second
+    // record just because of capitalisation. 💚
+    var existingRes = await SB('visitors?full_name=ilike.'+encodeURIComponent(S.newName)+'&limit=1');
+    var newV = (existingRes.data||[])[0];
+    if(!newV){
+      var vRes=await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
+        full_name:S.newName, email:S.newEmail||null, mobile:S.newMobile||null,
+        postcode:S.newPostcode||null, age_group:S.selectedAge||null, gender:S.selectedGender||null,
+        newsletter_consent:S.newsletterConsent, whatsapp_consent:S.whatsappConsent,
+        anon_reporting_consent:S.anonConsent, is_co_creator:false,
+        first_visit_date:todayISO()
+      })});
+      newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
+    }
     var autoOut=await calcAutoSignOut(newV,'community',S.isVolunteering);
     await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
-      visitor_id:newV.id, visitor_name:S.newName,
+      visitor_id:newV.id, visitor_name:newV.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
       visit_type:S.isVolunteering ? 'volunteer' : 'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
     })});
-    await doThankYou(S.newName);
+    await doThankYou(newV.full_name);
   } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
 }
 
