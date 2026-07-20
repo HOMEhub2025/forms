@@ -652,14 +652,15 @@ document.getElementById('btn-signin').addEventListener('click', async function()
       } catch(e){}
     }
 
-    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+    var signInPayload = {
       visitor_id:visitorId, visitor_name:S.visitor.full_name,
       session_name:S.selectedSession, reason_for_attending:S.selectedReason,
-      company_name:S.selectedReason==='Contractor' ? S.contractorCompany.trim() : null,
       visit_type:S.isVolunteering ? 'volunteer' : 'community',
       signed_out_at:autoOut.toISOString(), auto_signed_out:true,
       source:'team_signin'
-    })});
+    };
+    if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
+    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
     if(!signInRes.ok){
       throw new Error('Visitor saved, but the sign-in itself didn\u2019t — ' + (signInRes.data && signInRes.data.message ? signInRes.data.message : 'error '+signInRes.status));
     }
