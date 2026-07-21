@@ -46,6 +46,8 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 
 /* STAT CARDS */
 .stats-row{display:flex;gap:10px;padding:0 16px;overflow-x:auto}
+.stats-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 16px 4px}
+.stats-grid-3 .stat-card{min-width:0;text-align:center;padding:14px 8px}
 .stat-card{background:var(--card);border-radius:var(--radius);border:1.5px solid var(--border);padding:11px 12px;min-width:96px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .stat-card .num{font-family:'League Spartan',sans-serif;font-size:1.3rem;font-weight:700;color:var(--db);line-height:1}
 .stat-card .lbl{font-size:.64rem;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.25}
@@ -368,6 +370,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Session Register</div><div class="card-desc">Who's booked and who signed in — send to the practitioner</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
+    <div class="card accent-orange" data-goto="screen-receipts">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M21 8V21H3V8"/><path d="M23 3H1v5h22z"/><path d="M10 12h4"/></svg></div>
+      <div class="card-body"><div class="card-title">Expense Receipts</div><div class="card-desc">Log a receipt on the spot — same tracker Heartwood uses</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-green" data-goto="screen-hub-today">
       <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
       <div class="card-body"><div class="card-title">Hub Today</div><div class="card-desc">Live — who's on-site, what's running, what's happening now</div></div>
@@ -486,7 +493,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p id="htDateLabel">Live snapshot of who's here and what's on</p>
   </div>
 
-  <div class="stats-row" id="htStats">
+  <div class="stats-grid-3" id="htStats">
     <div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>
   </div>
 
@@ -527,6 +534,53 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div id="cuErrorWrap"></div>
     <button class="btn-primary" id="cuSubmitBtn" type="button">Submit cash-up</button>
   </div>
+</div>
+
+<!-- ============ EXPENSE RECEIPTS ============ -->
+<div class="screen" id="screen-receipts">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Expense <span>Receipts</span></h2>
+    <p>Same tracker Heartwood uses — this lands straight in the real record.</p>
+  </div>
+  <div class="stats-grid-3" style="grid-template-columns:1fr 1fr">
+    <div class="stat-card"><div class="num" id="recMonthTotal">–</div><div class="lbl">This month</div></div>
+    <div class="stat-card"><div class="num" id="recMonthCount">–</div><div class="lbl">Receipts logged</div></div>
+  </div>
+  <div class="form-wrap">
+    <div class="field-row">
+      <div class="field"><label>Amount (&pound;)</label><input type="text" inputmode="decimal" id="recAmount" placeholder="0.00"></div>
+      <div class="field"><label>Date</label><input type="date" id="recDate"></div>
+    </div>
+    <div class="field"><label>Category</label>
+      <select id="recCategory">
+        <option>Stationery &amp; office supplies</option>
+        <option>Cleaning supplies</option>
+        <option>Catering &amp; refreshments</option>
+        <option>Room maintenance &amp; repairs</option>
+        <option>Equipment &amp; furniture</option>
+        <option>Training &amp; development</option>
+        <option>Marketing &amp; printing</option>
+        <option>Travel &amp; transport</option>
+        <option>Utilities (direct cost)</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Description</label><input type="text" id="recDescription" placeholder="What was purchased and why"></div>
+    <div class="field"><label>Paid by</label><input type="text" id="recPaidBy" placeholder="Name of person who paid"></div>
+    <div class="field"><label>Payment method</label>
+      <select id="recMethod">
+        <option>H.O.M.E HUB cash</option>
+        <option>H.O.M.E HUB card</option>
+        <option>Personal (to be reimbursed)</option>
+      </select>
+    </div>
+    <div id="recErrorWrap"></div>
+    <button class="btn-primary" id="recSubmitBtn" type="button">Save receipt</button>
+    <div class="helper-text" style="text-align:center">Photos aren't captured here yet — keep the paper receipt until that's built.</div>
+  </div>
+  <div class="section-label">Recently logged</div>
+  <div id="recList"><div class="loading-row">Loading receipts…</div></div>
 </div>
 
 <!-- ============ INVOICES & PURCHASE ORDERS ============ -->
@@ -3004,6 +3058,89 @@ async function loadCashUp(){
 screenLoaders['screen-cashup'] = loadCashUp;
 
 /* ============================================================
+   EXPENSE RECEIPTS — same "receipts" table Heartwood's tracker
+   uses, so both apps stay in one shared record. Photo capture
+   isn't wired up here (Heartwood's own photo capture silently
+   never saved either — the compressed image was never actually
+   sent to the server, just previewed) — proper photo storage is
+   a real follow-up, not something to guess at from here. 💚
+   ============================================================ */
+async function loadReceipts(){
+  var listEl = document.getElementById('recList');
+  var dateEl = document.getElementById('recDate');
+  if(dateEl && !dateEl.value) dateEl.value = toISODate(new Date());
+  listEl.innerHTML = '<div class="loading-row">Loading receipts…</div>';
+  try{
+    var res = await SB('receipts?select=*&order=created_at.desc&limit=50');
+    var rows = res.data || [];
+    var monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    var monthRows = rows.filter(function(r){ return new Date(r.receipt_date||r.created_at) >= monthStart; });
+    var monthTotal = monthRows.reduce(function(s,r){ return s + (parseFloat(r.amount)||0); }, 0);
+    document.getElementById('recMonthTotal').textContent = '£'+monthTotal.toFixed(2);
+    document.getElementById('recMonthCount').textContent = monthRows.length;
+
+    if(!rows.length){
+      listEl.innerHTML = '<div class="agenda-empty">No receipts logged yet.</div>';
+      return;
+    }
+    listEl.innerHTML = rows.map(function(r){
+      var dt = r.receipt_date || (r.created_at||'').slice(0,10);
+      var dtLabel = dt ? new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+      return '<div class="tx-row"><div style="min-width:0;flex:1">'
+        + '<div class="tx-row-desc">'+(r.description||'(no description)')+'</div>'
+        + '<div class="tx-row-date">'+(r.category||'')+' \u00b7 '+dtLabel+' \u00b7 '+(r.paid_by||'Unknown')+'</div>'
+        + '</div><div class="tx-row-amount">£'+(parseFloat(r.amount)||0).toFixed(2)+'</div></div>';
+    }).join('');
+  }catch(e){
+    listEl.innerHTML = '<div class="error-banner">Couldn\'t load receipts — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-receipts'] = loadReceipts;
+
+document.getElementById('recSubmitBtn').addEventListener('click', async function(){
+  var u = getUser();
+  if(!u){ openUserSheet(); return; }
+  var errWrap = document.getElementById('recErrorWrap');
+  errWrap.innerHTML = '';
+
+  var amount = parseFloat(document.getElementById('recAmount').value)||0;
+  var description = document.getElementById('recDescription').value.trim();
+  if(amount<=0){ errWrap.innerHTML = '<div class="error-banner">Enter an amount before saving.</div>'; return; }
+  if(!description){ errWrap.innerHTML = '<div class="error-banner">A short description is needed.</div>'; return; }
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    var recRes = await SB('receipts', {
+      method:'POST', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({
+        amount: amount,
+        receipt_date: document.getElementById('recDate').value || toISODate(new Date()),
+        category: document.getElementById('recCategory').value,
+        description: description,
+        paid_by: document.getElementById('recPaidBy').value.trim() || 'Unknown',
+        payment_method: document.getElementById('recMethod').value,
+        logged_by: u.display_name,
+        created_at: new Date().toISOString()
+      })
+    });
+    if(!recRes.ok){
+      throw new Error((recRes.data && recRes.data.message) ? recRes.data.message : 'error '+recRes.status);
+    }
+    if(typeof logAction === 'function') logAction('submit_receipt', 'Receipts', '£'+amount.toFixed(2)+' — '+description);
+    showToast('Receipt saved — £'+amount.toFixed(2));
+    document.getElementById('recAmount').value = '';
+    document.getElementById('recDescription').value = '';
+    document.getElementById('recPaidBy').value = '';
+    loadReceipts();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save receipt';
+  }
+});
+
+/* ============================================================
    HUB TODAY — live snapshot for reception/leadership: who's
    on-site right now, what's running today, and the most recent
    sign-in activity. Read-only, refreshable, no editing here.
@@ -3038,31 +3175,35 @@ async function loadHubToday(){
       '<div class="stat-card"><div class="num">'+signIns.length+'</div><div class="lbl">Signed in today</div></div>' +
       '<div class="stat-card"><div class="num">'+uniqueToday+'</div><div class="lbl">Unique people</div></div>';
 
-    // Sessions running today — same "today" rule the sign-in QR page uses
-    var todaySessions = (sessionsRes.data||[]).filter(function(s){
+    // Sessions running today — only the ones someone's actually signed
+    // into, so this is a live "what's happening" list, not a static
+    // schedule dump of every group whether anyone's there or not. 💚
+    var scheduledToday = (sessionsRes.data||[]).filter(function(s){
       return (s.days_of_week||[]).some(function(d){ return (d||'').toLowerCase() === todayName.toLowerCase(); });
     });
-    if(todaySessions.length){
-      // How many have actually signed in for each session today, so this
-      // isn't just a static list — it shows real activity per group. 💚
-      var countBySession = {};
-      signIns.forEach(function(s){
-        var sn = (s.session_name||'').trim();
-        if(!sn) return;
-        countBySession[sn] = (countBySession[sn]||0) + 1;
-      });
-      sessionsWrap.innerHTML = todaySessions.map(function(s){
+    var countBySession = {};
+    signIns.forEach(function(s){
+      var sn = (s.session_name||'').trim();
+      if(!sn) return;
+      countBySession[sn] = (countBySession[sn]||0) + 1;
+    });
+    var activeSessions = scheduledToday.filter(function(s){ return (countBySession[s.name]||0) > 0; });
+    if(activeSessions.length){
+      sessionsWrap.innerHTML = activeSessions.map(function(s){
         var c = countBySession[s.name] || 0;
         return '<div class="tx-row"><div style="min-width:0;flex:1"><div class="tx-row-desc">'+s.name+'</div></div>'
-          + '<div class="tx-row-amount" style="color:'+(c>0?'var(--dg)':'var(--muted)')+'">'+c+' signed in</div></div>';
+          + '<div class="tx-row-amount" style="color:var(--dg)">'+c+' signed in</div></div>';
       }).join('');
     } else {
-      sessionsWrap.innerHTML = '<div class="agenda-empty">Nothing scheduled today.</div>';
+      sessionsWrap.innerHTML = '<div class="agenda-empty">No one\u2019s signed into a group yet today.</div>';
     }
 
-    // Live activity — most recent sign-ins today, newest first
+    // Live activity — collapsed by default (just a count + expand), since
+    // this list can get long on a busy day and isn't something you need
+    // staring at you the moment you open the screen. 💚
     if(signIns.length){
-      feedWrap.innerHTML = signIns.slice(0,20).map(function(s){
+      var onSiteCount = signIns.filter(function(s){ return s.signed_out_at && new Date(s.signed_out_at) > now; }).length;
+      var rowsHtml = signIns.slice(0,30).map(function(s){
         var t = new Date(s.signed_in_at);
         var timeStr = t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
         var stillHere = s.signed_out_at && new Date(s.signed_out_at) > now;
@@ -3074,6 +3215,19 @@ async function loadHubToday(){
           + '<div class="tx-row-date">'+(s.session_name||s.reason_for_attending||'')+' \u00b7 '+timeStr+'</div>'
           + '</div>'+statusPill+'</div>';
       }).join('');
+      feedWrap.innerHTML =
+        '<div id="htFeedToggle" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;touch-action:manipulation">'
+        + '<div style="font-size:.78rem;font-weight:700;color:var(--text)">'+onSiteCount+' on site \u00b7 '+signIns.length+' signed in today</div>'
+        + '<svg id="htFeedChevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</div>'
+        + '<div id="htFeedRows" style="display:none;margin-top:8px">'+rowsHtml+'</div>';
+      document.getElementById('htFeedToggle').addEventListener('click', function(){
+        var rows = document.getElementById('htFeedRows');
+        var chevron = document.getElementById('htFeedChevron');
+        var open = rows.style.display === 'block';
+        rows.style.display = open ? 'none' : 'block';
+        chevron.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+      });
     } else {
       feedWrap.innerHTML = '<div class="agenda-empty">No one\u2019s signed in yet today.</div>';
     }
