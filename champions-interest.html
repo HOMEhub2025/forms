@@ -554,6 +554,21 @@ document.addEventListener('DOMContentLoaded', function() {
   // Restore any saved draft
   restoreDraft();
 
+  // Prefill from a referring page (e.g. the QR sign-in "Yes, tell me
+  // more" prompt) — takes priority over a stale draft, since arriving
+  // here via that link is a fresher, more deliberate signal. 💚
+  try {
+    var qp = new URLSearchParams(window.location.search);
+    var prefillMap = {first_name:'first-name', last_name:'last-name', email:'email', phone:'phone'};
+    Object.keys(prefillMap).forEach(function(param){
+      var val = qp.get(param);
+      if(val){
+        var el = document.getElementById(prefillMap[param]);
+        if(el) el.value = val;
+      }
+    });
+  } catch(prefillErr){ console.warn('[Champions] prefill failed:', prefillErr.message); }
+
   // Save draft on any field change
   document.querySelectorAll('#first-name,#last-name,#email,#phone,#org-name,#org-website').forEach(function(input) {
     input.addEventListener('input', saveDraft);
