@@ -1119,9 +1119,19 @@ async function submitReturning(){
       signed_out_at:autoOut.toISOString(), auto_signed_out:true
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
-    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+    if(!signInRes.ok){
+      throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
+    }
     await doThankYou(S.visitor.full_name, S.visitor.email);
-  } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
+  } catch(e){
+    console.error('Sign-in failed to save:', e);
+    btn.innerHTML='Sign me in'; btn.disabled=false;
+    rErr.querySelector('.validation-prompt-text').textContent = 'That didn\u2019t save \u2014 please try again';
+    rErr.querySelector('.validation-prompt-hint').textContent = e.message || 'Something went wrong. If this keeps happening, let a team member know.';
+    rErr.style.display='block';
+    rErr.scrollIntoView({behavior:'smooth', block:'center'});
+  }
 }
 
 // ── SCREEN 4: NEW VISITOR ────────────────────────────────────────
@@ -1194,7 +1204,13 @@ async function submitNew(){
         anon_reporting_consent:S.anonConsent, is_co_creator:false,
         first_visit_date:todayISO()
       })});
-      newV=(vRes.data||[])[0]||{id:null,full_name:S.newName};
+      if(!vRes.ok){
+        throw new Error('Could not save your details \u2014 '+((vRes.data && vRes.data.message) ? vRes.data.message : 'error '+vRes.status));
+      }
+      newV=(vRes.data||[])[0];
+      if(!newV){
+        throw new Error('Your details didn\u2019t save properly \u2014 nothing came back from the database.');
+      }
     }
     var autoOut=await calcAutoSignOut(newV,'community',S.isVolunteering);
     var signInPayload = {
@@ -1203,9 +1219,19 @@ async function submitNew(){
       visit_type:S.isVolunteering ? 'volunteer' : 'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
-    await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+    if(!signInRes.ok){
+      throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
+    }
     await doThankYou(newV.full_name, newV.email || S.newEmail);
-  } catch(e){ btn.innerHTML='Sign me in'; btn.disabled=false; }
+  } catch(e){
+    console.error('Sign-in failed to save:', e);
+    btn.innerHTML='Sign me in'; btn.disabled=false;
+    rErr.querySelector('.validation-prompt-text').textContent = 'That didn\u2019t save \u2014 please try again';
+    rErr.querySelector('.validation-prompt-hint').textContent = e.message || 'Something went wrong. If this keeps happening, let a team member know.';
+    rErr.style.display='block';
+    rErr.scrollIntoView({behavior:'smooth', block:'center'});
+  }
 }
 
 // ── AUTO SIGN-OUT ────────────────────────────────────────────────
