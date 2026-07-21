@@ -605,7 +605,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="field" id="fbBatchOtherWrap" style="display:none"><label>Name it</label><input type="text" id="fbBatchOtherName" placeholder="e.g. Astrology Workshop"></div>
     <div class="field"><label>Practitioner <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="text" id="fbBatchPractitioner" placeholder="e.g. Donna Robinson"></div>
     <div class="field"><label>Date</label><input type="date" id="fbBatchDate"></div>
-    <div class="field"><label>What does this survey help us understand?</label>
+    <div class="field">
+      <label style="display:flex;justify-content:space-between;align-items:center">
+        <span>Message to go with the link</span>
+        <button type="button" id="fbGenerateMsgBtn" style="background:none;border:none;color:var(--dg);font-size:.72rem;font-weight:700;cursor:pointer;padding:2px 4px">Write this for me</button>
+      </label>
       <textarea id="fbBatchMessage" rows="3" placeholder="e.g. This quick, anonymous survey helps us see how today's session went for you, and where we can improve — it takes about two minutes."></textarea>
     </div>
     <div id="fbBatchErrorWrap"></div>
@@ -3332,6 +3336,37 @@ document.getElementById('fbSendBtn').addEventListener('click', async function(){
     errWrap.innerHTML = '<div class="error-banner">Couldn\'t create survey \u2014 '+e.message+'</div>';
   }finally{
     btn.disabled = false; btn.textContent = 'Generate survey link';
+  }
+});
+
+document.getElementById('fbGenerateMsgBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('fbBatchErrorWrap');
+  errWrap.innerHTML = '';
+  var selVal = document.getElementById('fbBatchSession').value;
+  var sessionName = selVal === '__other__'
+    ? document.getElementById('fbBatchOtherName').value.trim()
+    : selVal;
+  if(!sessionName){ errWrap.innerHTML = '<div class="error-banner">Pick a group/session first, so there\u2019s something to write about.</div>'; return; }
+
+  var btn = this;
+  var originalLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Writing\u2026';
+  try{
+    var res = await fetch('/api/generate-post', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        postType: 'survey',
+        sessionName: sessionName,
+        practitionerName: document.getElementById('fbBatchPractitioner').value.trim() || null
+      })
+    });
+    var data = await res.json();
+    if(!res.ok || data.error) throw new Error(data.error || 'Could not write this one');
+    document.getElementById('fbBatchMessage').value = (data.whatsapp || '').trim();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t write this one \u2014 '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = originalLabel;
   }
 });
 
