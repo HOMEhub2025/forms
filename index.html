@@ -1116,6 +1116,24 @@ async function SB(path, opts){
   return {data: data, contentRange: contentRange};
 }
 
+// ── PAGINATED FETCH — same fix as Heartwood's hwFetchAllRows: PostgREST
+// caps any single request at 1000 rows by default. This loops in pages
+// of 1000 until a short page confirms there's nothing left, so reports
+// built on cash_ups / invoices / financial_transactions (any of which can
+// exceed 1000 rows over time) don't silently under-report. 💚
+async function SBAll(path){
+  var pageSize = 1000, offset = 0, more = true, rows = [];
+  var sep = path.indexOf('?') === -1 ? '?' : '&';
+  while(more){
+    var res = await SB(path + sep + 'limit=' + pageSize + '&offset=' + offset);
+    var batch = res.data || [];
+    rows = rows.concat(batch);
+    more = batch.length === pageSize;
+    offset += pageSize;
+  }
+  return rows;
+}
+
 /* ---------- SUPABASE AUTH (real login, not the anon key) ---------- */
 function getSessionRaw(){
   try{ return JSON.parse(localStorage.getItem('hh_auth') || 'null'); }catch(e){ return null; }
@@ -2144,12 +2162,10 @@ async function loadFinancials(){
     //    count as Reconciled; the cash portion only counts as Reconciled
     //    once banked_at is set. Until then it's Cash in Hand — real money,
     //    just not yet verifiable against the bank statement.
-    var cuRes = await SB('cash_ups?deleted_at=is.null&select=cashup_date,card_amount,sumup_amount,net_cash_banking,banked_at');
-    var invRes = await SB('invoices?status=eq.paid&select=total,issued_date,matched_cashup_id');
-    var txRes = await SB('financial_transactions?select=tx_date,type,amount');
-    var cashups = cuRes.data || [];
-    var invoices = (invRes.data || []).filter(function(i){ return !i.matched_cashup_id; });
-    var transactions = txRes.data || [];
+    var cashups = await SBAll('cash_ups?deleted_at=is.null&select=cashup_date,card_amount,sumup_amount,net_cash_banking,banked_at');
+    var invoicesAll = await SBAll('invoices?status=eq.paid&select=total,issued_date,matched_cashup_id');
+    var transactions = await SBAll('financial_transactions?select=tx_date,type,amount');
+    var invoices = invoicesAll.filter(function(i){ return !i.matched_cashup_id; });
 
     function cashBankedPortion(c){ return c.banked_at ? (parseFloat(c.net_cash_banking)||0) : 0; }
     function cashUnbankedPortion(c){ return c.banked_at ? 0 : (parseFloat(c.net_cash_banking)||0); }
@@ -2224,8 +2240,7 @@ var finTxAllExpanded = false;
 async function loadTransactionHistory(){
   var wrap = document.getElementById('finTxGroups');
   try{
-    var res = await SB('financial_transactions?order=tx_date.desc');
-    var rows = res.data || [];
+    var rows = await SBAll('financial_transactions?order=tx_date.desc');
     if(!rows.length){
       wrap.innerHTML = '<div class="agenda-empty">No transactions on record yet.</div>';
       return;
@@ -3005,8 +3020,7 @@ async function loadDocsScreen(){
   var invWrap = document.getElementById('docInvoicesGroups');
   invWrap.innerHTML = '<div class="loading-row">Loading invoices…</div>';
   try{
-    var res = await SB('invoices?order=issued_date.desc');
-    var rows = res.data || [];
+    var rows = await SBAll('invoices?order=issued_date.desc');
     renderStatusGroups(invWrap, rows, 'status', 'total', function(i){
       return '<div class="tx-row">' +
         '<div style="min-width:0;flex:1"><div class="tx-row-desc">'+(i.customer_name||i.client_name||'(no name)')+'</div><div class="tx-row-date">'+(i.invoice_number||'')+' · '+(i.issued_date||'')+'</div></div>' +
@@ -3124,8 +3138,7 @@ async function loadQuotes(){
   statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>';
   listWrap.innerHTML = '<div class="loading-row">Loading quotes…</div>';
   try{
-    var res = await SB('room_bookings?booking_title=ilike.*Room+Hire+Quote*&order=created_at.desc');
-    qtData = res.data || [];
+    qtData = await SBAll('room_bookings?booking_title=ilike.*Room+Hire+Quote*&order=created_at.desc');
     renderQuotesView();
   }catch(e){
     statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Couldn\'t load</div></div>';
