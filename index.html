@@ -370,6 +370,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Session Register</div><div class="card-desc">Who's booked and who signed in — send to the practitioner</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
+    <div class="card accent-blue" data-goto="screen-feedback">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+      <div class="card-body"><div class="card-title">Session Feedback</div><div class="card-desc">Send a wellbeing survey link — same one Heartwood uses</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-orange" data-goto="screen-receipts">
       <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M21 8V21H3V8"/><path d="M23 3H1v5h22z"/><path d="M10 12h4"/></svg></div>
       <div class="card-body"><div class="card-title">Expense Receipts</div><div class="card-desc">Log a receipt on the spot — same tracker Heartwood uses</div></div>
@@ -581,6 +586,41 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
   <div class="section-label">Recently logged</div>
   <div id="recList"><div class="loading-row">Loading receipts…</div></div>
+</div>
+
+<!-- ============ SESSION FEEDBACK ============ -->
+<div class="screen" id="screen-feedback">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Session <span>Feedback</span></h2>
+    <p>Same wellbeing survey Heartwood uses — the link works exactly the same wherever it's sent from.</p>
+  </div>
+
+  <div class="section-label">Send to one person</div>
+  <div class="form-wrap">
+    <div class="field"><label>Client name</label><input type="text" id="fbName" placeholder="e.g. Jane Smith"></div>
+    <div class="field"><label>Client email <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="email" id="fbEmail" placeholder="jane@example.com"></div>
+    <div class="field-row">
+      <div class="field"><label>Practitioner</label><input type="text" id="fbPractitioner" placeholder="e.g. Donna Robinson"></div>
+      <div class="field"><label>Session</label><input type="text" id="fbSession" placeholder="e.g. Pilates"></div>
+    </div>
+    <div class="field"><label>Session date</label><input type="date" id="fbDate"></div>
+    <div id="fbErrorWrap"></div>
+    <button class="btn-primary" id="fbSendBtn" type="button">Generate survey link</button>
+  </div>
+
+  <div class="section-label" style="margin-top:20px">Send to everyone at a session — anonymous</div>
+  <div class="helper-text" style="margin:0 16px 10px">One reusable link, no names attached — anyone who opens it can complete it, with no way to trace an answer back to a person.</div>
+  <div class="form-wrap">
+    <div class="field"><label>Session <span style="font-weight:400;color:var(--muted)">(optional — leave blank for ad-hoc)</span></label><input type="text" id="fbBatchSession" placeholder="e.g. Astrology Workshop"></div>
+    <div class="field"><label>Practitioner <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="text" id="fbBatchPractitioner" placeholder="e.g. Donna Robinson"></div>
+    <div class="field"><label>Date</label><input type="date" id="fbBatchDate"></div>
+    <div id="fbBatchErrorWrap"></div>
+    <button class="btn-primary" id="fbBatchBtn" type="button">Create group survey link</button>
+  </div>
+
+  <div class="section-label">Recently sent</div>
+  <div id="fbList"><div class="loading-row">Loading…</div></div>
 </div>
 
 <!-- ============ INVOICES & PURCHASE ORDERS ============ -->
@@ -3137,6 +3177,153 @@ document.getElementById('recSubmitBtn').addEventListener('click', async function
     errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
   }finally{
     btn.disabled = false; btn.textContent = 'Save receipt';
+  }
+});
+
+/* ============================================================
+   SESSION FEEDBACK — same wellbeing_surveys / wellbeing_survey_batches
+   tables Heartwood's Session Feedback screen uses. The survey-taking
+   page itself only exists inside Heartwood's own index.html (reached
+   via a ?feedback=TOKEN link) — NOT in this app — so every link
+   generated here is deliberately pointed at the Heartwood domain,
+   not this app's own URL, or it would send people to a screen that
+   doesn't know what to do with the link. 💚
+   ============================================================ */
+var FEEDBACK_LINK_BASE = 'https://heartwood.homehub-benfleet.co.uk/';
+
+function fbGenerateToken(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g,'');
+  return 'fb' + Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+}
+
+function showFeedbackLinkResult(link, label, isGroup){
+  var existing = document.getElementById('fbLinkOverlay');
+  if(existing) existing.remove();
+  var waMsg = isGroup
+    ? 'Hi! We\u2019d love your feedback \u2014 completely anonymous, takes two minutes: ' + link
+    : 'Thank you for your session with us today \uD83D\uDC9A If you have two minutes, we\u2019d love to hear how you\u2019re feeling: ' + link;
+  var o = document.createElement('div');
+  o.id = 'fbLinkOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,.45);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.innerHTML =
+    '<div style="background:#fff;border-radius:16px;max-width:380px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center">'
+    + '<div style="font-size:16px;font-weight:700;color:var(--db);margin-bottom:4px">'+(isGroup?'Group survey ready':'Survey link ready')+'</div>'
+    + '<div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">'+label+'</div>'
+    + (isGroup ? '<img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data='+encodeURIComponent(link)+'" alt="QR code" style="width:180px;height:180px;border:1.5px solid var(--border);border-radius:12px;padding:8px;margin-bottom:14px">' : '')
+    + '<div style="background:#f3faf4;border:1.5px solid #cfe9d3;border-radius:10px;padding:10px 12px;font-size:11px;word-break:break-all;color:#111827;margin-bottom:14px;text-align:left">'+link+'</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px">'
+    + '<button id="fbCopyBtn" type="button" style="flex:1;min-width:100px;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:12px;font-weight:600;cursor:pointer">Copy link</button>'
+    + '<a id="fbWaBtn" href="https://wa.me/?text='+encodeURIComponent(waMsg)+'" target="_blank" style="flex:1;min-width:100px;padding:10px;border-radius:10px;border:none;background:#25D366;color:#fff;font-size:12px;font-weight:700;text-decoration:none;text-align:center">WhatsApp</a>'
+    + '</div>'
+    + '<button id="fbDoneBtn" type="button" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--dg);color:#fff;font-size:13px;font-weight:700;cursor:pointer">Done</button>'
+    + '</div>';
+  document.body.appendChild(o);
+  document.getElementById('fbCopyBtn').addEventListener('click', function(){
+    navigator.clipboard.writeText(link);
+    showToast('Link copied');
+  });
+  document.getElementById('fbDoneBtn').addEventListener('click', function(){ o.remove(); });
+}
+
+async function loadFeedbackList(){
+  var listEl = document.getElementById('fbList');
+  try{
+    var rows = await SBAll('wellbeing_surveys?select=client_name,session_name,status,sent_at,completed_at&order=sent_at.desc&limit=20');
+    if(!rows.length){
+      listEl.innerHTML = '<div class="agenda-empty">No surveys sent yet.</div>';
+      return;
+    }
+    listEl.innerHTML = rows.map(function(r){
+      var done = r.status === 'completed';
+      var pill = done
+        ? '<span style="font-size:.62rem;font-weight:700;color:var(--dg);background:#f0fdf4;padding:2px 8px;border-radius:100px">Completed</span>'
+        : '<span style="font-size:.62rem;font-weight:700;color:var(--muted);background:#f3f4f6;padding:2px 8px;border-radius:100px">Sent</span>';
+      var dt = r.sent_at ? new Date(r.sent_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+      return '<div class="tx-row"><div style="min-width:0;flex:1">'
+        + '<div class="tx-row-desc">'+(r.client_name||'(no name)')+'</div>'
+        + '<div class="tx-row-date">'+(r.session_name||'')+' \u00b7 '+dt+'</div>'
+        + '</div>'+pill+'</div>';
+    }).join('');
+  }catch(e){
+    listEl.innerHTML = '<div class="error-banner">Couldn\'t load — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-feedback'] = loadFeedbackList;
+
+document.getElementById('fbSendBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('fbErrorWrap');
+  errWrap.innerHTML = '';
+  var name = document.getElementById('fbName').value.trim();
+  if(!name){ errWrap.innerHTML = '<div class="error-banner">Add the client\u2019s name first.</div>'; return; }
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Generating\u2026';
+  try{
+    var token = fbGenerateToken();
+    var res = await SB('wellbeing_surveys', {
+      method:'POST', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({
+        token: token,
+        client_name: name,
+        client_email: document.getElementById('fbEmail').value.trim() || null,
+        practitioner_name: document.getElementById('fbPractitioner').value.trim() || null,
+        session_name: document.getElementById('fbSession').value.trim() || null,
+        session_date: document.getElementById('fbDate').value || null,
+        status: 'sent',
+        sent_at: new Date().toISOString()
+      })
+    });
+    if(!res.ok){ throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status); }
+
+    var link = FEEDBACK_LINK_BASE + '?feedback=' + token;
+    showFeedbackLinkResult(link, 'For ' + name + ' \u2014 copy this or send straight to WhatsApp', false);
+    if(typeof logAction === 'function') logAction('send_wellbeing_survey', 'Session Feedback', 'Sent to ' + name);
+
+    ['fbName','fbEmail','fbPractitioner','fbSession','fbDate'].forEach(function(id){
+      document.getElementById(id).value = '';
+    });
+    loadFeedbackList();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t create survey \u2014 '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Generate survey link';
+  }
+});
+
+document.getElementById('fbBatchBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('fbBatchErrorWrap');
+  errWrap.innerHTML = '';
+  var u = getUser();
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Creating\u2026';
+  try{
+    var token = fbGenerateToken();
+    var sessionName = document.getElementById('fbBatchSession').value.trim();
+    var res = await SB('wellbeing_survey_batches', {
+      method:'POST', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({
+        token: token,
+        session_name: sessionName || null,
+        practitioner_name: document.getElementById('fbBatchPractitioner').value.trim() || null,
+        session_date: document.getElementById('fbBatchDate').value || null,
+        mode: sessionName ? 'session' : 'adhoc',
+        created_by: u ? u.display_name : null
+      })
+    });
+    if(!res.ok){ throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status); }
+
+    var link = FEEDBACK_LINK_BASE + '?feedback=' + token;
+    showFeedbackLinkResult(link, sessionName || 'Ad-hoc / on-site survey', true);
+    if(typeof logAction === 'function') logAction('create_wellbeing_batch', 'Session Feedback', sessionName || 'Ad-hoc survey');
+
+    ['fbBatchSession','fbBatchPractitioner','fbBatchDate'].forEach(function(id){
+      document.getElementById(id).value = '';
+    });
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t create group survey \u2014 '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Create group survey link';
   }
 });
 
