@@ -217,6 +217,9 @@ input::placeholder{color:#b0b7c0;font-weight:400}
 .ty2-wrap{background:linear-gradient(135deg,var(--db),#091f40);border-radius:20px;padding:40px 28px;text-align:center;box-shadow:var(--sh2);position:relative;overflow:hidden;margin-bottom:20px}
 .ty2-wrap::before{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:var(--or);border-radius:50%;opacity:.1}
 .ty2-wrap::after{content:"";position:absolute;bottom:-40px;left:-40px;width:150px;height:150px;background:var(--lg);border-radius:50%;opacity:.12}
+.champion-pill{background:linear-gradient(135deg,var(--or),#d96f0f);border-radius:20px;padding:26px 24px;text-align:center;position:relative;overflow:hidden;box-shadow:var(--sh2)}
+.champion-pill::before{content:"";position:absolute;top:-50px;right:-50px;width:160px;height:160px;background:#fff;border-radius:50%;opacity:.1}
+.champion-pill::after{content:"";position:absolute;bottom:-35px;left:-35px;width:120px;height:120px;background:var(--dg);border-radius:50%;opacity:.15}
 .ty-footer{text-align:center;padding:20px 20px 0}
 .ty-home-name{font-family:'League Spartan',sans-serif;font-size:32px;font-weight:900;color:var(--db);letter-spacing:.06em}
 .ty-home-name span{color:var(--or)}
@@ -361,6 +364,11 @@ input::placeholder{color:#b0b7c0;font-weight:400}
     <div class="wb-sub" id="ret-sub">Great to have you back with us today</div>
   </div>
 
+  <div class="card" id="ret-director-card" style="display:none;text-align:center">
+    <div class="card-sub" style="margin-bottom:16px">Visiting H.O.M.E Hub &middot; Director</div>
+    <div class="btn" id="btn-ret-director-signin">Sign me in</div>
+  </div>
+
   <div class="card" id="ret-missing-card" style="display:none">
     <div class="card-header">
       <div class="card-icon orange">
@@ -393,7 +401,7 @@ input::placeholder{color:#b0b7c0;font-weight:400}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="ret-session-card">
     <div class="card-header">
       <div class="card-icon"><svg><use href="#icon-group"/></svg></div>
       <div><div class="card-title">What are you joining today?</div><div class="card-sub" id="ret-session-card-sub">Sessions running today are shown first</div></div>
@@ -407,7 +415,7 @@ input::placeholder{color:#b0b7c0;font-weight:400}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="ret-reason-card">
     <div class="card-header">
       <div class="card-icon blue"><svg><use href="#icon-heart"/></svg></div>
       <div><div class="card-title">What brings you in today?</div><div class="card-sub">Choose the reason that feels most right</div></div>
@@ -553,28 +561,10 @@ input::placeholder{color:#b0b7c0;font-weight:400}
 </div>
 
 <!-- ═══ THANK YOU SCREEN 1 — Quote ════════════════════════ -->
-<div class="screen" id="screen-ty1">
-  <div class="ty-wrap">
-    <div class="ty-icon">
-      <svg><use href="#icon-star"/></svg>
-    </div>
-    <div class="ty-headline">You are <span>Amazing.</span></div>
-    <div class="ty-divider"></div>
-    <div class="ty-quote" id="ty-quote">"Every community is built one connection at a time. Today, you are that connection."</div>
-  </div>
-  <div class="card" style="text-align:center;padding:22px 24px">
-    <div style="font-size:16px;color:var(--mid);line-height:1.75;font-weight:500">
-      Every time you walk through our door, you're choosing to show up.<br>For yourself. For this community.<br><strong style="color:var(--dg)">We see you. And we are so glad you're here.</strong>
-    </div>
-    <div style="margin-top:20px">
-      <div class="btn" id="btn-ty1-next">One more thing</div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ THANK YOU SCREEN 2 — We Love You ══════════════════ -->
+<!-- ═══ THANK YOU SCREEN — We Love You ══════════════════ -->
 <div class="screen" id="screen-ty2">
   <div class="ty2-wrap">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:14px;position:relative">Thanks for booking in today</div>
     <div class="ty-icon">
       <svg><use href="#icon-heart"/></svg>
     </div>
@@ -585,22 +575,13 @@ input::placeholder{color:#b0b7c0;font-weight:400}
     </div>
   </div>
 
-  <div class="card" id="champion-prompt-card" style="text-align:center;padding:22px 24px">
-    <div style="font-size:15px;color:var(--mid);line-height:1.6;font-weight:500;margin-bottom:16px">
-      Want to know how you can help support H.O.M.E Hub? You could become a <strong style="color:var(--dg)">Community Champion</strong>.
+  <div class="champion-pill" id="champion-prompt-card">
+    <div style="font-size:15px;color:#fff;line-height:1.6;font-weight:600;margin-bottom:16px;position:relative">
+      Would you like to know how you can support H.O.M.E Hub, so we can offer more groups to our community for free?
     </div>
-    <div style="display:flex;gap:10px;justify-content:center" id="champion-prompt-buttons">
-      <div class="btn" id="btn-champion-yes" style="flex:1;max-width:180px">Yes, tell me more</div>
-      <div class="btn-ghost" id="btn-champion-no" style="flex:1;max-width:140px">No thanks</div>
-    </div>
-    <div id="champion-email-wrap" style="display:none;margin-top:16px;text-align:left">
-      <label class="field-label" for="champion-email">Your email address</label>
-      <input type="email" id="champion-email" placeholder="your@email.com" autocomplete="email" inputmode="email">
-      <div class="btn" id="btn-champion-send" style="margin-top:12px">Send my interest</div>
-      <div class="err-text" id="champion-error" style="display:none;color:#dc2626;font-size:13px;font-weight:600;margin-top:8px;text-align:center"></div>
-    </div>
-    <div id="champion-thanks" style="display:none;text-align:center;color:var(--dg);font-weight:600;font-size:14px">
-      Thank you — someone from the team will be in touch. 💚
+    <div style="display:flex;gap:10px;justify-content:center;position:relative" id="champion-prompt-buttons">
+      <div class="btn" id="btn-champion-yes" style="flex:1;max-width:180px;background:#fff;color:var(--or)">Yes, tell me more</div>
+      <div class="btn-ghost" id="btn-champion-no" style="flex:1;max-width:140px;border-color:rgba(255,255,255,.5);color:#fff">No thanks</div>
     </div>
   </div>
 
@@ -1021,6 +1002,22 @@ async function buildReturningScreen(v){
   document.getElementById('ret-name').textContent = 'Great to see you, '+fn+'!';
   document.getElementById('ret-sub').textContent = 'Wonderful to have you back with us today';
 
+  // Directors always visit the same way — no picker needed, just confirm
+  // and sign in. 💚
+  var DIRECTOR_NAMES = ['mark cox', 'james taylor'];
+  var isDirector = DIRECTOR_NAMES.indexOf((v.full_name||'').trim().toLowerCase()) > -1;
+  document.getElementById('ret-director-card').style.display = isDirector ? 'block' : 'none';
+  document.getElementById('ret-session-card').style.display = isDirector ? 'none' : 'block';
+  document.getElementById('ret-reason-card').style.display = isDirector ? 'none' : 'block';
+  document.getElementById('ret-missing-card').style.display = 'none';
+
+  if(isDirector){
+    S.selectedSession = 'Visiting H.O.M.E Hub';
+    S.selectedReason = 'Director';
+    S.isVolunteering = false;
+    return;
+  }
+
   // No contact/GDPR prompt here — that's captured once, at registration,
   // in the new-visitor flow. A returning visitor shouldn't be asked
   // again every time just because that data isn't in the system yet
@@ -1081,6 +1078,7 @@ function autoSelectVolunteerReason(){
 }
 
 document.getElementById('btn-ret-signin').addEventListener('click', submitReturning);
+document.getElementById('btn-ret-director-signin').addEventListener('click', submitReturning);
 document.getElementById('btn-ret-back').addEventListener('click', function(){
   if(S.visitor && S.visitor.is_co_creator) showScreen('screen-cocreator');
   else showScreen('screen-name');
@@ -1123,7 +1121,7 @@ async function submitReturning(){
     if(!signInRes.ok){
       throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
     }
-    await doThankYou(S.visitor.full_name, S.visitor.email);
+    await doThankYou(S.visitor.full_name, S.visitor.email, S.selectedSession);
   } catch(e){
     console.error('Sign-in failed to save:', e);
     btn.innerHTML='Sign me in'; btn.disabled=false;
@@ -1223,7 +1221,7 @@ async function submitNew(){
     if(!signInRes.ok){
       throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
     }
-    await doThankYou(newV.full_name, newV.email || S.newEmail);
+    await doThankYou(newV.full_name, newV.email || S.newEmail, S.selectedSession);
   } catch(e){
     console.error('Sign-in failed to save:', e);
     btn.innerHTML='Sign me in'; btn.disabled=false;
@@ -1255,92 +1253,48 @@ async function calcAutoSignOut(visitor, visitType, isVolunteering){
 }
 
 // ── THANK YOU ────────────────────────────────────────────────────
-async function doThankYou(name, email){
-  var quote='\u201cEvery community is built one connection at a time. Today, you are that connection.\u201d';
-  try {
-    var qr=await SB('daily_quotes?select=quote&limit=50');
-    var qs=(qr.data||[]).filter(function(q){ return q.quote; });
-    if(qs.length) quote='\u201c'+qs[Math.floor(Math.random()*qs.length)].quote+'\u201d';
-  } catch(e){}
-  document.getElementById('ty-quote').textContent=quote;
+async function doThankYou(name, email, sessionName){
   var fn=firstName(name);
-  document.getElementById('ty2-body').textContent='Thank you for being part of H.O.M.E Hub today, '+fn+'. You don\u2019t just attend \u2014 you belong here. What you bring to this community matters more than you know.';
+  var body;
+  if(sessionName === 'H.O.M.E Hub - Partners'){
+    body = 'It\u2019s awesome working in co-creation with you today, '+fn+'.';
+  } else {
+    body = 'Thank you for being part of H.O.M.E Hub today, '+fn+'. You don\u2019t just attend \u2014 you belong here. What you bring to this community matters more than you know.';
+  }
+  document.getElementById('ty2-body').textContent = body;
   resetChampionPrompt(name, email);
-  showScreen('screen-ty1');
+  showScreen('screen-ty2');
 }
 
 // ── COMMUNITY CHAMPION PROMPT ─────────────────────────────────────
 // A light, entirely optional "would you like to help support the
-// Hub?" ask on the thank-you screen. Logs interest into the same
-// champions_interests table the full Champions form uses, so James/Mark
-// see it in one place — but doesn't force anyone through that whole
-// tier-selection form mid sign-in. 💚
+// Hub?" ask on the thank-you screen. "Yes" hands off to the real
+// Champions interest form with their details already filled in,
+// rather than trying to capture interest inline. 💚
 function resetChampionPrompt(name, email){
   document.getElementById('champion-prompt-card').style.display='block';
   document.getElementById('champion-prompt-buttons').style.display='flex';
-  document.getElementById('champion-email-wrap').style.display='none';
-  document.getElementById('champion-thanks').style.display='none';
-  document.getElementById('champion-error').style.display='none';
-  document.getElementById('champion-email').value = email || '';
-  document.getElementById('champion-email').disabled = false;
-  var sendBtn = document.getElementById('btn-champion-send');
-  sendBtn.textContent = 'Send my interest'; sendBtn.style.opacity='1'; sendBtn.style.pointerEvents='auto';
   document.getElementById('champion-prompt-card').setAttribute('data-name', name || '');
+  document.getElementById('champion-prompt-card').setAttribute('data-email', email || '');
 }
 
 document.getElementById('btn-champion-yes').addEventListener('click', function(){
-  document.getElementById('champion-prompt-buttons').style.display='none';
-  document.getElementById('champion-email-wrap').style.display='block';
-  document.getElementById('champion-email').focus();
+  var fullName = document.getElementById('champion-prompt-card').getAttribute('data-name') || '';
+  var email = document.getElementById('champion-prompt-card').getAttribute('data-email') || '';
+  var nameParts = fullName.trim().split(' ');
+  var firstN = nameParts[0] || '';
+  var lastN = nameParts.slice(1).join(' ') || '';
+  var params = new URLSearchParams();
+  if(firstN) params.set('first_name', firstN);
+  if(lastN) params.set('last_name', lastN);
+  if(email) params.set('email', email);
+  window.location.href = 'champions-interest.html' + (params.toString() ? '?'+params.toString() : '');
 });
 
 document.getElementById('btn-champion-no').addEventListener('click', function(){
   document.getElementById('champion-prompt-card').style.display='none';
 });
 
-document.getElementById('btn-champion-send').addEventListener('click', async function(){
-  var emailEl = document.getElementById('champion-email');
-  var errEl = document.getElementById('champion-error');
-  var email = emailEl.value.trim();
-  errEl.style.display='none';
-  if(!email || !email.includes('@')){
-    errEl.textContent = 'Please pop in a valid email address.';
-    errEl.style.display='block';
-    emailEl.focus();
-    return;
-  }
-  var btn = this;
-  btn.textContent = 'Sending\u2026'; btn.style.opacity='0.7'; btn.style.pointerEvents='none';
-  emailEl.disabled = true;
-  try {
-    var fullName = document.getElementById('champion-prompt-card').getAttribute('data-name') || '';
-    var nameParts = fullName.trim().split(' ');
-    var firstN = nameParts[0] || '';
-    var lastN = nameParts.slice(1).join(' ') || '';
-    var payload = {
-      first_name: firstN, last_name: lastN, email: email, phone: null,
-      tier: 'undecided', tier_label: 'Interest expressed at sign-in \u2014 no tier chosen yet',
-      payment_preference: null, explorer_amount: null,
-      is_commercial: false, organisation_name: null, organisation_website: null,
-      how_heard: 'Sign-in thank-you prompt',
-      consent_contact: true, consent_newsletter: false, consent_stats: false,
-      status: 'interest', created_at: new Date().toISOString()
-    };
-    var res = await SB('champions_interests', {method:'POST', headers:{Prefer:'return=minimal'}, body:JSON.stringify(payload)});
-    if(!res.ok){
-      throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status);
-    }
-    document.getElementById('champion-email-wrap').style.display='none';
-    document.getElementById('champion-thanks').style.display='block';
-  } catch(e){
-    errEl.textContent = 'Something went wrong sending that — please try again, or let a team member know.';
-    errEl.style.display='block';
-    btn.textContent = 'Send my interest'; btn.style.opacity='1'; btn.style.pointerEvents='auto';
-    emailEl.disabled = false;
-  }
-});
-
-document.getElementById('btn-ty1-next').addEventListener('click', function(){ showScreen('screen-ty2'); });
 document.getElementById('btn-done').addEventListener('click', resetFlow);
 
 // ── RESET ────────────────────────────────────────────────────────
