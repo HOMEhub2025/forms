@@ -3175,9 +3175,6 @@ document.getElementById('recSubmitBtn').addEventListener('click', async function
         created_at: new Date().toISOString()
       })
     });
-    if(!recRes.ok){
-      throw new Error((recRes.data && recRes.data.message) ? recRes.data.message : 'error '+recRes.status);
-    }
     if(typeof logAction === 'function') logAction('submit_receipt', 'Receipts', '£'+amount.toFixed(2)+' — '+description);
     showToast('Receipt saved — £'+amount.toFixed(2));
     document.getElementById('recAmount').value = '';
@@ -3322,7 +3319,6 @@ document.getElementById('fbSendBtn').addEventListener('click', async function(){
         sent_at: new Date().toISOString()
       })
     });
-    if(!res.ok){ throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status); }
 
     var link = FEEDBACK_LINK_BASE + '?feedback=' + token;
     showFeedbackLinkResult(link, 'For ' + name + ' \u2014 copy this or send straight to WhatsApp', false);
@@ -3398,7 +3394,6 @@ document.getElementById('fbBatchBtn').addEventListener('click', async function()
         created_by: u ? u.display_name : null
       })
     });
-    if(!res.ok){ throw new Error((res.data && res.data.message) ? res.data.message : 'error '+res.status); }
 
     var link = FEEDBACK_LINK_BASE + '?feedback=' + token;
     var fullMessage = (customMsg ? customMsg + '\n\n' : '') + link;
