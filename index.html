@@ -368,6 +368,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Session Register</div><div class="card-desc">Who's booked and who signed in — send to the practitioner</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
+    <div class="card accent-green" data-goto="screen-hub-today">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="card-body"><div class="card-title">Hub Today</div><div class="card-desc">Live — who's on-site, what's running, what's happening now</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-red" data-goto="screen-quotes">
       <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
       <div class="card-body"><div class="card-title">Bookings &amp; Quotes</div><div class="card-desc">Every room quote — pending, confirmed and lost</div></div>
@@ -471,6 +476,31 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <button class="btn-primary" id="qbGenerateBtn" type="button">Generate quote</button>
     <div class="helper-text" style="text-align:center">Opens a printable quote in a new tab — save as PDF or print straight from your phone.</div>
   </div>
+</div>
+
+<!-- ============ HUB TODAY ============ -->
+<div class="screen" id="screen-hub-today">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Hub <span>Today</span></h2>
+    <p id="htDateLabel">Live snapshot of who's here and what's on</p>
+  </div>
+
+  <div class="stats-row" id="htStats">
+    <div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>
+  </div>
+
+  <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+    <span>Sessions running today</span>
+    <span id="htSessionsDay" style="font-weight:600;color:var(--muted);text-transform:none;font-size:.68rem"></span>
+  </div>
+  <div id="htSessionsList"><div class="loading-row">Loading sessions…</div></div>
+
+  <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:18px">
+    <span>Live activity</span>
+    <button type="button" id="htRefreshBtn" style="background:none;border:none;color:var(--dg);font-size:.72rem;font-weight:700;cursor:pointer;padding:4px 6px">Refresh</button>
+  </div>
+  <div id="htActivityFeed"><div class="loading-row">Loading activity…</div></div>
 </div>
 
 <!-- ============ CASH UP ============ -->
@@ -2972,6 +3002,89 @@ async function loadCashUp(){
   }catch(e){ /* datalist just stays empty, not critical */ }
 }
 screenLoaders['screen-cashup'] = loadCashUp;
+
+/* ============================================================
+   HUB TODAY — live snapshot for reception/leadership: who's
+   on-site right now, what's running today, and the most recent
+   sign-in activity. Read-only, refreshable, no editing here.
+   ============================================================ */
+async function loadHubToday(){
+  var statsWrap = document.getElementById('htStats');
+  var sessionsWrap = document.getElementById('htSessionsList');
+  var feedWrap = document.getElementById('htActivityFeed');
+  var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var today = new Date();
+  var todayName = dayNames[today.getDay()];
+  var todayStr = toISODate(today);
+  document.getElementById('htDateLabel').textContent = todayName+' '+today.toLocaleDateString('en-GB',{day:'numeric',month:'long'});
+  document.getElementById('htSessionsDay').textContent = todayName;
+
+  statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Loading…</div></div>';
+  sessionsWrap.innerHTML = '<div class="loading-row">Loading sessions…</div>';
+  feedWrap.innerHTML = '<div class="loading-row">Loading activity…</div>';
+
+  try {
+    var [signInsRows, sessionsRes] = await Promise.all([
+      SBAll('sign_ins?signed_in_at=gte.'+todayStr+'T00:00:00&signed_in_at=lte.'+todayStr+'T23:59:59&select=visitor_name,session_name,reason_for_attending,signed_in_at,signed_out_at&order=signed_in_at.desc'),
+      SB('sign_in_sessions?is_active=eq.true&order=sort_order')
+    ]);
+    var signIns = signInsRows;
+    var now = new Date();
+    var onSiteNow = signIns.filter(function(s){ return s.signed_out_at && new Date(s.signed_out_at) > now; }).length;
+    var uniqueToday = new Set(signIns.map(function(s){ return (s.visitor_name||'').trim().toLowerCase(); }).filter(Boolean)).size;
+
+    statsWrap.innerHTML =
+      '<div class="stat-card"><div class="num">'+onSiteNow+'</div><div class="lbl">On-site now</div></div>' +
+      '<div class="stat-card"><div class="num">'+signIns.length+'</div><div class="lbl">Signed in today</div></div>' +
+      '<div class="stat-card"><div class="num">'+uniqueToday+'</div><div class="lbl">Unique people</div></div>';
+
+    // Sessions running today — same "today" rule the sign-in QR page uses
+    var todaySessions = (sessionsRes.data||[]).filter(function(s){
+      return (s.days_of_week||[]).some(function(d){ return (d||'').toLowerCase() === todayName.toLowerCase(); });
+    });
+    if(todaySessions.length){
+      // How many have actually signed in for each session today, so this
+      // isn't just a static list — it shows real activity per group. 💚
+      var countBySession = {};
+      signIns.forEach(function(s){
+        var sn = (s.session_name||'').trim();
+        if(!sn) return;
+        countBySession[sn] = (countBySession[sn]||0) + 1;
+      });
+      sessionsWrap.innerHTML = todaySessions.map(function(s){
+        var c = countBySession[s.name] || 0;
+        return '<div class="tx-row"><div style="min-width:0;flex:1"><div class="tx-row-desc">'+s.name+'</div></div>'
+          + '<div class="tx-row-amount" style="color:'+(c>0?'var(--dg)':'var(--muted)')+'">'+c+' signed in</div></div>';
+      }).join('');
+    } else {
+      sessionsWrap.innerHTML = '<div class="agenda-empty">Nothing scheduled today.</div>';
+    }
+
+    // Live activity — most recent sign-ins today, newest first
+    if(signIns.length){
+      feedWrap.innerHTML = signIns.slice(0,20).map(function(s){
+        var t = new Date(s.signed_in_at);
+        var timeStr = t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        var stillHere = s.signed_out_at && new Date(s.signed_out_at) > now;
+        var statusPill = stillHere
+          ? '<span style="font-size:.62rem;font-weight:700;color:var(--dg);background:#f0fdf4;padding:2px 8px;border-radius:100px">On site</span>'
+          : '<span style="font-size:.62rem;font-weight:700;color:var(--muted);background:#f3f4f6;padding:2px 8px;border-radius:100px">Left</span>';
+        return '<div class="tx-row"><div style="min-width:0;flex:1">'
+          + '<div class="tx-row-desc">'+(s.visitor_name||'(no name)')+'</div>'
+          + '<div class="tx-row-date">'+(s.session_name||s.reason_for_attending||'')+' \u00b7 '+timeStr+'</div>'
+          + '</div>'+statusPill+'</div>';
+      }).join('');
+    } else {
+      feedWrap.innerHTML = '<div class="agenda-empty">No one\u2019s signed in yet today.</div>';
+    }
+  } catch(e){
+    statsWrap.innerHTML = '<div class="stat-card"><div class="num">–</div><div class="lbl">Couldn\'t load</div></div>';
+    sessionsWrap.innerHTML = '<div class="error-banner">Couldn\'t load sessions — '+e.message+'</div>';
+    feedWrap.innerHTML = '<div class="error-banner">Couldn\'t load activity — '+e.message+'</div>';
+  }
+}
+document.getElementById('htRefreshBtn').addEventListener('click', loadHubToday);
+screenLoaders['screen-hub-today'] = loadHubToday;
 
 /* ============================================================
    INVOICES & PURCHASE ORDERS — grouped by status, same
