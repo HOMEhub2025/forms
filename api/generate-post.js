@@ -57,7 +57,15 @@ Never invent details not provided.`;
 
     let systemPrompt, userPrompt;
 
-    if (postType === 'volunteer') {
+    if (postType === 'survey') {
+      const { sessionName, practitionerName, purpose } = body;
+      if (!sessionName) { res.status(400).json({ error: 'Group/session name is required' }); return; }
+
+      systemPrompt = baseVoice + `\n\nThis particular request is a short WHATSAPP MESSAGE inviting people who just attended a group, session or workshop to fill in a brief, completely anonymous wellbeing survey — it is NOT a social media post, and no hashtags are needed. It should feel like a warm, genuine ask from someone who cares how the session went for them, explain in a sentence what the survey helps the Hub understand or improve, and reassure them it's anonymous and only takes about two minutes. Keep it to 2-3 short sentences, casual and warm, like a message you'd actually send in a WhatsApp group.\n\nFor this particular request, output ONLY valid JSON in this exact shape: {"whatsapp": "..."} — no instagram or facebook keys this time.`;
+
+      userPrompt = `Write a short WhatsApp message inviting people who just attended this to complete an anonymous wellbeing survey:\n\nGroup/session: ${sessionName}\nFacilitator: ${practitionerName || 'the team'}\nWhat we're hoping to learn / why we're asking: ${purpose || '(not specified — keep it general: how the session went for them and how we can keep improving)'}`;
+
+    } else if (postType === 'volunteer') {
       const { roleName, roleDescription, timeCommitment, howToApply } = body;
       if (!roleName) { res.status(400).json({ error: 'Role name is required' }); return; }
 
