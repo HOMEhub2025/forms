@@ -126,8 +126,14 @@ input:focus{outline:none;border-color:var(--dg)}
     <label class="field-label" for="new-age">Age group <span style="text-transform:none;font-weight:500">(optional)</span></label>
     <select id="new-age" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px">
       <option value="">Prefer not to say</option>
-      <option>Under 18</option><option>18–24</option><option>25–34</option>
-      <option>35–44</option><option>45–54</option><option>55–64</option><option>65+</option>
+      <option>Under 5</option><option>5\u201311</option><option>12\u201315</option><option>16\u201317</option>
+      <option>18\u201324</option><option>25\u201334</option>
+      <option>35\u201344</option><option>45\u201354</option><option>55\u201364</option><option>65+</option>
+    </select>
+    <label class="field-label" for="new-gender">Gender <span style="text-transform:none;font-weight:500">(completely optional)</span></label>
+    <select id="new-gender" style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px">
+      <option value="">Prefer not to say</option>
+      <option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer to self-describe</option>
     </select>
     <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:10px">
       <div style="font-size:.7rem;font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px">GDPR &amp; consent</div>
@@ -315,6 +321,7 @@ document.getElementById('add-new-row').addEventListener('click', function(){
   document.getElementById('new-mobile').value='';
   document.getElementById('new-postcode').value='';
   document.getElementById('new-age').value='';
+  document.getElementById('new-gender').value='';
   document.getElementById('new-anon').checked=true;
   document.getElementById('new-newsletter').checked=false;
   document.getElementById('card-search').classList.add('hidden');
@@ -339,6 +346,7 @@ document.getElementById('btn-new-continue').addEventListener('click', function()
     mobile:document.getElementById('new-mobile').value.trim()||null,
     postcode:document.getElementById('new-postcode').value.trim()||null,
     age_group:document.getElementById('new-age').value||null,
+    gender:document.getElementById('new-gender').value||null,
     anon_reporting_consent:document.getElementById('new-anon').checked,
     newsletter_consent:document.getElementById('new-newsletter').checked,
     is_co_creator:false
@@ -649,7 +657,7 @@ document.getElementById('btn-signin').addEventListener('click', async function()
       } else {
         var vRes = await SB('visitors',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
           full_name:S.visitor.full_name, email:S.visitor.email||null, mobile:S.visitor.mobile||null,
-          postcode:S.visitor.postcode||null, age_group:S.visitor.age_group||null,
+          postcode:S.visitor.postcode||null, age_group:S.visitor.age_group||null, gender:S.visitor.gender||null,
           is_co_creator:false,
           anon_reporting_consent:S.visitor.anon_reporting_consent!==false,
           newsletter_consent:!!S.visitor.newsletter_consent, whatsapp_consent:false,
