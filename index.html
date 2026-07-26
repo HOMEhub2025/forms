@@ -297,9 +297,19 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 
   <div class="section-label">Business tools</div>
   <div class="cards">
-    <div class="card accent-blue" data-goto="screen-mgmt-category">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
-      <div class="card-body"><div class="card-title">Management</div><div class="card-desc">Bookings overview, financials, quotes &amp; more</div></div>
+    <div class="card accent-green" data-goto="screen-today-category">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="card-body"><div class="card-title">Today</div><div class="card-desc">Live status, cash-up &amp; who's signed in</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-blue" data-goto="screen-financials-category">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
+      <div class="card-body"><div class="card-title">Financials</div><div class="card-desc">Invoices, purchase orders &amp; payment links</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-orange" data-goto="screen-bookings-category">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="card-body"><div class="card-title">Bookings</div><div class="card-desc">Rooms, sessions, quotes &amp; waiting lists</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
     <div class="card accent-purple" data-goto="screen-marketing-category">
@@ -328,41 +338,16 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 </div>
 
 <!-- ============ MANAGEMENT CATEGORY ============ -->
-<div class="screen" id="screen-mgmt-category">
+<div class="screen" id="screen-today-category">
   <div class="hero">
     <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <h2>Manage<span>ment</span></h2>
-    <p>Oversight tools — bookings, money, and quotes.</p>
+    <h2>To<span>day</span></h2>
+    <p>What's happening right now, and what needs doing before you clock off.</p>
   </div>
   <div class="cards" style="margin-top:16px">
-    <div class="card accent-green" data-goto="screen-cashup">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
-      <div class="card-body"><div class="card-title">Daily Cash-Up</div><div class="card-desc">Log today's takings — cash, card, SumUp</div></div>
-      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </div>
-    <div class="card accent-blue" data-goto="screen-docs">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-      <div class="card-body"><div class="card-title">Invoices &amp; Purchase Orders</div><div class="card-desc">Every one on record, grouped by status</div></div>
-      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </div>
-    <div class="card accent-orange" data-goto="screen-manage" data-mg-open="board">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-      <div class="card-body"><div class="card-title">Bookings Overview</div><div class="card-desc">Day, week or month — everything on the board</div></div>
-      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </div>
-    <div class="card accent-green" data-goto="screen-manage" data-mg-open="financials">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
-      <div class="card-body"><div class="card-title">Financials &amp; Invoices</div><div class="card-desc">Balance, outstanding invoices, recent cash-ups</div></div>
-      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </div>
-    <div class="card accent-blue" data-goto="screen-manage" data-mg-open="waitlist">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-      <div class="card-body"><div class="card-title">Waiting Lists</div><div class="card-desc">Demand by day for closed, referral-only classes</div></div>
-      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </div>
-    <div class="card accent-purple" data-goto="screen-payment-links">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-      <div class="card-body"><div class="card-title">Payment Links</div><div class="card-desc">Find, copy and send existing Stripe links</div></div>
+    <div class="card accent-green" data-goto="screen-hub-today">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="card-body"><div class="card-title">Hub Today</div><div class="card-desc">Live — who's on-site, what's running, what's happening now</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
     <div class="card accent-green" data-goto="screen-register">
@@ -370,9 +355,35 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Session Register</div><div class="card-desc">Who's booked and who signed in — send to the practitioner</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
-    <div class="card accent-blue" data-goto="screen-feedback">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-      <div class="card-body"><div class="card-title">Session Feedback</div><div class="card-desc">Send a wellbeing survey link — same one Heartwood uses</div></div>
+    <div class="card accent-blue" data-goto="screen-cashup">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
+      <div class="card-body"><div class="card-title">Daily Cash-Up</div><div class="card-desc">Log today's takings — cash, card, SumUp</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FINANCIALS CATEGORY ============ -->
+<div class="screen" id="screen-financials-category">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Finan<span>cials</span></h2>
+    <p>Money in, money out, and where it all stands.</p>
+  </div>
+  <div class="cards" style="margin-top:16px">
+    <div class="card accent-blue" data-goto="screen-docs">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="card-body"><div class="card-title">Invoices &amp; Purchase Orders</div><div class="card-desc">Every one on record, grouped by status</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-green" data-goto="screen-manage" data-mg-open="financials">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
+      <div class="card-body"><div class="card-title">Financials &amp; Invoices</div><div class="card-desc">Balance, outstanding invoices, recent cash-ups</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-purple" data-goto="screen-payment-links">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <div class="card-body"><div class="card-title">Payment Links</div><div class="card-desc">Find, copy and send existing Stripe links</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
     <div class="card accent-orange" data-goto="screen-receipts">
@@ -380,9 +391,25 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Expense Receipts</div><div class="card-desc">Log a receipt on the spot — same tracker Heartwood uses</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
-    <div class="card accent-green" data-goto="screen-hub-today">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div class="card-body"><div class="card-title">Hub Today</div><div class="card-desc">Live — who's on-site, what's running, what's happening now</div></div>
+  </div>
+</div>
+
+<!-- ============ BOOKINGS CATEGORY ============ -->
+<div class="screen" id="screen-bookings-category">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Book<span>ings</span></h2>
+    <p>Rooms, sessions, quotes and waiting lists — all in one place.</p>
+  </div>
+  <div class="cards" style="margin-top:16px">
+    <div class="card accent-orange" data-goto="screen-manage" data-mg-open="board">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="card-body"><div class="card-title">Bookings Overview</div><div class="card-desc">Day, week or month — everything on the board</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-blue" data-goto="screen-manage" data-mg-open="waitlist">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="card-body"><div class="card-title">Waiting Lists</div><div class="card-desc">Demand by day for closed, referral-only classes</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
     <div class="card accent-red" data-goto="screen-quotes">
@@ -398,6 +425,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="card accent-purple" data-goto="screen-quote-builder">
       <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
       <div class="card-body"><div class="card-title">Room Hire Quote Tool</div><div class="card-desc">Branded PDF quotes with payment schedule</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="card accent-blue" data-goto="screen-feedback">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+      <div class="card-body"><div class="card-title">Session Feedback</div><div class="card-desc">Send a wellbeing survey link — same one Heartwood uses</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
   </div>
