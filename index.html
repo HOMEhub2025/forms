@@ -3123,6 +3123,23 @@ screenLoaders['screen-payment-links'] = loadPaymentLinks;
 var swSessionsCache = [];
 var currentSwSession = null;
 
+function swOrdinal(n){
+  if(n === -1) return 'last';
+  var suf = ['th','st','nd','rd'], v = n % 100;
+  return n + (suf[(v-20)%10] || suf[v] || suf[0]);
+}
+// Two sessions can share the same name (e.g. a recurring session plus a
+// one-off reschedule for one particular month) — this label is what stops
+// them looking identical in the list. 💚
+function swWhenLabel(s){
+  if(s.recurrence_type === 'weekly') return 'Every ' + (s.day_of_week || '');
+  if(s.recurrence_type === 'fortnightly') return 'Every other ' + (s.day_of_week || '');
+  if(s.recurrence_type === 'monthly_weekday' && s.day_of_week && s.weekday_ordinal) return 'Every ' + swOrdinal(s.weekday_ordinal) + ' ' + s.day_of_week + ' of the month';
+  if(s.recurrence_type === 'monthly') return 'Monthly';
+  if(s.recurrence_type === 'one_off' && s.event_date) return 'One-off \u2014 ' + fmtDateLabel(s.event_date);
+  return 'One-off';
+}
+
 function swBuildUrl(kind, slug){
   if(!slug) return '';
   return 'https://heartwood.homehub-benfleet.co.uk/?' + (kind === 'register' ? 'register=' : 'book=') + encodeURIComponent(slug);
@@ -3139,9 +3156,7 @@ async function loadSessionsWorkshops(){
       return;
     }
     wrap.innerHTML = swSessionsCache.map(function(s){
-      var when = s.recurrence_type === 'weekly' ? ('Every ' + (s.day_of_week || ''))
-        : s.recurrence_type === 'fortnightly' ? ('Every other ' + (s.day_of_week || ''))
-        : (s.event_date ? fmtDateLabel(s.event_date) : 'One-off');
+      var when = swWhenLabel(s);
       var hasLink = !!(s.public_slug || s.payment_link_url);
       return '<div class="card accent-orange2" data-sw-id="'+s.id+'">' +
         '<div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
@@ -3176,7 +3191,7 @@ function swRefreshHints(){
 function openSwSheet(s){
   currentSwSession = s;
   document.getElementById('swSheetName').textContent = s.name;
-  document.getElementById('swSheetSub').textContent = (s.room_name || 'Room not set');
+  document.getElementById('swSheetSub').textContent = swWhenLabel(s) + (s.room_name ? ' · ' + s.room_name : '');
   document.getElementById('swFacilitator').value = s.facilitator_name || '';
   document.getElementById('swRoom').value = s.room_name || '';
   document.getElementById('swDescription').value = s.description || '';
