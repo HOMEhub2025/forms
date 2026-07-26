@@ -390,9 +390,9 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Bookings &amp; Quotes</div><div class="card-desc">Every room quote — pending, confirmed and lost</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
-    <div class="card accent-orange2" data-coming-soon="Session Builder">
+    <div class="card accent-orange2" data-goto="screen-sessions-workshops">
       <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-      <div class="card-body"><div class="card-title">Session Builder</div><div class="card-desc">Create new bookable sessions &amp; workshops — coming soon</div></div>
+      <div class="card-body"><div class="card-title">Sessions &amp; Workshops</div><div class="card-desc">Every bookable session — edit details &amp; booking links</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
     <div class="card accent-purple" data-goto="screen-quote-builder">
@@ -438,6 +438,18 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
   <div class="cards" id="paymentLinksList" style="margin-top:16px">
     <div class="loading-row">Loading payment links…</div>
+  </div>
+</div>
+
+<!-- ============ SESSIONS & WORKSHOPS ============ -->
+<div class="screen" id="screen-sessions-workshops">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Sessions &amp; <span>Workshops</span></h2>
+    <p>Every bookable session — tap one to edit details or drop in a link.</p>
+  </div>
+  <div class="cards" id="swList" style="margin-top:16px">
+    <div class="loading-row">Loading sessions &amp; workshops…</div>
   </div>
 </div>
 
@@ -1192,6 +1204,48 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="field"><label>Internal notes (optional)</label><textarea id="wlAdminNotes"></textarea></div>
     <div id="wlErrorWrap"></div>
     <button class="btn-primary" id="wlSaveBtn" type="button">Save</button>
+  </div>
+</div>
+
+<div class="overlay" id="swOverlay"></div>
+<div class="sheet" id="swSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-form-name" id="swSheetName">Session</div>
+  <div class="sheet-subtitle" id="swSheetSub">—</div>
+  <div class="form-wrap">
+    <div class="field"><label>Facilitator</label><input type="text" id="swFacilitator"></div>
+    <div class="field"><label>Room / Location</label><input type="text" id="swRoom"></div>
+    <div class="field"><label>Description</label><textarea id="swDescription"></textarea></div>
+    <div class="field">
+      <label>Free or paid</label>
+      <div class="chip-row">
+        <div class="chip" data-sw-free="true">Free</div>
+        <div class="chip" data-sw-free="false">Paid</div>
+      </div>
+    </div>
+    <div class="field" id="swPriceField"><label>Price (£)</label><input type="text" inputmode="decimal" id="swPrice"></div>
+    <div class="field"><label>Capacity per slot</label><input type="text" inputmode="numeric" id="swCapacity"></div>
+
+    <div class="field" style="border-top:1.5px solid var(--border);padding-top:14px;margin-top:2px">
+      <label>Public booking link</label>
+      <input type="text" id="swPublicSlug" placeholder="e.g. drum-circle">
+      <div class="helper-text" id="swPublicUrlHint">Enter a short slug — no spaces</div>
+      <button class="btn-secondary" id="swCopyPublicBtn" type="button" style="width:auto;padding:8px 14px;margin-top:8px;font-size:.75rem">Copy link</button>
+    </div>
+    <div class="field">
+      <label>Free interest / register link (optional)</label>
+      <input type="text" id="swRegisterSlug" placeholder="e.g. drum-circle-register">
+      <div class="helper-text" id="swRegisterUrlHint">Used for "let us know you're coming" posts</div>
+      <button class="btn-secondary" id="swCopyRegisterBtn" type="button" style="width:auto;padding:8px 14px;margin-top:8px;font-size:.75rem">Copy link</button>
+    </div>
+    <div class="field">
+      <label>Stripe / payment link (optional)</label>
+      <input type="text" id="swPaymentLink" placeholder="https://buy.stripe.com/…">
+      <button class="btn-secondary" id="swCopyPaymentBtn" type="button" style="width:auto;padding:8px 14px;margin-top:8px;font-size:.75rem">Copy link</button>
+    </div>
+
+    <div id="swErrorWrap"></div>
+    <button class="btn-primary" id="swSaveBtn" type="button">Save</button>
   </div>
 </div>
 
@@ -3058,6 +3112,154 @@ async function loadPaymentLinks(){
   }
 }
 screenLoaders['screen-payment-links'] = loadPaymentLinks;
+
+/* ============================================================
+   SESSIONS & WORKSHOPS — view every bookable_sessions record and
+   edit the details that matter most on the go: facilitator, room,
+   capacity, price, and — the bit you actually can't do from a
+   phone anywhere else — the public booking link, the free
+   register link, and the Stripe payment link. 💚
+   ============================================================ */
+var swSessionsCache = [];
+var currentSwSession = null;
+
+function swBuildUrl(kind, slug){
+  if(!slug) return '';
+  return 'https://heartwood.homehub-benfleet.co.uk/?' + (kind === 'register' ? 'register=' : 'book=') + encodeURIComponent(slug);
+}
+
+async function loadSessionsWorkshops(){
+  var wrap = document.getElementById('swList');
+  wrap.innerHTML = '<div class="loading-row">Loading sessions &amp; workshops…</div>';
+  try{
+    var res = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+    swSessionsCache = res.data || [];
+    if(!swSessionsCache.length){
+      wrap.innerHTML = '<div class="agenda-empty">No sessions or workshops set up yet.</div>';
+      return;
+    }
+    wrap.innerHTML = swSessionsCache.map(function(s){
+      var when = s.recurrence_type === 'weekly' ? ('Every ' + (s.day_of_week || ''))
+        : s.recurrence_type === 'fortnightly' ? ('Every other ' + (s.day_of_week || ''))
+        : (s.event_date ? fmtDateLabel(s.event_date) : 'One-off');
+      var hasLink = !!(s.public_slug || s.payment_link_url);
+      return '<div class="card accent-orange2" data-sw-id="'+s.id+'">' +
+        '<div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>' +
+        '<div class="card-body"><div class="card-title">'+s.name+'</div>' +
+        '<div class="card-desc">'+when+(s.facilitator_name ? ' · '+s.facilitator_name : '')+(s.is_free ? ' · Free' : (s.price ? ' · £'+s.price : ''))+'</div>' +
+        '<div class="card-meta" style="color:'+(hasLink ? 'var(--dg)' : 'var(--muted)')+'">'+(hasLink ? 'LINK SET' : 'NO LINK YET')+'</div></div>' +
+        '<div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+        '</div>';
+    }).join('');
+    wrap.querySelectorAll('[data-sw-id]').forEach(function(card){
+      card.addEventListener('click', function(){
+        var s = swSessionsCache.find(function(x){ return x.id === card.getAttribute('data-sw-id'); });
+        openSwSheet(s);
+      });
+    });
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load sessions &amp; workshops — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-sessions-workshops'] = loadSessionsWorkshops;
+
+var swOverlay = document.getElementById('swOverlay');
+var swSheet = document.getElementById('swSheet');
+
+function swRefreshHints(){
+  var pubSlug = document.getElementById('swPublicSlug').value.trim();
+  var regSlug = document.getElementById('swRegisterSlug').value.trim();
+  document.getElementById('swPublicUrlHint').textContent = pubSlug ? swBuildUrl('book', pubSlug) : 'Enter a short slug — no spaces';
+  document.getElementById('swRegisterUrlHint').textContent = regSlug ? swBuildUrl('register', regSlug) : 'Used for "let us know you\u2019re coming" posts';
+}
+
+function openSwSheet(s){
+  currentSwSession = s;
+  document.getElementById('swSheetName').textContent = s.name;
+  document.getElementById('swSheetSub').textContent = (s.room_name || 'Room not set');
+  document.getElementById('swFacilitator').value = s.facilitator_name || '';
+  document.getElementById('swRoom').value = s.room_name || '';
+  document.getElementById('swDescription').value = s.description || '';
+  document.getElementById('swPrice').value = s.price != null ? s.price : '';
+  document.getElementById('swCapacity').value = s.capacity_per_slot != null ? s.capacity_per_slot : '';
+  document.getElementById('swPublicSlug').value = s.public_slug || '';
+  document.getElementById('swRegisterSlug').value = s.register_slug || '';
+  document.getElementById('swPaymentLink').value = s.payment_link_url || '';
+  document.querySelectorAll('[data-sw-free]').forEach(function(chip){
+    chip.classList.toggle('active', chip.getAttribute('data-sw-free') === String(!!s.is_free));
+  });
+  document.getElementById('swPriceField').style.display = s.is_free ? 'none' : 'block';
+  swRefreshHints();
+  document.getElementById('swErrorWrap').innerHTML = '';
+  swOverlay.classList.add('open'); swSheet.classList.add('open');
+}
+function closeSwSheet(){ swOverlay.classList.remove('open'); swSheet.classList.remove('open'); }
+swOverlay.addEventListener('click', function(e){ if(e.target===swOverlay) closeSwSheet(); });
+
+document.querySelectorAll('[data-sw-free]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-sw-free]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    document.getElementById('swPriceField').style.display = chip.getAttribute('data-sw-free') === 'true' ? 'none' : 'block';
+  });
+});
+document.getElementById('swPublicSlug').addEventListener('input', swRefreshHints);
+document.getElementById('swRegisterSlug').addEventListener('input', swRefreshHints);
+
+function swCopy(text){
+  if(!text){ showToast('Nothing to copy yet — add a link first'); return; }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ showToast('Link copied to clipboard'); });
+  }
+}
+document.getElementById('swCopyPublicBtn').addEventListener('click', function(){
+  swCopy(swBuildUrl('book', document.getElementById('swPublicSlug').value.trim()));
+});
+document.getElementById('swCopyRegisterBtn').addEventListener('click', function(){
+  swCopy(swBuildUrl('register', document.getElementById('swRegisterSlug').value.trim()));
+});
+document.getElementById('swCopyPaymentBtn').addEventListener('click', function(){
+  swCopy(document.getElementById('swPaymentLink').value.trim());
+});
+
+document.getElementById('swSaveBtn').addEventListener('click', async function(){
+  var errWrap = document.getElementById('swErrorWrap');
+  errWrap.innerHTML = '';
+  var btn = document.getElementById('swSaveBtn');
+  var freeChip = document.querySelector('[data-sw-free].active');
+  var isFree = freeChip ? freeChip.getAttribute('data-sw-free') === 'true' : !!currentSwSession.is_free;
+  var priceRaw = document.getElementById('swPrice').value.trim();
+  var capRaw = document.getElementById('swCapacity').value.trim();
+  var slugRaw = document.getElementById('swPublicSlug').value.trim().replace(/\s+/g, '-');
+  var regSlugRaw = document.getElementById('swRegisterSlug').value.trim().replace(/\s+/g, '-');
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    var patch = {
+      facilitator_name: document.getElementById('swFacilitator').value.trim() || null,
+      room_name: document.getElementById('swRoom').value.trim() || null,
+      description: document.getElementById('swDescription').value.trim() || null,
+      is_free: isFree,
+      price: isFree ? null : (priceRaw ? parseFloat(priceRaw) : null),
+      capacity_per_slot: capRaw ? parseInt(capRaw, 10) : null,
+      public_slug: slugRaw || null,
+      register_slug: regSlugRaw || null,
+      payment_link_url: document.getElementById('swPaymentLink').value.trim() || null
+    };
+    await SB('bookable_sessions?id=eq.'+currentSwSession.id, {
+      method:'PATCH', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify(patch)
+    });
+    logAction('update_bookable_session', 'Management', currentSwSession.name + ' — links & details updated');
+    showToast(currentSwSession.name + ' updated 💚');
+    closeSwSheet();
+    loadSessionsWorkshops();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Couldn\'t save — '+e.message+'</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
 
 /* ============================================================
    ROOM HIRE QUOTE TOOL — full branded quote, matching Heartwood's
