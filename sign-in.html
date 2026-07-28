@@ -1117,9 +1117,20 @@ async function submitReturning(){
       signed_out_at:autoOut.toISOString(), auto_signed_out:true
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
-    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
-    if(!signInRes.ok){
-      throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
+    // Live check right before saving — not a snapshot from earlier in the
+    // flow, which could go stale if they've already been signed in another
+    // way (a friend scanned for them, a different device) in the meantime.
+    // If they're already in for this exact session today, skip the insert
+    // rather than creating a duplicate — they still get their warm
+    // thank-you either way, no need to alarm anyone about it. 💚
+    var todayStart = todayISO()+'T00:00:00', todayEnd = todayISO()+'T23:59:59';
+    var dupRes = await SB('sign_ins?visitor_id=eq.'+S.visitor.id+'&session_name=eq.'+encodeURIComponent(S.selectedSession)+'&signed_in_at=gte.'+todayStart+'&signed_in_at=lte.'+todayEnd+'&select=id&limit=1');
+    var alreadyIn = dupRes.ok && dupRes.data && dupRes.data.length;
+    if(!alreadyIn){
+      var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+      if(!signInRes.ok){
+        throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
+      }
     }
     await doThankYou(S.visitor.full_name, S.visitor.email, S.selectedSession);
   } catch(e){
@@ -1217,9 +1228,17 @@ async function submitNew(){
       visit_type:S.isVolunteering ? 'volunteer' : 'community', signed_out_at:autoOut.toISOString(), auto_signed_out:true
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
-    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
-    if(!signInRes.ok){
-      throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
+    // Same live check as the returning-visitor flow — a brand new visitor
+    // record could still already have a sign-in today if they were found
+    // via the ilike match above rather than truly being new. 💚
+    var todayStart2 = todayISO()+'T00:00:00', todayEnd2 = todayISO()+'T23:59:59';
+    var dupRes2 = await SB('sign_ins?visitor_id=eq.'+newV.id+'&session_name=eq.'+encodeURIComponent(S.selectedSession)+'&signed_in_at=gte.'+todayStart2+'&signed_in_at=lte.'+todayEnd2+'&select=id&limit=1');
+    var alreadyIn2 = dupRes2.ok && dupRes2.data && dupRes2.data.length;
+    if(!alreadyIn2){
+      var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+      if(!signInRes.ok){
+        throw new Error((signInRes.data && signInRes.data.message) ? signInRes.data.message : 'error '+signInRes.status);
+      }
     }
     await doThankYou(newV.full_name, newV.email || S.newEmail, S.selectedSession);
   } catch(e){
