@@ -696,9 +696,17 @@ document.getElementById('btn-signin').addEventListener('click', async function()
       source:'team_signin'
     };
     if(S.selectedReason==='Contractor') signInPayload.company_name = S.contractorCompany.trim();
-    var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
-    if(!signInRes.ok){
-      throw new Error('Visitor saved, but the sign-in itself didn\u2019t — ' + (signInRes.data && signInRes.data.message ? signInRes.data.message : 'error '+signInRes.status));
+    // Live check right before saving — this page had no duplicate
+    // protection at all before, so this is the only thing stopping a
+    // double-tap or a page revisit from creating a genuine duplicate. 💚
+    var todayStart = todayISO()+'T00:00:00', todayEnd = todayISO()+'T23:59:59';
+    var dupRes = await SB('sign_ins?visitor_id=eq.'+visitorId+'&session_name=eq.'+encodeURIComponent(S.selectedSession)+'&signed_in_at=gte.'+todayStart+'&signed_in_at=lte.'+todayEnd+'&select=id&limit=1');
+    var alreadyIn = dupRes.ok && dupRes.data && dupRes.data.length;
+    if(!alreadyIn){
+      var signInRes = await SB('sign_ins',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(signInPayload)});
+      if(!signInRes.ok){
+        throw new Error('Visitor saved, but the sign-in itself didn\u2019t — ' + (signInRes.data && signInRes.data.message ? signInRes.data.message : 'error '+signInRes.status));
+      }
     }
 
     showSignedInConfirmation(S.visitor.full_name);
