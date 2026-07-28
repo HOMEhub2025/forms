@@ -139,14 +139,24 @@ async function checkIn(name, btn){
   btn.disabled = true;
   btn.textContent = '…';
   try{
-    await sb('sign_ins', {
-      method: 'POST', headers: {Prefer: 'return=minimal'},
-      body: JSON.stringify({
-        visitor_name: name, session_name: sessionName,
-        visit_type: kind === 'group' ? 'group' : 'booked_session',
-        signed_in_at: new Date().toISOString()
-      })
-    });
+    // The list of who's already in was fetched when this page first
+    // loaded — if it's been open a while, or someone got signed in via a
+    // different route (the QR page, Heartwood itself) in the meantime,
+    // that snapshot is stale. A live re-check right here, right before
+    // the insert, is what actually stops the duplicate. 💚
+    var today = date;
+    var dupRes = await sb('sign_ins?visitor_name=ilike.'+encodeURIComponent(name)+'&session_name=eq.'+encodeURIComponent(sessionName)+'&signed_in_at=gte.'+today+'T00:00:00&signed_in_at=lte.'+today+'T23:59:59&select=id&limit=1');
+    var alreadyIn = dupRes.ok && dupRes.data && dupRes.data.length;
+    if(!alreadyIn){
+      await sb('sign_ins', {
+        method: 'POST', headers: {Prefer: 'return=minimal'},
+        body: JSON.stringify({
+          visitor_name: name, session_name: sessionName,
+          visit_type: kind === 'group' ? 'group' : 'booked_session',
+          signed_in_at: new Date().toISOString()
+        })
+      });
+    }
     signedInNames.push(name.toLowerCase());
     btn.classList.add('done');
     btn.textContent = 'Signed in ✓';
