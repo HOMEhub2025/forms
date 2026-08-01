@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e386a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Trustee Registration — H.O.M.E Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Montserrat',sans-serif;background:#f9faf8;color:#111827;min-height:100svh;padding:0 0 60px}
+:root{
+  --dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;--ly:#f7f3d8;
+  --ink:#111827;--mid:#374151;--mut:#6b7280;--border:#e5e7eb;
+  --sh:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);
+  --red:#dc2626;
+}
+nav{position:sticky;top:0;z-index:300;height:64px;padding:0 20px;background:rgba(14,56,106,.97);backdrop-filter:blur(16px);display:flex;align-items:center;gap:12px;box-shadow:0 2px 20px rgba(0,0,0,.2)}
+.nav-brand-name{font-family:'League Spartan',sans-serif;font-size:16px;font-weight:900;color:#fff}
+.nav-brand-sub{font-size:9px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.12em}
+.hero{background:linear-gradient(135deg,var(--db),#082347);padding:32px 20px 28px}
+.hero-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.hero-title{font-family:'League Spartan',sans-serif;font-size:clamp(26px,6vw,36px);font-weight:900;color:#fff;line-height:1.1;margin-bottom:8px}
+.hero-title span{color:var(--or)}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.75);line-height:1.7;max-width:500px}
+main{max-width:620px;margin:0 auto;padding:24px 16px}
+.card{background:#fff;border-radius:16px;border:1.5px solid var(--border);box-shadow:var(--sh);padding:24px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.card-num{width:32px;height:32px;background:var(--db);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'League Spartan',sans-serif;font-weight:900;font-size:16px;flex-shrink:0}
+.card-num.green{background:var(--dg)}
+.card-num.orange{background:var(--or)}
+.card-title{font-family:'League Spartan',sans-serif;font-size:18px;font-weight:800;color:var(--db)}
+.card-sub{font-size:11px;color:var(--mut);margin-top:2px}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field-label{display:block;font-size:12px;font-weight:700;color:var(--db);margin-bottom:5px}
+.field-label .req{color:var(--red);margin-left:2px}
+.field-label .hint{font-weight:400;color:var(--mut);font-size:11px;display:block;margin-top:1px}
+input[type=text],input[type=email],input[type=tel],input[type=date],textarea,select{
+  width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:'Montserrat',sans-serif;font-size:14px;color:var(--ink);background:#fff;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--db)}
+textarea{resize:vertical;min-height:80px}
+.radio-row{display:flex;gap:8px;flex-wrap:wrap}
+.radio-opt{flex:1;min-width:100px;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;text-align:center;font-size:12.5px;font-weight:600;color:var(--mid);cursor:pointer;transition:all .15s}
+.radio-opt.selected{border-color:var(--db);background:#eff6ff;color:var(--db)}
+.declaration-box{background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:16px;font-size:12px;color:var(--mid);line-height:1.7;margin-bottom:14px}
+.declaration-box li{margin-left:18px;margin-bottom:4px}
+.checkbox-row{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.checkbox-row input{width:20px;height:20px;margin-top:1px;flex-shrink:0;accent-color:var(--db)}
+.checkbox-row span{font-size:12.5px;color:var(--mid);line-height:1.5}
+.submit-btn{width:100%;padding:16px;background:var(--dg);color:#fff;border:none;border-radius:12px;font-family:'League Spartan',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 4px 16px rgba(0,104,55,.25)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+.error-banner{background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--red);margin-bottom:14px;display:none}
+#success{display:none;text-align:center;padding:40px 20px}
+#success.show{display:block}
+#success .icon{width:64px;height:64px;background:var(--dg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px}
+#success h2{font-family:'League Spartan',sans-serif;font-size:22px;color:var(--db);margin-bottom:8px}
+#success p{font-size:13px;color:var(--mut);line-height:1.6;max-width:400px;margin:0 auto}
+</style>
+</head>
+<body>
+
+<nav>
+  <div><div class="nav-brand-name">H.O.M.E HUB</div><div class="nav-brand-sub">Trustee Registration</div></div>
+</nav>
+
+<div class="hero">
+  <div class="hero-label">Governance</div>
+  <div class="hero-title">Become a <span>Trustee</span></div>
+  <div class="hero-sub">Thank you for your interest in helping govern H.O.M.E Hub CIC. Fill in your details below and a director will be in touch to confirm your appointment.</div>
+</div>
+
+<main>
+  <div id="form-section">
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-num green">1</div><div><div class="card-title">Your details</div><div class="card-sub">For the trustee register</div></div></div>
+      <div class="field"><label class="field-label">Full name<span class="req">*</span></label><input type="text" id="full_name" placeholder="Jane Smith"></div>
+      <div class="field"><label class="field-label">Email<span class="req">*</span></label><input type="email" id="email" placeholder="you@example.com"></div>
+      <div class="field"><label class="field-label">Phone<span class="req">*</span></label><input type="tel" id="phone" placeholder="07700 000000"></div>
+      <div class="field"><label class="field-label">Date of birth<span class="req">*</span><span class="hint">Required for the trustee register and any DBS checks</span></label><input type="date" id="date_of_birth"></div>
+      <div class="field"><label class="field-label">Home address<span class="req">*</span></label><textarea id="address" placeholder="Full postal address"></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-num orange">2</div><div><div class="card-title">Role & experience</div><div class="card-sub">What you'd bring to the board</div></div></div>
+      <div class="field"><label class="field-label">Which role are you interested in?</label>
+        <div class="radio-row" id="role-row">
+          <div class="radio-opt" data-val="Trustee">Trustee</div>
+          <div class="radio-opt" data-val="Chair">Chair</div>
+          <div class="radio-opt" data-val="Treasurer">Treasurer</div>
+          <div class="radio-opt" data-val="Secretary">Secretary</div>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Relevant skills or experience<span class="hint">Optional, but helpful for the board</span></label><textarea id="experience" placeholder="e.g. finance background, safeguarding experience, community work..."></textarea></div>
+      <div class="field"><label class="field-label">DBS check status</label>
+        <div class="radio-row" id="dbs-row">
+          <div class="radio-opt" data-val="clear">Have a current DBS</div>
+          <div class="radio-opt" data-val="pending">Applied, awaiting result</div>
+          <div class="radio-opt" data-val="not_checked">Not yet checked</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-num">3</div><div><div class="card-title">Declaration</div><div class="card-sub">Standard trustee eligibility</div></div></div>
+      <div class="declaration-box">
+        By registering, I confirm that:
+        <ul>
+          <li>I am not disqualified from acting as a charity trustee or company director</li>
+          <li>I am aged 16 or over</li>
+          <li>I will act in the best interests of H.O.M.E Hub CIC at all times</li>
+          <li>I will declare any conflicts of interest as they arise</li>
+          <li>I understand my details will be held on H.O.M.E Hub's trustee register</li>
+        </ul>
+      </div>
+      <label class="checkbox-row"><input type="checkbox" id="declaration_accepted"><span>I confirm the above and would like to register my interest in becoming a trustee.</span></label>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitForm()">Submit registration</button>
+  </div>
+
+  <div id="success">
+    <div class="icon">✓</div>
+    <h2>Thank you</h2>
+    <p>Your registration has been received. A director will be in touch to confirm your appointment and next steps.</p>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+
+let selectedRole = 'Trustee';
+let selectedDbs = 'not_checked';
+
+document.querySelectorAll('#role-row .radio-opt').forEach(function(el){
+  el.addEventListener('click', function(){
+    document.querySelectorAll('#role-row .radio-opt').forEach(function(o){ o.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedRole = el.getAttribute('data-val');
+  });
+});
+document.querySelectorAll('#dbs-row .radio-opt').forEach(function(el){
+  el.addEventListener('click', function(){
+    document.querySelectorAll('#dbs-row .radio-opt').forEach(function(o){ o.classList.remove('selected'); });
+    el.classList.add('selected');
+    selectedDbs = el.getAttribute('data-val');
+  });
+});
+// Default selections shown visually
+document.querySelector('#role-row .radio-opt[data-val="Trustee"]').classList.add('selected');
+document.querySelector('#dbs-row .radio-opt[data-val="not_checked"]').classList.add('selected');
+
+function showError(msg){
+  const banner = document.getElementById('error-banner');
+  banner.textContent = msg;
+  banner.style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+async function submitForm(){
+  const errorBanner = document.getElementById('error-banner');
+  errorBanner.style.display = 'none';
+
+  const full_name = document.getElementById('full_name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const date_of_birth = document.getElementById('date_of_birth').value;
+  const address = document.getElementById('address').value.trim();
+  const experience = document.getElementById('experience').value.trim();
+  const declaration_accepted = document.getElementById('declaration_accepted').checked;
+
+  if(!full_name){ showError('Please enter your full name.'); return; }
+  if(!email){ showError('Please enter your email.'); return; }
+  if(!phone){ showError('Please enter your phone number.'); return; }
+  if(!date_of_birth){ showError('Please enter your date of birth.'); return; }
+  if(!address){ showError('Please enter your home address.'); return; }
+  if(!declaration_accepted){ showError('Please confirm the declaration before submitting.'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+
+  const payload = {
+    full_name: full_name,
+    email: email,
+    phone: phone,
+    date_of_birth: date_of_birth,
+    address: address,
+    role: selectedRole,
+    experience: experience || null,
+    dbs_status: selectedDbs,
+    declaration_accepted: true,
+    declaration_accepted_at: new Date().toISOString(),
+    status: 'pending'
+  };
+
+  try {
+    const response = await fetch(SUPABASE_URL + '/rest/v1/trustees', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if(!response.ok){
+      const err = await response.text();
+      console.error('Supabase error:', err);
+      throw new Error('Could not submit — please try again or contact the Hub directly.');
+    }
+
+    document.getElementById('form-section').style.display = 'none';
+    window.scrollTo(0,0);
+    document.getElementById('success').classList.add('show');
+  } catch(e){
+    showError(e.message || 'Something went wrong — please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Submit registration';
+  }
+}
+</script>
+</body>
+</html>
