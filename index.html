@@ -494,32 +494,84 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
   <div class="form-wrap">
     <div class="field">
+      <label>Is this a single date, or a recurring series?</label>
+      <div class="chip-row">
+        <div class="chip active" data-qb-mode="single">Single day</div>
+        <div class="chip" data-qb-mode="series">Series (recurring)</div>
+      </div>
+    </div>
+    <div class="field">
       <label>Room</label>
       <select id="qbRoom"><option value="">Choose a room…</option></select>
     </div>
-    <div class="field-row">
-      <div class="field"><label>Date</label><input type="date" id="qbDate"></div>
-      <div class="field"><label>Quote valid for</label>
-        <select id="qbValidity">
-          <option value="7">7 days</option>
-          <option value="14" selected>14 days</option>
-          <option value="21">21 days</option>
-          <option value="30">30 days</option>
-          <option value="60">60 days</option>
-        </select>
+    <div id="qbSingleFields">
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="qbDate"></div>
+        <div class="field"><label>Quote valid for</label>
+          <select id="qbValidity">
+            <option value="7">7 days</option>
+            <option value="14" selected>14 days</option>
+            <option value="21">21 days</option>
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Start</label><input type="time" id="qbStart"></div>
+        <div class="field"><label>End</label><input type="time" id="qbEnd"></div>
       </div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>Start</label><input type="time" id="qbStart"></div>
-      <div class="field"><label>End</label><input type="time" id="qbEnd"></div>
+    <div id="qbSeriesFields" style="display:none">
+      <div class="field-row">
+        <div class="field"><label>Day of week</label>
+          <select id="qbSeriesDow">
+            <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option>
+            <option value="4" selected>Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
+          </select>
+        </div>
+        <div class="field"><label>Quote valid for</label>
+          <select id="qbValiditySeries">
+            <option value="7">7 days</option>
+            <option value="14" selected>14 days</option>
+            <option value="21">21 days</option>
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Start</label><input type="time" id="qbSeriesStart" value="09:00"></div>
+        <div class="field"><label>End</label><input type="time" id="qbSeriesEnd" value="11:00"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>First date</label><input type="date" id="qbSeriesFrom"></div>
+        <div class="field"><label>Last date</label><input type="date" id="qbSeriesTo"></div>
+      </div>
+      <div class="helper-text" id="qbSeriesPreview">Pick a first and last date to see how many sessions that covers.</div>
     </div>
     <div class="field"><label>Contact name</label><input type="text" id="qbContactName" placeholder="Who's this quote for"></div>
     <div class="field"><label>Contact email</label><input type="email" id="qbContactEmail"></div>
     <div class="field"><label>What's it for (shows on the quote)</label><input type="text" id="qbDescription" placeholder="e.g. Weekly Pilates class"></div>
     <div class="field">
-      <label>Total room hire</label>
+      <label id="qbTotalLabel">Total room hire</label>
       <input type="text" inputmode="decimal" id="qbTotal" placeholder="0.00">
       <div class="helper-text" id="qbRateHint"></div>
+    </div>
+    <div class="field"><label>Notes <span style="font-weight:400;color:#9ca3af">(shown on the quote)</span></label>
+      <textarea id="qbNotes" rows="2" placeholder="e.g. Hot &amp; cold drinks supplied on a suggested donation of £2"></textarea>
+    </div>
+    <div class="field"><label>Payment terms</label>
+      <select id="qbPaymentTerms">
+        <option value="7days">Payable 7 days in advance</option>
+        <option value="4weeks">Payable 4 weeks in advance</option>
+        <option value="agreed">Payment terms to be agreed</option>
+        <option value="custom">Custom — type below</option>
+      </select>
+      <input type="text" id="qbPaymentTermsCustom" placeholder="Type custom payment terms" style="display:none;margin-top:8px">
+    </div>
+    <div class="field"><label>Quoted by <span style="font-weight:400;color:#9ca3af">(who gets credit for this one)</span></label>
+      <select id="qbQuotedBy"><option value="">Me — whoever's logged in</option></select>
     </div>
     <div class="field">
       <label>Deposit &amp; payment link</label>
@@ -3319,6 +3371,7 @@ var qbPaymentMode = 'link';
 async function loadQuoteBuilder(){
   document.getElementById('qbDate').value = toISODate(new Date());
   document.getElementById('qbErrorWrap').innerHTML = '';
+  qbPopulateQuotedBy();
   var sel = document.getElementById('qbRoom');
   try{
     if(!qbRoomsCache.length){
@@ -4351,6 +4404,71 @@ document.querySelectorAll('[data-qb-payment]').forEach(function(chip){
   });
 });
 
+// ── Series vs single day — same choice as Heartwood's own quote
+// builder, so a recurring booking becomes one clean grouped quote
+// here too, not a series of individual day entries. 💚
+var qbMode = 'single';
+document.querySelectorAll('[data-qb-mode]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-qb-mode]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    qbMode = chip.getAttribute('data-qb-mode');
+    document.getElementById('qbSingleFields').style.display = qbMode==='single' ? 'block' : 'none';
+    document.getElementById('qbSeriesFields').style.display = qbMode==='series' ? 'block' : 'none';
+    document.getElementById('qbTotalLabel').textContent = qbMode==='series' ? 'Total room hire (per session)' : 'Total room hire';
+    qbUpdateSeriesPreview();
+  });
+});
+function qbComputeSeriesDates(){
+  var fromStr = document.getElementById('qbSeriesFrom').value;
+  var toStr = document.getElementById('qbSeriesTo').value;
+  var dow = parseInt(document.getElementById('qbSeriesDow').value, 10);
+  if(!fromStr || !toStr) return [];
+  var from = new Date(fromStr+'T00:00:00');
+  var to = new Date(toStr+'T00:00:00');
+  if(to < from || isNaN(dow)) return [];
+  var dates = [];
+  var cursor = new Date(from);
+  var safety = 0;
+  while(cursor.getDay() !== dow && safety<8){ cursor.setDate(cursor.getDate()+1); safety++; }
+  if(cursor > to) return [];
+  while(cursor <= to){
+    dates.push(toISODate(cursor));
+    cursor.setDate(cursor.getDate()+7);
+  }
+  return dates;
+}
+function qbUpdateSeriesPreview(){
+  var el = document.getElementById('qbSeriesPreview');
+  if(!el) return;
+  var dates = qbComputeSeriesDates();
+  el.textContent = dates.length ? dates.length+' session'+(dates.length===1?'':'s')+' will be included' : 'Pick a first and last date to see how many sessions that covers.';
+}
+['qbSeriesFrom','qbSeriesTo'].forEach(function(id){
+  var el = document.getElementById(id);
+  if(el) el.addEventListener('input', qbUpdateSeriesPreview);
+});
+var dowEl = document.getElementById('qbSeriesDow');
+if(dowEl) dowEl.addEventListener('change', qbUpdateSeriesPreview);
+
+document.getElementById('qbPaymentTerms').addEventListener('change', function(){
+  document.getElementById('qbPaymentTermsCustom').style.display = this.value==='custom' ? 'block' : 'none';
+});
+
+var qbTeamCache = null;
+async function qbPopulateQuotedBy(){
+  var sel = document.getElementById('qbQuotedBy');
+  if(!sel || sel.options.length > 1) return;
+  try{
+    if(!qbTeamCache){
+      var res = await SB('users_internal?active=eq.true&select=display_name,email&order=display_name.asc');
+      qbTeamCache = (res.data||[]).filter(function(u){ return u.display_name; });
+    }
+    sel.innerHTML = '<option value="">Me — whoever\'s logged in</option>'
+      + qbTeamCache.map(function(u){ return '<option value="'+u.display_name+'|'+(u.email||'')+'">'+u.display_name+'</option>'; }).join('');
+  }catch(e){ /* non-fatal — falls back to the logged-in user */ }
+}
+
 /* ── ROOM PRICING — ported exactly from Heartwood's calcRoomCost,
    the "canonical pricing engine — shared logic for Heartwood + customer app".
    Keeping this identical means a quote from here always matches what
@@ -4454,17 +4572,41 @@ document.getElementById('qbGenerateBtn').addEventListener('click', async functio
   errWrap.innerHTML = '';
 
   var room = document.getElementById('qbRoom').value;
-  var date = document.getElementById('qbDate').value;
-  var start = document.getElementById('qbStart').value;
-  var end = document.getElementById('qbEnd').value;
   var contactName = document.getElementById('qbContactName').value.trim();
   var contactEmail = document.getElementById('qbContactEmail').value.trim();
   var description = document.getElementById('qbDescription').value.trim();
   var total = parseFloat(document.getElementById('qbTotal').value);
-  var validityDays = parseInt(document.getElementById('qbValidity').value, 10);
+  var notes = document.getElementById('qbNotes').value.trim();
+  var ptSel = document.getElementById('qbPaymentTerms').value;
+  var ptCustom = document.getElementById('qbPaymentTermsCustom').value.trim();
+  var paymentTermsText = ptSel==='custom' ? (ptCustom||'Payment terms to be agreed')
+    : ptSel==='4weeks' ? 'Payable 4 weeks in advance'
+    : ptSel==='agreed' ? 'Payment terms to be agreed'
+    : 'Payable 7 days in advance';
 
-  if(!room || !date || !start || !end || !contactName || !description || !total || total <= 0){
-    errWrap.innerHTML = '<div class="error-banner">Room, date, times, contact name, description and a total are all needed to build a quote.</div>';
+  var seriesDates = qbMode==='series' ? qbComputeSeriesDates() : [];
+  var date, start, end, validityDays;
+  if(qbMode==='single'){
+    date = document.getElementById('qbDate').value;
+    start = document.getElementById('qbStart').value;
+    end = document.getElementById('qbEnd').value;
+    validityDays = parseInt(document.getElementById('qbValidity').value, 10);
+  } else {
+    start = document.getElementById('qbSeriesStart').value;
+    end = document.getElementById('qbSeriesEnd').value;
+    validityDays = parseInt(document.getElementById('qbValiditySeries').value, 10);
+  }
+
+  if(!room || !contactName || !description || !total || total <= 0){
+    errWrap.innerHTML = '<div class="error-banner">Room, contact name, description and a total are all needed to build a quote.</div>';
+    return;
+  }
+  if(qbMode==='single' && (!date || !start || !end)){
+    errWrap.innerHTML = '<div class="error-banner">Date and times are needed for a single-day quote.</div>';
+    return;
+  }
+  if(qbMode==='series' && !seriesDates.length){
+    errWrap.innerHTML = '<div class="error-banner">Pick a day of week, first date and last date that actually cover at least one session.</div>';
     return;
   }
 
@@ -4482,28 +4624,78 @@ document.getElementById('qbGenerateBtn').addEventListener('click', async functio
   try{
     var quoteRef = 'QT-' + Date.now().toString().slice(-8);
 
+    // "Quoted by" can be overridden to credit whoever actually brokered
+    // the deal, not just whoever's logged in typing it up. 💚
+    var quotedByName = u.display_name;
     var quoterEmail = '';
     try{
       var profRes = await SB('users_internal?id=eq.'+u.id+'&select=email');
       quoterEmail = ((profRes.data||[])[0]||{}).email || '';
     }catch(e){ /* non-fatal, quote still works without it */ }
+    var quotedBySel = document.getElementById('qbQuotedBy').value;
+    if(quotedBySel){
+      var qbParts = quotedBySel.split('|');
+      quotedByName = qbParts[0]; quoterEmail = qbParts[1]||'';
+    }
 
-    var insertRes = await SB('room_bookings', {
-      method:'POST', headers:{Prefer:'return=representation'},
-      body: JSON.stringify({
-        booking_title: contactName + ' — Room Hire Quote',
-        room: room, booking_date: date, start_time: start, end_time: end,
-        booked_by: u.display_name, status: 'quote', estimated_cost: total,
-        quote_validity_days: validityDays, quoted_by: u.display_name, quoted_by_email: quoterEmail || null,
-        notes: 'QUOTE — Day 1 of 1: ' + description
-      })
-    });
-    var newBooking = (insertRes.data || [])[0];
+    var seriesInfo = null;
+    var finalTotal = total;
+    var newBookingIds = [];
+
+    if(qbMode==='single'){
+      var insertRes = await SB('room_bookings', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify({
+          booking_title: contactName + ' — Room Hire Quote',
+          room: room, booking_date: date, start_time: start, end_time: end,
+          booked_by: u.display_name, status: 'quote', estimated_cost: total,
+          quote_validity_days: validityDays, quoted_by: quotedByName, quoted_by_email: quoterEmail || null,
+          payment_terms: paymentTermsText, quote_notes: notes,
+          notes: 'QUOTE — Day 1 of 1: ' + description
+        })
+      });
+      var newBooking = (insertRes.data || [])[0];
+      if(newBooking) newBookingIds.push(newBooking.id);
+    } else {
+      // Series — one room_bookings row per date, all linked by the same
+      // recurring_series_id, same as Heartwood's own builder. total
+      // entered is PER SESSION; the quote's overall total is that
+      // multiplied across every session in the range.
+      var seriesId = 'series-' + Date.now();
+      finalTotal = total * seriesDates.length;
+      var rows = seriesDates.map(function(d, i){
+        return {
+          booking_title: contactName + ' — Room Hire Quote',
+          room: room, booking_date: d, start_time: start, end_time: end,
+          booked_by: u.display_name, status: 'quote', estimated_cost: total,
+          quote_validity_days: validityDays, quoted_by: quotedByName, quoted_by_email: quoterEmail || null,
+          payment_terms: paymentTermsText, quote_notes: notes,
+          recurring_series_id: seriesId,
+          recurrence_note: contactName + ' \u00b7 ' + seriesDates.length + '-day quote (' + quoteRef + ')',
+          notes: 'QUOTE — Day ' + (i+1) + ' of ' + seriesDates.length + ': ' + description
+        };
+      });
+      var seriesInsertRes = await SB('room_bookings', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify(rows)
+      });
+      newBookingIds = (seriesInsertRes.data||[]).map(function(r){ return r.id; });
+
+      var sm = start.split(':'), em = end.split(':');
+      var durationHours = (parseInt(em[0])+parseInt(em[1])/60) - (parseInt(sm[0])+parseInt(sm[1])/60);
+      var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      seriesInfo = {
+        room: room, dayName: dayNames[parseInt(document.getElementById('qbSeriesDow').value,10)],
+        start: start, end: end, durationHours: durationHours,
+        firstDate: seriesDates[0], lastDate: seriesDates[seriesDates.length-1],
+        count: seriesDates.length, perSessionCost: total
+      };
+    }
 
     var payLinkUrl = null;
     if(qbPaymentMode === 'link'){
       try{
-        var deposit = (total / 2).toFixed(2);
+        var deposit = (finalTotal / 2).toFixed(2);
         var payRes = await fetch('/api/create-quote-payment-link', {
           method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({
@@ -4516,22 +4708,25 @@ document.getElementById('qbGenerateBtn').addEventListener('click', async functio
       }catch(payErr){ /* quote still works fine without a link */ }
     }
 
-    if(payLinkUrl && newBooking){
+    if(payLinkUrl && newBookingIds.length){
       try{
-        await SB('room_bookings?id=eq.'+newBooking.id, {
-          method:'PATCH', headers:{Prefer:'return=minimal'},
-          body: JSON.stringify({quote_ref: quoteRef})
-        });
+        for(var bi=0; bi<newBookingIds.length; bi++){
+          await SB('room_bookings?id=eq.'+newBookingIds[bi], {
+            method:'PATCH', headers:{Prefer:'return=minimal'},
+            body: JSON.stringify({quote_ref: quoteRef})
+          });
+        }
       }catch(e){ /* non-fatal */ }
     }
 
-    logAction('create_room_quote', 'Quote Builder', contactName + ' — ' + room + ' — £' + total.toFixed(2));
+    logAction('create_room_quote', 'Quote Builder', contactName + ' — ' + room + ' — £' + finalTotal.toFixed(2));
     renderQuotePDF(win, {
       quoteRef: quoteRef, contactName: contactName, contactEmail: contactEmail,
-      roomName: room, total: total, validityDays: validityDays,
-      quotedByName: u.display_name, quotedByEmail: quoterEmail,
+      roomName: room, total: finalTotal, validityDays: validityDays,
+      quotedByName: quotedByName, quotedByEmail: quoterEmail,
       dayLine: (room) + (date ? ' · ' + fmtDateLabel(date) : '') + (start && end ? ' · ' + fmtTime(start) + '–' + fmtTime(end) : '') + (description ? ' · ' + description : ''),
-      payLinkUrl: payLinkUrl
+      payLinkUrl: payLinkUrl,
+      notes: notes, paymentTerms: paymentTermsText, series: seriesInfo
     });
     showToast('Quote generated for ' + contactName.split(' ')[0]);
   }catch(e){
@@ -4546,6 +4741,14 @@ document.getElementById('qbGenerateBtn').addEventListener('click', async functio
    same colours, same payment schedule, same cancellation policy, same
    bank details — so a quote from here looks identical to one from
    Heartwood itself. */
+function renderQuoteSeriesBreakdown(s){
+  var fmtD = function(d){ return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}); };
+  return '<div style="font-weight:700;color:#0a1928;font-size:12.5px;margin-bottom:3px">Every '+s.dayName+', '+s.start+'\u2013'+s.end+' ('+s.durationHours+' hour'+(s.durationHours===1?'':'s')+') \u2014 '+s.room+'</div>' +
+    '<div style="color:#6b7280;margin-bottom:6px">'+fmtD(s.firstDate)+' \u2013 '+fmtD(s.lastDate)+' \u00b7 '+s.count+' session'+(s.count===1?'':'s')+'</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px dashed #e5e7eb">' +
+      '<span>Per session</span><span style="font-weight:700;color:#006837">\u00a3'+s.perSessionCost.toFixed(2)+'</span>' +
+    '</div>';
+}
 function renderQuotePDF(win, q){
   var total = q.total;
   var deposit = (total/2).toFixed(2);
@@ -4626,7 +4829,7 @@ function renderQuotePDF(win, q){
       '<div style="font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Booking breakdown</div>' +
       '<table style="width:100%;border-collapse:collapse;background:#f8fafc;border-radius:10px;overflow:hidden">' +
         '<thead><tr style="background:#0e386a"><th style="padding:7px 12px;font-size:9px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.06em;text-align:left">Details</th></tr></thead>' +
-        '<tbody><tr><td style="padding:6px 12px;font-size:11.5px;color:#374151">'+q.dayLine+'</td></tr></tbody>' +
+        '<tbody><tr><td style="padding:'+(q.series?'10px 12px':'6px 12px')+';font-size:11.5px;color:#374151">' + (q.series ? renderQuoteSeriesBreakdown(q.series) : q.dayLine) + '</td></tr></tbody>' +
       '</table>' +
     '</div>' +
     '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:9px 12px;margin-bottom:8px">' +
@@ -4645,6 +4848,14 @@ function renderQuotePDF(win, q){
       '</div>' +
     '</div>' +
     payButtonHtml +
+    (q.paymentTerms ? '<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:9px 12px;margin-bottom:8px">' +
+      '<div style="font-size:9px;font-weight:700;color:#0e386a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Payment terms</div>' +
+      '<div style="font-size:12px;color:#1e3a5f;font-weight:600">'+q.paymentTerms+'</div>' +
+    '</div>' : '') +
+    (q.notes ? '<div style="background:#fafafa;border:1.5px solid #e5e7eb;border-radius:10px;padding:9px 12px;margin-bottom:8px">' +
+      '<div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">Notes</div>' +
+      '<div style="font-size:11.5px;color:#374151;line-height:1.5">'+q.notes+'</div>' +
+    '</div>' : '') +
     '<div style="background:#fef9f3;border:1.5px solid #f5d5b3;border-radius:10px;padding:9px 12px;margin-bottom:8px">' +
       '<div style="font-size:9px;font-weight:700;color:#0e386a;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px">Cancellation policy</div>' +
       '<div style="font-size:11px;color:#374151;line-height:1.4;margin-bottom:6px">We know plans sometimes change. Here\u2019s how we hold your date and what happens to your deposit and any balance already paid if you need to cancel or move your booking:</div>' +
