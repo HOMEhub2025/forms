@@ -528,8 +528,8 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
           <span>Total</span><span id="eahBasketTotal">\u00a30.00</span>
         </div>
         <div style="display:flex;gap:8px">
-          <button type="button" onclick="eahCheckout('cash')" class="btn-primary" style="flex:1;background:#006837">Cash</button>
-          <button type="button" onclick="eahCheckout('card')" class="btn-primary" style="flex:1;background:#0e386a">Card</button>
+          <button type="button" onclick="eahConfirmCheckout('cash')" class="btn-primary" style="flex:1;background:#006837">Cash</button>
+          <button type="button" onclick="eahConfirmCheckout('card')" class="btn-primary" style="flex:1;background:#0e386a">Card</button>
         </div>
         <button type="button" onclick="eahClearBasket()" style="width:100%;margin-top:8px;padding:8px;border:none;background:none;color:#9ca3af;font-size:11.5px;cursor:pointer">Clear basket</button>
       </div>
@@ -1966,6 +1966,32 @@ function eahRenderBasket(){
     + '</div>';
   }).join('');
   totalEl.textContent = '\u00a3'+total.toFixed(2);
+}
+// No card terminal is connected to this phone, so nothing else confirms
+// a card payment actually happened \u2014 this explicit step is that
+// confirmation, for cash too, before the sale locks in and the till
+// resets for the next customer. 💚
+function eahConfirmCheckout(method){
+  if(!eahTillSession){ showToast('No till session open'); return; }
+  if(!eahBasket.length){ showToast('Basket is empty'); return; }
+  var total = eahBasket.reduce(function(s,l){return s+l.price*l.qty;},0);
+  var methodLabel = method==='cash' ? 'Cash' : 'Card';
+  var existing = document.getElementById('eahConfirmOverlay'); if(existing) existing.remove();
+  var o = document.createElement('div');
+  o.id = 'eahConfirmOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,0.5);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.onclick = function(e){ if(e.target===o) o.remove(); };
+  o.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">'
+    + '<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">Confirm '+methodLabel+' \u2014 \u00a3'+total.toFixed(2)+'</div>'
+    + '<div style="font-size:12.5px;color:#6b7280;line-height:1.5;margin-bottom:18px">'
+      + (method==='card' ? 'No card terminal is connected to this phone \u2014 confirm the card payment has genuinely been taken before this locks in and moves to the next customer.' : 'Confirm the cash has been received before this locks in and moves to the next customer.')
+    + '</div>'
+    + '<div style="display:flex;gap:8px">'
+      + '<button type="button" onclick="document.getElementById(\'eahConfirmOverlay\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#475569;font-weight:600;font-size:13px;cursor:pointer">Cancel</button>'
+      + '<button type="button" onclick="document.getElementById(\'eahConfirmOverlay\').remove();eahCheckout(\''+method+'\')" style="flex:1;padding:11px;border-radius:10px;border:none;background:'+(method==='cash'?'#006837':'#0e386a')+';color:#fff;font-weight:700;font-size:13px;cursor:pointer">Yes, '+methodLabel.toLowerCase()+' taken</button>'
+    + '</div>'
+  + '</div>';
+  document.body.appendChild(o);
 }
 async function eahCheckout(method){
   if(!eahTillSession){ showToast('No till session open'); return; }
