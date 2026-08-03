@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#006837">
+<title>Eat at H.O.M.E — Quick Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=League+Spartan:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Montserrat',sans-serif;background:#f9faf8;color:#111827;min-height:100svh;padding:0 0 50px}
+:root{--dg:#006837;--lg:#39b54a;--or:#f58221;--mut:#6b7280;--border:#e5e7eb}
+.hero{background:linear-gradient(135deg,#006837,#004d25);padding:32px 20px 28px;text-align:center}
+.hero img{width:64px;height:64px;margin-bottom:12px}
+.hero-title{font-family:'League Spartan',sans-serif;font-size:clamp(24px,6vw,32px);font-weight:900;color:#fff;line-height:1.1}
+.hero-title span{color:var(--or)}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.8);margin-top:6px}
+main{max-width:480px;margin:0 auto;padding:24px 16px}
+.notice{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:14px;padding:16px;font-size:13px;color:#7c3a0c;line-height:1.6;margin-bottom:20px}
+.notice b{color:#c2410c}
+.card{background:#fff;border-radius:16px;border:1.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06);padding:22px}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field-label{display:block;font-size:12px;font-weight:700;color:var(--dg);margin-bottom:6px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input,select{width:100%;padding:12px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:15px;color:#111827;background:#fff}
+input:focus,select:focus{outline:none;border-color:var(--dg)}
+.submit-btn{width:100%;padding:16px;background:var(--dg);color:#fff;border:none;border-radius:12px;font-family:'League Spartan',sans-serif;font-size:17px;font-weight:800;cursor:pointer;margin-top:20px;box-shadow:0 4px 16px rgba(0,104,55,.25)}
+.submit-btn:disabled{opacity:.5}
+.error-banner{background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#dc2626;margin-bottom:14px;display:none}
+#success{display:none;text-align:center;padding:50px 20px}
+#success.show{display:block}
+#success .icon{width:70px;height:70px;background:var(--dg);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:36px;color:#fff}
+#success h2{font-family:'League Spartan',sans-serif;font-size:24px;color:#006837;margin-bottom:8px}
+#success p{font-size:14px;color:var(--mut);line-height:1.6;max-width:340px;margin:0 auto}
+.footer-note{text-align:center;font-size:11px;color:#9ca3af;margin-top:20px}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub">
+  <div class="hero-title">Eat at <span>H.O.M.E</span></div>
+  <div class="hero-sub">Quick sign in — takes 10 seconds</div>
+</div>
+
+<main>
+  <div id="form-section">
+    <div class="notice">
+      <b>Why we ask:</b> signing in helps H.O.M.E Hub secure more funding, so we can keep expanding our free offerings to the community. No spam, no marketing — just a quick count of who's visiting us today.
+    </div>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="card">
+      <div class="two-col">
+        <div class="field"><label class="field-label">First name</label><input type="text" id="first_name" placeholder="Jane" autocomplete="given-name"></div>
+        <div class="field"><label class="field-label">Last name</label><input type="text" id="last_name" placeholder="Smith" autocomplete="family-name"></div>
+      </div>
+      <div class="field">
+        <label class="field-label">Age group</label>
+        <select id="age_group">
+          <option value="">Prefer not to say</option>
+          <option>Under 5</option><option>5&ndash;11</option><option>12&ndash;15</option><option>16&ndash;17</option>
+          <option>18&ndash;24</option><option>25&ndash;34</option><option>35&ndash;44</option>
+          <option>45&ndash;54</option><option>55&ndash;64</option><option>65+</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Postcode</label>
+        <input type="text" id="postcode" placeholder="SS7 5JF" autocomplete="postal-code" style="text-transform:uppercase">
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="submitSignIn()">Sign in</button>
+    </div>
+    <div class="footer-note">H.O.M.E Hub CIC &middot; 88 Brook Road, South Benfleet Playing Fields, SS7 5JF</div>
+  </div>
+
+  <div id="success">
+    <div class="icon">✓</div>
+    <h2>You're signed in!</h2>
+    <p>Thanks for helping us track our impact — enjoy your visit to Eat at H.O.M.E.</p>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+const SESSION_NAME = 'Eat at H.O.M.E';
+const REASON = 'Caf\u00e9 / refreshments';
+
+function showError(msg){
+  const banner = document.getElementById('error-banner');
+  banner.textContent = msg;
+  banner.style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+async function sbFetch(path, options){
+  options = options || {};
+  const headers = Object.assign({
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+  }, options.headers || {});
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, options, {headers}));
+  if(!res.ok){
+    const errText = await res.text().catch(()=> '');
+    throw new Error('Supabase ' + res.status + ': ' + errText);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function submitSignIn(){
+  const errorBanner = document.getElementById('error-banner');
+  errorBanner.style.display = 'none';
+
+  const firstName = document.getElementById('first_name').value.trim();
+  const lastName = document.getElementById('last_name').value.trim();
+  const ageGroup = document.getElementById('age_group').value;
+  const postcode = document.getElementById('postcode').value.trim().toUpperCase();
+
+  if(!firstName){ showError('Please enter your first name.'); return; }
+  if(!lastName){ showError('Please enter your last name.'); return; }
+
+  const fullName = firstName + ' ' + lastName;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Signing in...';
+
+  try{
+    // Reuse an existing visitor record if this exact name has been seen
+    // before, so repeat customers don't pile up as duplicates every visit.
+    let visitorId = null;
+    const existing = await sbFetch('visitors?full_name=ilike.' + encodeURIComponent(fullName) + '&select=id&limit=1', { method:'GET' });
+    if(existing && existing.length){
+      visitorId = existing[0].id;
+    } else {
+      const created = await sbFetch('visitors', {
+        method:'POST',
+        headers: { 'Prefer':'return=representation' },
+        body: JSON.stringify({
+          full_name: fullName,
+          age_group: ageGroup || null,
+          postcode: postcode || null,
+          first_visit_date: new Date().toISOString().slice(0,10),
+          is_co_creator: false
+        })
+      });
+      visitorId = created && created[0] ? created[0].id : null;
+    }
+
+    await sbFetch('sign_ins', {
+      method: 'POST',
+      body: JSON.stringify({
+        visitor_id: visitorId,
+        visitor_name: fullName,
+        session_name: SESSION_NAME,
+        reason_for_attending: REASON,
+        visit_type: 'community',
+        signed_in_at: new Date().toISOString()
+      })
+    });
+
+    document.getElementById('form-section').style.display = 'none';
+    window.scrollTo(0,0);
+    document.getElementById('success').classList.add('show');
+  } catch(e){
+    showError(e.message || 'Something went wrong — please try again, or just let a member of staff know.');
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+</script>
+</body>
+</html>
