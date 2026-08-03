@@ -293,6 +293,10 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="tile-icon" style="color:var(--lg)"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg></div>
       <div class="tile-label">Sign Someone In</div>
     </div>
+    <div class="tile" data-goto="screen-eat-at-home">
+      <div class="tile-icon" style="color:#c2410c"><svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div>
+      <div class="tile-label">Eat @ Home</div>
+    </div>
   </div>
 
   <div class="section-label">Business tools</div>
@@ -486,6 +490,53 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 </div>
 
 <!-- ============ ROOM HIRE QUOTE TOOL ============ -->
+<div class="screen" id="screen-eat-at-home">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Eat @ <span>Home</span></h2>
+    <p>The café till — same menu, same stock, same orders as Heartwood.</p>
+  </div>
+  <div class="form-wrap">
+    <div class="field" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Till Mode</div>
+      <div class="chip-row">
+        <div class="chip active" data-eah-mode="normal">Normal</div>
+        <div class="chip" data-eah-mode="locked">Lock to till</div>
+      </div>
+      <div class="helper-text" style="margin-top:6px">Locking hides the menu bar and back button so a busy till doesn\u2019t get bumped out of mid-sale. Unlock any time from the button at the top.</div>
+    </div>
+
+    <div id="eahUnlockBar" style="display:none;position:sticky;top:0;z-index:50;background:#0e386a;border-radius:10px;padding:9px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:#fff;font-size:12px;font-weight:700">\ud83d\udd12 Till locked</span>
+      <button type="button" id="eahUnlockBtn" style="background:#fff;color:#0e386a;border:none;border-radius:7px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer">Unlock</button>
+    </div>
+
+    <div id="eahNoSession" style="display:none;text-align:center;padding:40px 20px">
+      <div style="font-size:15px;font-weight:700;color:#374151;margin-bottom:6px">No till session open</div>
+      <div style="font-size:12.5px;color:#9ca3af;margin-bottom:16px">Ask someone to open the till in Heartwood first \u2014 sales need an active session to keep the cash-up accurate.</div>
+      <button type="button" onclick="loadEatAtHome()" style="padding:10px 20px;border-radius:9px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:700;cursor:pointer">Check again</button>
+    </div>
+
+    <div id="eahTillArea" style="display:none">
+      <div id="eahCategoryTabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px"></div>
+      <div id="eahMenuGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px"></div>
+
+      <div style="background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:14px;padding:14px;position:sticky;bottom:70px">
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Basket</div>
+        <div id="eahBasketItems" style="margin-bottom:10px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:#0a1928;padding-top:10px;border-top:1.5px solid #e5e7eb;margin-bottom:12px">
+          <span>Total</span><span id="eahBasketTotal">\u00a30.00</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" onclick="eahCheckout('cash')" class="btn-primary" style="flex:1;background:#006837">Cash</button>
+          <button type="button" onclick="eahCheckout('card')" class="btn-primary" style="flex:1;background:#0e386a">Card</button>
+        </div>
+        <button type="button" onclick="eahClearBasket()" style="width:100%;margin-top:8px;padding:8px;border:none;background:none;color:#9ca3af;font-size:11.5px;cursor:pointer">Clear basket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="screen" id="screen-quote-builder">
   <div class="hero">
     <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -1802,6 +1853,181 @@ async function loadHome(){
   }
 }
 screenLoaders['screen-home'] = loadHome;
+
+/* ============================================================
+   EAT @ HOME — the café till, reading and writing the exact same
+   tables Heartwood's own till uses (cafe_menu_items, cafe_orders,
+   cafe_order_items, cafe_till_sessions). Deliberately scoped down for
+   this first phone version — no extras, specials, or the Community
+   Champions discount yet, and a session must already be open in
+   Heartwood before this will sell anything, so cash-up stays accurate
+   with one till session, not two apps fighting over it.
+   ============================================================ */
+var eahBasket = [];
+var eahMenuByCategory = {};
+var eahActiveCategory = null;
+var eahTillSession = null;
+
+async function loadEatAtHome(){
+  document.getElementById('eahNoSession').style.display = 'none';
+  document.getElementById('eahTillArea').style.display = 'none';
+  try{
+    var sessRes = await SB('cafe_till_sessions?status=eq.open&order=opened_at.desc&limit=1');
+    eahTillSession = (sessRes.data||[])[0] || null;
+    if(!eahTillSession){
+      document.getElementById('eahNoSession').style.display = 'block';
+      return;
+    }
+    var menuRes = await SB('cafe_menu_items?is_active=eq.true&order=category.asc,sort_order.asc');
+    var rows = menuRes.data || [];
+    eahMenuByCategory = {};
+    rows.forEach(function(m){ (eahMenuByCategory[m.category] = eahMenuByCategory[m.category] || []).push(m); });
+    var cats = Object.keys(eahMenuByCategory);
+    if(!eahActiveCategory || cats.indexOf(eahActiveCategory) === -1) eahActiveCategory = cats[0] || null;
+    document.getElementById('eahCategoryTabs').innerHTML = cats.map(function(c){
+      return '<div onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;background:'+(c===eahActiveCategory?'#0e386a':'#f3f4f6')+';color:'+(c===eahActiveCategory?'#fff':'#6b7280')+'">'+c+'</div>';
+    }).join('');
+    eahRenderMenuGrid();
+    eahRenderBasket();
+    document.getElementById('eahTillArea').style.display = 'block';
+  }catch(e){
+    document.getElementById('eahNoSession').style.display = 'block';
+    document.getElementById('eahNoSession').querySelector('div').textContent = 'Couldn\u2019t load the till';
+  }
+}
+screenLoaders['screen-eat-at-home'] = loadEatAtHome;
+
+function eahSelectCategory(cat){
+  eahActiveCategory = cat;
+  document.querySelectorAll('#eahCategoryTabs > div').forEach(function(el){
+    var isActive = el.textContent === cat;
+    el.style.background = isActive ? '#0e386a' : '#f3f4f6';
+    el.style.color = isActive ? '#fff' : '#6b7280';
+  });
+  eahRenderMenuGrid();
+}
+function eahRenderMenuGrid(){
+  var grid = document.getElementById('eahMenuGrid');
+  var items = eahMenuByCategory[eahActiveCategory] || [];
+  grid.innerHTML = items.map(function(m){
+    var price = parseFloat(m.sell_price)||0;
+    var tracked = !!m.track_stock;
+    var stockQty = parseFloat(m.stock_qty)||0;
+    var inBasket = (eahBasket.find(function(l){return l.id===m.id;})||{}).qty || 0;
+    var remaining = stockQty - inBasket;
+    var outOfStock = tracked && remaining <= 0;
+    return '<button type="button" '+(outOfStock?'disabled':'onclick="eahAddToBasket(\''+m.id+'\',\''+m.name.replace(/'/g,"\\'")+'\','+price+')"')+' style="text-align:left;padding:12px;border-radius:12px;border:1.5px solid '+(inBasket>0?'#0e386a':'#e5e7eb')+';background:'+(outOfStock?'#f9fafb':'#fff')+';cursor:'+(outOfStock?'not-allowed':'pointer')+';opacity:'+(outOfStock?'0.5':'1')+'">'
+      + '<div style="font-size:12.5px;font-weight:700;color:#0a1928;margin-bottom:3px">'+m.name+(inBasket>0?' <span style="color:#0e386a">\u00d7'+inBasket+'</span>':'')+'</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#006837">\u00a3'+price.toFixed(2)+'</div>'
+      + (outOfStock ? '<div style="font-size:9.5px;color:#dc2626;font-weight:700;margin-top:2px">OUT OF STOCK</div>' : '')
+    + '</button>';
+  }).join('') || '<div style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:12px;padding:20px 0">No items in this category</div>';
+}
+function eahAddToBasket(id, name, price){
+  var line = eahBasket.find(function(l){return l.id===id;});
+  if(line) line.qty++;
+  else eahBasket.push({id:id, name:name, price:price, qty:1});
+  eahRenderMenuGrid();
+  eahRenderBasket();
+}
+function eahChangeQty(id, delta){
+  var line = eahBasket.find(function(l){return l.id===id;});
+  if(!line) return;
+  line.qty += delta;
+  if(line.qty <= 0) eahBasket = eahBasket.filter(function(l){return l.id!==id;});
+  eahRenderMenuGrid();
+  eahRenderBasket();
+}
+function eahClearBasket(){
+  eahBasket = [];
+  eahRenderMenuGrid();
+  eahRenderBasket();
+}
+function eahRenderBasket(){
+  var itemsEl = document.getElementById('eahBasketItems');
+  var totalEl = document.getElementById('eahBasketTotal');
+  if(!eahBasket.length){
+    itemsEl.innerHTML = '<div style="font-size:12px;color:#9ca3af;text-align:center;padding:10px 0">Basket is empty</div>';
+    totalEl.textContent = '\u00a30.00';
+    return;
+  }
+  var total = 0;
+  itemsEl.innerHTML = eahBasket.map(function(l){
+    var lineTotal = l.price * l.qty;
+    total += lineTotal;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #e5e7eb">'
+      + '<div style="flex:1;min-width:0;font-size:12px;font-weight:600;color:#111827">'+l.name+'</div>'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+        + '<button type="button" onclick="eahChangeQty(\''+l.id+'\',-1)" style="width:24px;height:24px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;font-size:14px;font-weight:700;color:#374151">\u2212</button>'
+        + '<span style="font-size:12px;font-weight:700;width:16px;text-align:center">'+l.qty+'</span>'
+        + '<button type="button" onclick="eahChangeQty(\''+l.id+'\',1)" style="width:24px;height:24px;border-radius:50%;border:1px solid #e5e7eb;background:#fff;font-size:14px;font-weight:700;color:#374151">+</button>'
+      + '</div>'
+      + '<div style="font-size:12.5px;font-weight:700;color:#0a1928;width:52px;text-align:right">\u00a3'+lineTotal.toFixed(2)+'</div>'
+    + '</div>';
+  }).join('');
+  totalEl.textContent = '\u00a3'+total.toFixed(2);
+}
+async function eahCheckout(method){
+  if(!eahTillSession){ showToast('No till session open'); return; }
+  if(!eahBasket.length){ showToast('Basket is empty'); return; }
+  var u = getUser();
+  var total = eahBasket.reduce(function(s,l){return s+l.price*l.qty;},0);
+  try{
+    var orderRes = await SB('cafe_orders', {
+      method:'POST', headers:{Prefer:'return=representation'},
+      body: JSON.stringify({
+        till_session_id: eahTillSession.id, subtotal: total, payment_method: method,
+        created_by: u ? u.display_name : null
+      })
+    });
+    var order = (orderRes.data||[])[0];
+    var lineItems = eahBasket.map(function(l){
+      return { order_id: order.id, menu_item_id: l.id, item_name: l.name, unit_price: l.price, qty: l.qty, line_total: l.price*l.qty };
+    });
+    await SB('cafe_order_items', { method:'POST', body: JSON.stringify(lineItems) });
+
+    // Decrement stock for tracked items, same as Heartwood's own till.
+    for(var i=0;i<eahBasket.length;i++){
+      var line = eahBasket[i];
+      var itemRes = await SB('cafe_menu_items?id=eq.'+line.id+'&select=track_stock,stock_qty');
+      var item = (itemRes.data||[])[0];
+      if(item && item.track_stock){
+        var newQty = Math.max(0, (parseFloat(item.stock_qty)||0) - line.qty);
+        await SB('cafe_menu_items?id=eq.'+line.id, { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({stock_qty:newQty}) });
+      }
+    }
+
+    showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
+    eahBasket = [];
+    loadEatAtHome();
+  }catch(e){
+    showToast('Couldn\u2019t complete the order \u2014 ' + e.message);
+  }
+}
+
+// ── Till Mode lock — hides the bottom nav and back button so a busy
+// till doesn't get bumped out of a sale by an accidental tap. 💚
+document.querySelectorAll('[data-eah-mode]').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    document.querySelectorAll('[data-eah-mode]').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    var mode = chip.getAttribute('data-eah-mode');
+    if(mode === 'locked') eahLockTill(); else eahUnlockTill();
+  });
+});
+function eahLockTill(){
+  document.querySelector('.bottom-nav').style.display = 'none';
+  document.querySelector('#screen-eat-at-home .back-btn').style.display = 'none';
+  document.getElementById('eahUnlockBar').style.display = 'flex';
+}
+function eahUnlockTill(){
+  document.querySelector('.bottom-nav').style.display = 'flex';
+  updateBackButtons(currentScreen);
+  document.getElementById('eahUnlockBar').style.display = 'none';
+  document.querySelectorAll('[data-eah-mode]').forEach(function(c){ c.classList.remove('active'); });
+  document.querySelector('[data-eah-mode="normal"]').classList.add('active');
+}
+document.getElementById('eahUnlockBtn').addEventListener('click', eahUnlockTill);
 
 /* Quick action tiles on the dashboard */
 document.querySelectorAll('[data-quick]').forEach(function(tile){
