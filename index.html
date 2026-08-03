@@ -2012,15 +2012,21 @@ async function eahCheckout(method){
     });
     await SB('cafe_order_items', { method:'POST', body: JSON.stringify(lineItems) });
 
-    // Decrement stock for tracked items, same as Heartwood's own till.
+    // Decrement stock atomically via the same database function
+    // Heartwood uses \u2014 with two phones potentially selling the same
+    // item at once, reading a value and writing it back later could
+    // silently overwrite another till's decrement. The database does
+    // the subtraction itself now, correct no matter how many tills are
+    // selling at the same time.
     for(var i=0;i<eahBasket.length;i++){
       var line = eahBasket[i];
-      var itemRes = await SB('cafe_menu_items?id=eq.'+line.id+'&select=track_stock,stock_qty');
-      var item = (itemRes.data||[])[0];
-      if(item && item.track_stock){
-        var newQty = Math.max(0, (parseFloat(item.stock_qty)||0) - line.qty);
-        await SB('cafe_menu_items?id=eq.'+line.id, { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({stock_qty:newQty}) });
-      }
+      try{
+        var itemRes = await SB('cafe_menu_items?id=eq.'+line.id+'&select=track_stock');
+        var item = (itemRes.data||[])[0];
+        if(item && item.track_stock){
+          await SB('rpc/decrement_cafe_stock', { method:'POST', body: JSON.stringify({item_id: line.id, decrement_qty: line.qty}) });
+        }
+      }catch(stockErr){ console.warn('[eahCheckout] stock decrement failed:', stockErr.message); }
     }
 
     showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
