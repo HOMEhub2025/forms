@@ -497,7 +497,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>The café till — same menu, same stock, same orders as Heartwood.</p>
   </div>
   <div class="form-wrap" style="padding-bottom:100px">
-    <div class="field" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+    <div class="field" id="eahTillModeBox" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px;margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Till Mode</div>
       <div class="chip-row">
         <div class="chip active" data-eah-mode="normal">Normal</div>
@@ -2255,22 +2255,32 @@ document.querySelectorAll('[data-eah-mode]').forEach(function(chip){
 function eahLockTill(){
   var bottomNav = document.querySelector('.bottom-nav');
   var header = document.querySelector('.header');
-  var backBtn = document.querySelector('#screen-eat-at-home .back-btn');
+  var hero = document.querySelector('#screen-eat-at-home .hero');
+  var tillModeBox = document.getElementById('eahTillModeBox');
+  var recountBtn = document.getElementById('eahRecountBtn');
   var footer = document.getElementById('eahCondensedFooter');
   var unlockBar = document.getElementById('eahUnlockBar');
   if(bottomNav) bottomNav.style.setProperty('display','none','important');
   if(header) header.style.setProperty('display','none','important');
-  if(backBtn) backBtn.style.setProperty('display','none','important');
+  if(hero) hero.style.setProperty('display','none','important');
+  if(tillModeBox) tillModeBox.style.setProperty('display','none','important');
+  if(recountBtn) recountBtn.style.setProperty('display','none','important');
   if(footer) footer.style.bottom = '0';
   if(unlockBar) unlockBar.style.display = 'flex';
 }
 function eahUnlockTill(){
   var bottomNav = document.querySelector('.bottom-nav');
   var header = document.querySelector('.header');
+  var hero = document.querySelector('#screen-eat-at-home .hero');
+  var tillModeBox = document.getElementById('eahTillModeBox');
+  var recountBtn = document.getElementById('eahRecountBtn');
   var footer = document.getElementById('eahCondensedFooter');
   var unlockBar = document.getElementById('eahUnlockBar');
   if(bottomNav) bottomNav.style.removeProperty('display');
   if(header) header.style.removeProperty('display');
+  if(hero) hero.style.removeProperty('display');
+  if(tillModeBox) tillModeBox.style.removeProperty('display');
+  if(recountBtn) recountBtn.style.removeProperty('display');
   if(footer) footer.style.bottom = '70px';
   updateBackButtons(currentScreen);
   if(unlockBar) unlockBar.style.display = 'none';
