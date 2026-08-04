@@ -841,6 +841,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="subtab" data-qt-filter="confirmed">Confirmed</div>
     <div class="subtab" data-qt-filter="cancelled">Lost</div>
   </div>
+  <div id="qtLostReasons" style="display:none"></div>
   <div class="cards" id="qtList" style="gap:8px">
     <div class="loading-row">Loading quotes…</div>
   </div>
@@ -2376,6 +2377,156 @@ async function roomGenerateInvoice(booking, d, btn){
   }
 }
 
+// ── EDIT / CANCEL AN EXISTING BOOKING — every change is logged (what
+// changed, who, when), and cancelling always requires a reason, which
+// is what lets Lost Opportunities actually mean something rather than
+// just being a pile of blank cancelled rows. 💚
+var QUOTE_LOST_REASONS = ['Price too high','Booked elsewhere','No longer needed','Went unresponsive','Date or time didn\u2019t work','Budget fell through','Duplicate entry','Other'];
+var currentEditBooking = null;
+
+function openBookingEditSheet(booking){
+  currentEditBooking = booking;
+  var existing = document.getElementById('bkEditOverlay'); if(existing) existing.remove();
+  var isQuote = /Room Hire Quote/i.test(booking.booking_title||'');
+  var o = document.createElement('div');
+  o.id = 'bkEditOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9600;background:rgba(14,56,106,0.5);display:flex;align-items:flex-end;justify-content:center';
+  o.addEventListener('click', function(e){ if(e.target===o) o.remove(); });
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:#fff;border-radius:18px 18px 0 0;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;padding:20px';
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+  panel.innerHTML = '<div style="width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px"></div>'
+    + '<div style="font-weight:700;font-size:16px;color:#111827;margin-bottom:2px">'+esc(booking.booking_title||booking.room||'Booking')+'</div>'
+    + '<div style="font-size:11.5px;color:#9ca3af;margin-bottom:16px">'+esc(booking.room||'')+'</div>'
+    + '<input type="date" id="bkeDate" value="'+esc(booking.booking_date||'')+'" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:8px;box-sizing:border-box">'
+    + '<div style="display:flex;gap:8px;margin-bottom:8px">'
+      + '<input type="time" id="bkeStart" value="'+esc((booking.start_time||'').slice(0,5))+'" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px">'
+      + '<input type="time" id="bkeEnd" value="'+esc((booking.end_time||'').slice(0,5))+'" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px">'
+    + '</div>'
+    + '<input type="text" id="bkeTitle" value="'+esc(booking.booking_title||'')+'" placeholder="Title" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:8px;box-sizing:border-box">'
+    + '<textarea id="bkeNotes" placeholder="Notes" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:8px;box-sizing:border-box;min-height:60px">'+esc(booking.notes||'')+'</textarea>'
+    + '<input type="text" inputmode="decimal" id="bkePrice" value="'+(booking.estimated_cost!=null?booking.estimated_cost:'')+'" placeholder="Price (£)" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;margin-bottom:14px;box-sizing:border-box">'
+    + (booking.invoice_ref ? '<div style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#c2410c;margin-bottom:14px">Invoice '+esc(booking.invoice_ref)+' already raised for this booking \u2014 changing the price here won\u2019t update it automatically.</div>' : '')
+    + '<div id="bkeErrorWrap"></div>'
+    + '<button type="button" id="bkeSaveBtn" class="btn-primary" style="margin-bottom:8px">Save changes</button>'
+    + '<button type="button" id="bkeCancelBookingBtn" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #fecaca;background:#fff;color:#dc2626;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px">'+(isQuote?'Mark as lost':'Cancel this booking')+'</button>'
+    + (booking.edit_log && booking.edit_log.length ? bkeEditLogHtml(booking.edit_log) : '')
+    + '<button type="button" onclick="document.getElementById(\'bkEditOverlay\').remove()" style="width:100%;padding:10px;border:none;background:none;color:#9ca3af;font-size:12.5px;cursor:pointer">Close</button>';
+  o.appendChild(panel);
+  document.body.appendChild(o);
+  document.getElementById('bkeSaveBtn').addEventListener('click', function(){ saveBookingEdit(booking, this); });
+  document.getElementById('bkeCancelBookingBtn').addEventListener('click', function(){ openBookingCancelModal(booking); });
+}
+function bkeEditLogHtml(log){
+  return '<div style="border-top:1px solid #f3f4f6;padding-top:10px;margin-bottom:10px">'
+    + '<div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Edit history</div>'
+    + log.slice().reverse().map(function(e){
+        return '<div style="font-size:11px;color:#374151;margin-bottom:6px"><strong>'+esc(e.date)+'</strong> \u00b7 '+esc(e.by)+' \u2014 '+esc(e.changes)+'</div>';
+      }).join('')
+  + '</div>';
+}
+async function saveBookingEdit(booking, btn){
+  var u = getUser();
+  var errWrap = document.getElementById('bkeErrorWrap');
+  errWrap.innerHTML = '';
+  var newVals = {
+    booking_date: document.getElementById('bkeDate').value,
+    start_time: document.getElementById('bkeStart').value,
+    end_time: document.getElementById('bkeEnd').value,
+    booking_title: document.getElementById('bkeTitle').value.trim(),
+    notes: document.getElementById('bkeNotes').value.trim(),
+    estimated_cost: (function(){ var v=document.getElementById('bkePrice').value.trim(); return v?parseFloat(v):null; })()
+  };
+  if(!newVals.booking_title || !newVals.booking_date || !newVals.start_time || !newVals.end_time){
+    errWrap.innerHTML = '<div class="error-banner">Title, date, start and end are all needed.</div>';
+    return;
+  }
+  if(timeToMins(newVals.end_time) <= timeToMins(newVals.start_time)){
+    errWrap.innerHTML = '<div class="error-banner">End time needs to be after the start time.</div>';
+    return;
+  }
+  // Build a plain-English summary of what actually changed, rather than
+  // logging raw field names — this is what makes the edit history worth
+  // reading later. 💚
+  var changes = [];
+  if(newVals.booking_date !== booking.booking_date) changes.push('Date: '+fmtDateLabel(booking.booking_date)+' \u2192 '+fmtDateLabel(newVals.booking_date));
+  if(newVals.start_time !== (booking.start_time||'').slice(0,5) || newVals.end_time !== (booking.end_time||'').slice(0,5)) changes.push('Time: '+fmtTime(booking.start_time)+'\u2013'+fmtTime(booking.end_time)+' \u2192 '+fmtTime(newVals.start_time)+'\u2013'+fmtTime(newVals.end_time));
+  if(newVals.booking_title !== booking.booking_title) changes.push('Title: "'+booking.booking_title+'" \u2192 "'+newVals.booking_title+'"');
+  var oldPrice = booking.estimated_cost!=null ? Number(booking.estimated_cost) : null;
+  if(newVals.estimated_cost !== oldPrice) changes.push('Price: '+(oldPrice!=null?'£'+oldPrice.toFixed(2):'none')+' \u2192 '+(newVals.estimated_cost!=null?'£'+newVals.estimated_cost.toFixed(2):'none'));
+  if(newVals.notes !== (booking.notes||'')) changes.push('Notes updated');
+
+  if(!changes.length){ document.getElementById('bkEditOverlay').remove(); return; }
+
+  btn.disabled = true; btn.textContent = 'Saving\u2026';
+  try{
+    var newLog = (booking.edit_log||[]).concat([{ date: toISODate(new Date()), by: u?u.display_name:'Unknown', changes: changes.join('; ') }]);
+    await SB('room_bookings?id=eq.'+booking.id, {
+      method:'PATCH', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify(Object.assign({}, newVals, { edit_log: newLog }))
+    });
+    logAction('edit_room_booking', 'Bookings', (newVals.booking_title||booking.booking_title)+' \u2014 '+changes.join('; '));
+    showToast('Booking updated \u2713');
+    document.getElementById('bkEditOverlay').remove();
+    if(typeof refreshRoomAvailability==='function') refreshRoomAvailability();
+    if(typeof loadQuotes==='function' && document.getElementById('screen-quotes') && document.getElementById('screen-quotes').style.display!=='none') loadQuotes();
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Could not save \u2014 '+e.message+'</div>';
+    btn.disabled = false; btn.textContent = 'Save changes';
+  }
+}
+
+function openBookingCancelModal(booking){
+  var existing = document.getElementById('bkCancelOverlay'); if(existing) existing.remove();
+  var o = document.createElement('div');
+  o.id = 'bkCancelOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9700;background:rgba(14,56,106,0.55);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.addEventListener('click', function(e){ if(e.target===o) o.remove(); });
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:#fff;border-radius:16px;max-width:360px;width:100%;padding:22px';
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+  panel.innerHTML = '<div style="font-weight:700;font-size:16px;color:#dc2626;margin-bottom:4px">Cancel this booking</div>'
+    + '<div style="font-size:11.5px;color:#9ca3af;margin-bottom:14px">'+esc(booking.booking_title||'')+'</div>'
+    + '<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:9px 11px;font-size:11px;color:#92400e;margin-bottom:14px">This stays on record with the reason attached \u2014 it just stops showing on the calendar and won\u2019t be pulled into any invoice.</div>'
+    + '<label style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:5px">Reason *</label>'
+    + '<select id="bkcReason" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;margin-bottom:10px">'
+      + QUOTE_LOST_REASONS.map(function(r){ return '<option value="'+esc(r)+'">'+esc(r)+'</option>'; }).join('')
+    + '</select>'
+    + '<textarea id="bkcNotes" placeholder="Notes (optional)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;margin-bottom:14px;min-height:50px;box-sizing:border-box"></textarea>'
+    + '<div id="bkcErrorWrap"></div>'
+    + '<button type="button" id="bkcConfirmBtn" style="width:100%;padding:12px;border-radius:10px;border:none;background:#dc2626;color:#fff;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px">Confirm cancellation</button>'
+    + '<button type="button" onclick="document.getElementById(\'bkCancelOverlay\').remove()" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;color:#475569;font-size:13px;cursor:pointer">Keep the booking</button>';
+  o.appendChild(panel);
+  document.body.appendChild(o);
+  document.getElementById('bkcConfirmBtn').addEventListener('click', function(){ confirmBookingCancel(booking, this); });
+}
+async function confirmBookingCancel(booking, btn){
+  var u = getUser();
+  var reason = document.getElementById('bkcReason').value;
+  var notes = document.getElementById('bkcNotes').value.trim();
+  btn.disabled = true; btn.textContent = 'Cancelling\u2026';
+  try{
+    var newLog = (booking.edit_log||[]).concat([{ date: toISODate(new Date()), by: u?u.display_name:'Unknown', changes: 'Cancelled \u2014 '+reason+(notes?' ('+notes+')':'') }]);
+    await SB('room_bookings?id=eq.'+booking.id, {
+      method:'PATCH', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({
+        status: 'cancelled', cancelled_at: new Date().toISOString(),
+        cancelled_by: u?u.display_name:'Unknown', cancel_reason: reason, cancel_notes: notes||null,
+        edit_log: newLog
+      })
+    });
+    logAction('cancel_room_booking', 'Bookings', (booking.booking_title||'')+' \u2014 '+reason);
+    showToast('Booking cancelled');
+    document.getElementById('bkCancelOverlay').remove();
+    var editOverlay = document.getElementById('bkEditOverlay'); if(editOverlay) editOverlay.remove();
+    if(typeof refreshRoomAvailability==='function') refreshRoomAvailability();
+    if(typeof loadQuotes==='function' && document.getElementById('screen-quotes') && document.getElementById('screen-quotes').style.display!=='none') loadQuotes();
+  }catch(e){
+    document.getElementById('bkcErrorWrap').innerHTML = '<div class="error-banner">Could not cancel \u2014 '+e.message+'</div>';
+    btn.disabled = false; btn.textContent = 'Confirm cancellation';
+  }
+}
+
 async function loadBookRoomsData(){
   document.getElementById('roomDate').value = toISODate(new Date());
   try{
@@ -2416,14 +2567,21 @@ async function refreshRoomAvailability(){
   }catch(e){ busyWrap.innerHTML = ''; }
 
   try{
-    var upRes = await SB('room_bookings?room=eq.'+encodeURIComponent(room)+'&booking_date=gte.'+toISODate(new Date())+'&order=booking_date.asc,start_time.asc&limit=8');
+    var upRes = await SB('room_bookings?room=eq.'+encodeURIComponent(room)+'&booking_date=gte.'+toISODate(new Date())+'&status=neq.cancelled&order=booking_date.asc,start_time.asc&limit=8');
     var up = upRes.data || [];
+    window._roomUpcomingCache = up;
     upcomingWrap.innerHTML = up.length ? up.map(function(b){
-      return '<div class="agenda-item"><div class="agenda-bar" style="background:var(--or)"></div>' +
+      return '<div class="agenda-item" data-bk-id="'+b.id+'" style="cursor:pointer"><div class="agenda-bar" style="background:var(--or)"></div>' +
         '<div class="agenda-time">'+fmtTime(b.start_time)+'</div>' +
         '<div class="agenda-body"><div class="agenda-title">'+(b.booking_title||'Booking')+'</div>' +
         '<div class="agenda-sub">'+fmtDateLabel(b.booking_date)+' · '+fmtTime(b.start_time)+'–'+fmtTime(b.end_time)+(b.booked_by ? ' · '+b.booked_by : '')+'</div></div></div>';
     }).join('') : '<div class="agenda-empty">Nothing else on the horizon for this room.</div>';
+    upcomingWrap.querySelectorAll('[data-bk-id]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var b = window._roomUpcomingCache.find(function(x){ return x.id === el.getAttribute('data-bk-id'); });
+        if(b) openBookingEditSheet(b);
+      });
+    });
   }catch(e){ upcomingWrap.innerHTML = '<div class="agenda-empty">Couldn\'t load upcoming bookings.</div>'; }
 }
 document.getElementById('roomSelect').addEventListener('change', refreshRoomAvailability);
@@ -4877,6 +5035,29 @@ function renderQuotesView(){
     '<div class="stat-card"><div class="num" style="color:#dc2626">'+buckets.cancelled.count+'</div><div class="lbl">Lost · £'+buckets.cancelled.total.toFixed(2)+'</div></div>' +
     '<div class="stat-card"><div class="num">'+totalCount+'</div><div class="lbl">Total · £'+totalValue.toFixed(2)+'</div></div>';
 
+  var lostReasonsEl = document.getElementById('qtLostReasons');
+  if(qtFilter === 'cancelled'){
+    var reasonCounts = {};
+    qtData.filter(function(r){ return r.status==='cancelled'; }).forEach(function(r){
+      var reason = r.cancel_reason || 'No reason given';
+      reasonCounts[reason] = (reasonCounts[reason]||0) + 1;
+    });
+    var reasonKeys = Object.keys(reasonCounts).sort(function(a,b){ return reasonCounts[b]-reasonCounts[a]; });
+    if(reasonKeys.length){
+      lostReasonsEl.style.display = 'block';
+      lostReasonsEl.innerHTML = '<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:12px 14px;margin-top:12px">'
+        + '<div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Why we\u2019re losing these</div>'
+        + reasonKeys.map(function(k){
+            return '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#7f1d1d;padding:3px 0"><span>'+esc(k)+'</span><span style="font-weight:700">'+reasonCounts[k]+'</span></div>';
+          }).join('')
+      + '</div>';
+    } else {
+      lostReasonsEl.style.display = 'none';
+    }
+  } else {
+    lostReasonsEl.style.display = 'none';
+  }
+
   var listWrap = document.getElementById('qtList');
   if(!filtered.length){
     listWrap.innerHTML = '<div class="agenda-empty">No quotes here yet.</div>';
@@ -4889,7 +5070,7 @@ function renderQuotesView(){
   };
   listWrap.innerHTML = filtered.map(function(r){
     var meta = statusMeta[r.status || 'quote'] || statusMeta.quote;
-    return '<div class="card accent-red" style="align-items:flex-start;flex-direction:column;gap:8px" data-qt-id="'+r.id+'">' +
+    return '<div class="card accent-red" style="align-items:flex-start;flex-direction:column;gap:8px;cursor:pointer" data-qt-id="'+r.id+'" data-qt-open="1">' +
       '<div style="display:flex;width:100%;align-items:center;gap:12px">' +
         '<div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>' +
         '<div class="card-body"><div class="card-title">'+qtContactName(r)+'</div>' +
@@ -4904,6 +5085,13 @@ function renderQuotesView(){
     '</div>';
   }).join('');
 
+  listWrap.querySelectorAll('[data-qt-open]').forEach(function(card){
+    card.addEventListener('click', function(){
+      var row = qtData.find(function(r){ return r.id === card.getAttribute('data-qt-id'); });
+      if(row) openBookingEditSheet(row);
+    });
+  });
+
   listWrap.querySelectorAll('[data-qt-action]').forEach(function(btn){
     btn.addEventListener('click', async function(e){
       e.stopPropagation();
@@ -4911,8 +5099,12 @@ function renderQuotesView(){
       var rowId = btn.getAttribute('data-qt-row');
       var row = qtData.find(function(r){ return r.id === rowId; });
       if(!row) return;
-      if(action === 'confirm' || action === 'cancel'){
-        var newStatus = action === 'confirm' ? 'confirmed' : 'cancelled';
+      if(action === 'cancel'){
+        openBookingCancelModal(row);
+        return;
+      }
+      if(action === 'confirm'){
+        var newStatus = 'confirmed';
         btn.disabled = true;
         try{
           await SB('room_bookings?id=eq.'+rowId, {
