@@ -1916,6 +1916,7 @@ var eahBasket = [];
 var eahMenuByCategory = {};
 var eahActiveCategory = null;
 var eahTillSession = null;
+var eahView = 'categories'; // 'categories' | 'items'
 
 async function loadEatAtHome(){
   document.getElementById('eahNoSession').style.display = 'none';
@@ -1931,12 +1932,9 @@ async function loadEatAtHome(){
     var rows = menuRes.data || [];
     eahMenuByCategory = {};
     rows.forEach(function(m){ (eahMenuByCategory[m.category] = eahMenuByCategory[m.category] || []).push(m); });
-    var cats = Object.keys(eahMenuByCategory);
-    if(!eahActiveCategory || cats.indexOf(eahActiveCategory) === -1) eahActiveCategory = cats[0] || null;
-    document.getElementById('eahCategoryTabs').innerHTML = cats.map(function(c){
-      return '<div onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="flex-shrink:0;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;background:'+(c===eahActiveCategory?'#0e386a':'#f3f4f6')+';color:'+(c===eahActiveCategory?'#fff':'#6b7280')+'">'+c+'</div>';
-    }).join('');
-    eahRenderMenuGrid();
+    eahView = 'categories';
+    eahActiveCategory = null;
+    eahRenderCategoryTiles();
     eahRenderBasket();
     document.getElementById('eahTillArea').style.display = 'block';
   }catch(e){
@@ -1946,16 +1944,39 @@ async function loadEatAtHome(){
 }
 screenLoaders['screen-eat-at-home'] = loadEatAtHome;
 
+// ── Two-level browsing: category tiles first (big, tappable, easy to
+// scan at a glance), then the items inside whichever one you tap, with
+// a clear way back. The basket and its footer never reset between the
+// two \u2014 only which items are actually on screen changes. 💚
+function eahRenderCategoryTiles(){
+  document.getElementById('eahCategoryTabs').innerHTML = '';
+  var grid = document.getElementById('eahMenuGrid');
+  var cats = Object.keys(eahMenuByCategory);
+  if(!cats.length){ grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:12px;padding:20px 0">No menu items set up yet</div>'; return; }
+  grid.innerHTML = cats.map(function(c){
+    var count = eahMenuByCategory[c].length;
+    return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="text-align:center;padding:22px 12px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
+      + '<div style="font-size:14px;font-weight:700;color:#0a1928;margin-bottom:4px">'+c+'</div>'
+      + '<div style="font-size:10.5px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
+    + '</button>';
+  }).join('');
+}
 function eahSelectCategory(cat){
   eahActiveCategory = cat;
-  document.querySelectorAll('#eahCategoryTabs > div').forEach(function(el){
-    var isActive = el.textContent === cat;
-    el.style.background = isActive ? '#0e386a' : '#f3f4f6';
-    el.style.color = isActive ? '#fff' : '#6b7280';
-  });
+  eahView = 'items';
+  document.getElementById('eahCategoryTabs').innerHTML =
+    '<button type="button" onclick="eahBackToCategories()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:4px">'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> '+esc(cat)
+    + '</button>';
   eahRenderMenuGrid();
 }
+function eahBackToCategories(){
+  eahView = 'categories';
+  eahActiveCategory = null;
+  eahRenderCategoryTiles();
+}
 function eahRenderMenuGrid(){
+  if(eahView === 'categories'){ eahRenderCategoryTiles(); return; }
   var grid = document.getElementById('eahMenuGrid');
   var items = eahMenuByCategory[eahActiveCategory] || [];
   grid.innerHTML = items.map(function(m){
