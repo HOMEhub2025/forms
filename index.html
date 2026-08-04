@@ -1364,6 +1364,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <div class="sheet-form-name" id="swSheetName">Session</div>
   <div class="sheet-subtitle" id="swSheetSub">—</div>
   <div class="form-wrap">
+    <button type="button" id="swBookBtn" class="btn-primary" style="margin-bottom:18px">Book someone in</button>
     <div class="field"><label>Facilitator</label><input type="text" id="swFacilitator"></div>
     <div class="field"><label>Room / Location</label><input type="text" id="swRoom"></div>
     <div class="field"><label>Description</label><textarea id="swDescription"></textarea></div>
@@ -3646,6 +3647,15 @@ function swCopy(text){
     navigator.clipboard.writeText(text).then(function(){ showToast('Link copied to clipboard'); });
   }
 }
+document.getElementById('swBookBtn').addEventListener('click', function(){
+  if(!currentSwSession){ return; }
+  var slug = (currentSwSession.public_slug || '').trim();
+  if(!slug){
+    showToast('Add a public booking link below first, then save, before booking someone in');
+    return;
+  }
+  window.open(swBuildUrl('book', slug), '_blank');
+});
 document.getElementById('swCopyPublicBtn').addEventListener('click', function(){
   swCopy(swBuildUrl('book', document.getElementById('swPublicSlug').value.trim()));
 });
