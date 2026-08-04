@@ -1932,6 +1932,7 @@ async function loadEatAtHome(){
     var rows = menuRes.data || [];
     eahMenuByCategory = {};
     rows.forEach(function(m){ (eahMenuByCategory[m.category] = eahMenuByCategory[m.category] || []).push(m); });
+    eahRestoreBasketFromStorage();
     eahView = 'categories';
     eahActiveCategory = null;
     eahRenderCategoryTiles();
@@ -2013,7 +2014,30 @@ function eahClearBasket(){
   eahRenderMenuGrid();
   eahRenderBasket();
 }
+// ── Basket persistence — survives an accidental back-swipe, the app
+// getting killed in the background, or a crash mid-sale. Tied to the
+// specific till session it was built during, so if that session's
+// since closed and a new one opened, an old basket never confusingly
+// reappears for whoever's serving next. 💚
+function eahSaveBasketToStorage(){
+  try{
+    if(!eahTillSession){ localStorage.removeItem('eahBasketState'); return; }
+    localStorage.setItem('eahBasketState', JSON.stringify({ sessionId: eahTillSession.id, basket: eahBasket }));
+  }catch(e){ /* storage can fail (private browsing, full disk) — basket still works fine in-memory */ }
+}
+function eahRestoreBasketFromStorage(){
+  try{
+    var raw = localStorage.getItem('eahBasketState');
+    if(!raw || !eahTillSession) return;
+    var saved = JSON.parse(raw);
+    if(saved && saved.sessionId === eahTillSession.id && Array.isArray(saved.basket) && saved.basket.length){
+      eahBasket = saved.basket;
+      showToast('Picked up where you left off \u2014 ' + eahBasket.length + ' item' + (eahBasket.length===1?'':'s') + ' still in the basket');
+    }
+  }catch(e){ /* corrupt or missing — just start with an empty basket */ }
+}
 function eahRenderBasket(){
+  eahSaveBasketToStorage();
   var footerEl = document.getElementById('eahCondensedFooter');
   var countEl = document.getElementById('eahFooterCount');
   var footerTotalEl = document.getElementById('eahFooterTotal');
@@ -2146,6 +2170,7 @@ async function eahCheckout(method){
 
     showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
     eahBasket = [];
+    eahSaveBasketToStorage();
     eahReviewMethod = null;
     eahCloseReview();
     loadEatAtHome();
