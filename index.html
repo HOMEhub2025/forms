@@ -5488,10 +5488,15 @@ function calcRoomCost(roomRateRow, roomName, dateStr, hours){
   var graceMins = roomGraceMins(hrs);
   var isMainHall = /main hall/i.test(roomName || '');
   var rr = roomRateRow || {};
+  // Any room with BOTH a peak and off-peak rate configured gets genuine
+  // peak/off-peak + block-discount pricing, using ITS OWN rates — not
+  // just Main Hall. Matches the same fix in Heartwood, so the two apps
+  // can never quote a different price for the same room and hours. 💚
+  var hasPeakPricing = rr.peak_rate != null && rr.offpeak_rate != null;
 
-  if(isMainHall){
-    var peakRate = rr.peak_rate != null ? Number(rr.peak_rate) : ROOM_RATE_PEAK_DEFAULT;
-    var offPeakRate = rr.offpeak_rate != null ? Number(rr.offpeak_rate) : ROOM_RATE_OFF_PEAK_DEFAULT;
+  if(hasPeakPricing){
+    var peakRate = Number(rr.peak_rate);
+    var offPeakRate = Number(rr.offpeak_rate);
     var discountPct = rr.block_discount_pct != null ? Number(rr.block_discount_pct) : ROOM_DISCOUNT_PCT_DEFAULT;
     var discountHrs = rr.block_discount_min_hours != null ? Number(rr.block_discount_min_hours) : ROOM_DISCOUNT_HRS_DEFAULT;
     var dayRate = rr.full_day_rate != null ? Number(rr.full_day_rate) : ROOM_RATE_DAY_DEFAULT;
@@ -5502,7 +5507,10 @@ function calcRoomCost(roomRateRow, roomName, dateStr, hours){
     var gross = rate * hrs;
     var discount = 0;
 
-    if(tier === 'peak' && hrs >= dayRateHrs){
+    // The flat day rate is a Main Hall-specific offer — other rooms
+    // don't have an equivalent, so this stays scoped to Main Hall even
+    // though peak/off-peak now applies everywhere.
+    if(isMainHall && tier === 'peak' && hrs >= dayRateHrs){
       var daySaving = gross - dayRate;
       return {
         total: dayRate, tier: tier, rate: rate, hours: hrs, discount: daySaving, graceMins: graceMins, isDayRate: true,
