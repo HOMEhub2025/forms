@@ -1365,6 +1365,18 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <div class="sheet-subtitle" id="swSheetSub">—</div>
   <div class="form-wrap">
     <button type="button" id="swBookBtn" class="btn-primary" style="margin-bottom:18px">Book someone in</button>
+
+    <div class="field" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:14px;margin-bottom:18px">
+      <label style="color:#991b1b">Block a date</label>
+      <div class="helper-text" style="margin-bottom:10px">Stops this date being offered for booking \u2014 use for holidays, sick days, or any day the facilitator isn't free.</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="date" id="swBlockDate" style="flex:1">
+      </div>
+      <input type="text" id="swBlockReason" placeholder="Reason (optional)" style="margin-bottom:8px">
+      <button type="button" id="swBlockDateBtn" class="btn-secondary" style="width:100%">Block this date</button>
+      <div id="swBlockedList" style="margin-top:12px"></div>
+    </div>
+
     <div class="field"><label>Facilitator</label><input type="text" id="swFacilitator"></div>
     <div class="field"><label>Room / Location</label><input type="text" id="swRoom"></div>
     <div class="field"><label>Description</label><textarea id="swDescription"></textarea></div>
@@ -3626,6 +3638,9 @@ function openSwSheet(s){
   document.getElementById('swPriceField').style.display = s.is_free ? 'none' : 'block';
   swRefreshHints();
   document.getElementById('swErrorWrap').innerHTML = '';
+  document.getElementById('swBlockDate').value = '';
+  document.getElementById('swBlockReason').value = '';
+  swLoadBlockedDates(s.id);
   swOverlay.classList.add('open'); swSheet.classList.add('open');
 }
 function closeSwSheet(){ swOverlay.classList.remove('open'); swSheet.classList.remove('open'); }
@@ -3656,6 +3671,62 @@ document.getElementById('swBookBtn').addEventListener('click', function(){
   }
   window.open(swBuildUrl('book', slug), '_blank');
 });
+
+// ── Block a date — the same bookable_session_exceptions table
+// Heartwood's own admin already uses, so a date blocked from a phone
+// here is exactly as effective as one blocked from the desktop: it
+// stops being offered on the public booking page immediately. 💚
+async function swLoadBlockedDates(sessionId){
+  var el = document.getElementById('swBlockedList');
+  if(!el) return;
+  el.innerHTML = '<div class="loading-row" style="padding:8px 0">Loading\u2026</div>';
+  try{
+    var today = new Date().toISOString().slice(0,10);
+    var res = await SB('bookable_session_exceptions?bookable_session_id=eq.'+sessionId+'&status=eq.cancelled&occurrence_date=gte.'+today+'&order=occurrence_date.asc');
+    var rows = res.data || [];
+    if(!rows.length){ el.innerHTML = ''; return; }
+    el.innerHTML = rows.map(function(r){
+      var dateLabel = fmtDateLabel(r.occurrence_date);
+      return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;color:#991b1b">'
+        + '<span>' + dateLabel + (r.reason ? ' \u2014 ' + r.reason : '') + '</span>'
+        + '<button type="button" onclick="swUnblockDate(\''+r.id+'\',\''+sessionId+'\')" style="background:none;border:none;color:#991b1b;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline">Undo</button>'
+      + '</div>';
+    }).join('');
+  }catch(e){ el.innerHTML = ''; }
+}
+document.getElementById('swBlockDateBtn').addEventListener('click', async function(){
+  if(!currentSwSession){ return; }
+  var date = document.getElementById('swBlockDate').value;
+  var reason = document.getElementById('swBlockReason').value.trim() || null;
+  if(!date){ showToast('Pick a date first'); return; }
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Blocking\u2026';
+  try{
+    await SB('bookable_session_exceptions', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ bookable_session_id: currentSwSession.id, occurrence_date: date, status: 'cancelled', reason: reason })
+    });
+    showToast(fmtDateLabel(date) + ' blocked \u2713');
+    document.getElementById('swBlockDate').value = '';
+    document.getElementById('swBlockReason').value = '';
+    swLoadBlockedDates(currentSwSession.id);
+  }catch(e){
+    showToast('Could not block that date \u2014 ' + e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Block this date';
+  }
+});
+async function swUnblockDate(exceptionId, sessionId){
+  try{
+    await SB('bookable_session_exceptions?id=eq.'+exceptionId, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    showToast('Restored \u2713');
+    swLoadBlockedDates(sessionId);
+  }catch(e){
+    showToast('Could not undo \u2014 ' + e.message);
+  }
+}
+
 document.getElementById('swCopyPublicBtn').addEventListener('click', function(){
   swCopy(swBuildUrl('book', document.getElementById('swPublicSlug').value.trim()));
 });
