@@ -506,6 +506,8 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="helper-text" style="margin-top:6px">Locking hides the top bar, menu bar and back button so a busy till doesn't get bumped out of mid-sale. Unlock any time from the button that appears.</div>
     </div>
 
+    <button type="button" id="eahRecountBtn" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #bfdbfe;background:#eff6ff;color:#0e386a;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px">Recount stock</button>
+
     <div id="eahUnlockBar" style="display:none;position:sticky;top:0;z-index:50;background:#0e386a;border-radius:10px;padding:9px 14px;margin-bottom:12px;justify-content:space-between;align-items:center">
       <span style="color:#fff;font-size:12px;font-weight:700">🔒 Till locked</span>
       <button type="button" id="eahUnlockBtn" style="background:#fff;color:#0e386a;border:none;border-radius:7px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer">Unlock</button>
@@ -2130,6 +2132,115 @@ async function eahCheckout(method){
     showToast('Couldn\u2019t complete the order \u2014 ' + e.message);
   }
 }
+
+// ── MANUAL STOCK RECOUNT — for the days nobody rings sales through
+// either till at all. Recount what's physically left, and the
+// difference from what the system last recorded is a reasonable
+// estimate of what actually got sold that day. Each recount is logged
+// permanently (item, before, after, implied sold, who, when), so a
+// pattern of "we keep losing stock we can't account for" would
+// actually be visible over time, not just quietly absorbed. 💚
+async function openStockRecount(){
+  var existing = document.getElementById('recountOverlay'); if(existing) existing.remove();
+  var o = document.createElement('div');
+  o.id = 'recountOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9800;background:#f8fafc;overflow-y:auto';
+  o.innerHTML = '<div style="background:#0e386a;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10">'
+    + '<div style="color:#fff;font-weight:700;font-size:16px">Recount stock</div>'
+    + '<button type="button" id="recountCloseBtn" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Close</button>'
+  + '</div>'
+  + '<div style="padding:16px">'
+    + '<div class="helper-text" style="margin-bottom:14px">What\u2019s actually left, right now? Only change the ones that are different \u2014 anything left alone stays as it was.</div>'
+    + '<div id="recountList"><div class="loading-row">Loading menu…</div></div>'
+    + '<div id="recountSummary" style="margin-top:14px"></div>'
+    + '<button type="button" id="recountSaveBtn" class="btn-primary" style="margin-top:16px">Save recount</button>'
+  + '</div>';
+  document.body.appendChild(o);
+  document.getElementById('recountCloseBtn').addEventListener('click', function(){ o.remove(); });
+  document.getElementById('recountSaveBtn').addEventListener('click', saveStockRecount);
+  loadRecountList();
+}
+var recountItemsCache = [];
+async function loadRecountList(){
+  var listEl = document.getElementById('recountList');
+  try{
+    var res = await SB('cafe_menu_items?is_active=eq.true&track_stock=eq.true&order=category.asc,name.asc');
+    recountItemsCache = res.data || [];
+    if(!recountItemsCache.length){
+      listEl.innerHTML = '<div class="agenda-empty">No items are set to track stock yet \u2014 nothing to recount.</div>';
+      return;
+    }
+    var byCategory = {};
+    recountItemsCache.forEach(function(m){ (byCategory[m.category]=byCategory[m.category]||[]).push(m); });
+    listEl.innerHTML = Object.keys(byCategory).map(function(cat){
+      return '<div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px">'+esc(cat)+'</div>'
+        + byCategory[cat].map(function(m){
+            var stock = parseFloat(m.stock_qty)||0;
+            return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-bottom:6px">'
+              + '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#111827">'+esc(m.name)+'</div><div style="font-size:10.5px;color:#9ca3af">System says '+stock+'</div></div>'
+              + '<input type="number" inputmode="numeric" data-recount-id="'+m.id+'" value="'+stock+'" style="width:70px;padding:8px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;text-align:center">'
+            + '</div>';
+          }).join('');
+    }).join('');
+  }catch(e){
+    listEl.innerHTML = '<div class="error-banner">Couldn\u2019t load the menu \u2014 '+e.message+'</div>';
+  }
+}
+async function saveStockRecount(){
+  var u = getUser();
+  if(!u){ openUserSheet(); showToast('Pick who you are first'); return; }
+  var inputs = document.querySelectorAll('[data-recount-id]');
+  var changes = [];
+  inputs.forEach(function(inp){
+    var id = inp.getAttribute('data-recount-id');
+    var item = recountItemsCache.find(function(m){ return m.id === id; });
+    if(!item) return;
+    var before = parseFloat(item.stock_qty)||0;
+    var after = parseFloat(inp.value);
+    if(isNaN(after) || after === before) return;
+    changes.push({ item: item, before: before, after: after, impliedSold: before - after });
+  });
+  if(!changes.length){ showToast('Nothing was changed'); return; }
+
+  var btn = document.getElementById('recountSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving\u2026';
+  var succeeded = [];
+  for(var i=0; i<changes.length; i++){
+    var c = changes[i];
+    try{
+      await SB('cafe_menu_items?id=eq.'+c.item.id, {
+        method:'PATCH', headers:{Prefer:'return=minimal'},
+        body: JSON.stringify({ stock_qty: c.after })
+      });
+      try{
+        await SB('cafe_stock_recounts', {
+          method:'POST', headers:{Prefer:'return=minimal'},
+          body: JSON.stringify({
+            menu_item_id: c.item.id, item_name: c.item.name,
+            previous_qty: c.before, counted_qty: c.after, implied_sold: c.impliedSold,
+            recorded_by: u.display_name, recorded_at: new Date().toISOString()
+          })
+        });
+      }catch(logErr){ console.warn('[saveStockRecount] log failed:', logErr.message); }
+      succeeded.push(c);
+    }catch(e){ console.warn('[saveStockRecount]', c.item.name, e.message); }
+  }
+
+  var soldUnits = succeeded.reduce(function(s,c){ return s + Math.max(0, c.impliedSold); }, 0);
+  var soldValue = succeeded.reduce(function(s,c){ return s + Math.max(0, c.impliedSold) * (parseFloat(c.item.sell_price)||0); }, 0);
+  var summaryEl = document.getElementById('recountSummary');
+  summaryEl.innerHTML = '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px">'
+    + '<div style="font-weight:700;color:#166534;margin-bottom:8px">'+succeeded.length+' item'+(succeeded.length===1?'':'s')+' updated</div>'
+    + succeeded.map(function(c){
+        return '<div style="font-size:12px;color:#374151;padding:3px 0">'+esc(c.item.name)+': '+c.before+' \u2192 '+c.after+(c.impliedSold>0?' <span style="color:#006837;font-weight:600">('+c.impliedSold+' likely sold)</span>':(c.impliedSold<0?' <span style="color:#c2410c">('+Math.abs(c.impliedSold)+' more than expected)</span>':''))+'</div>';
+      }).join('')
+    + '<div style="border-top:1px dashed #bbf7d0;margin-top:8px;padding-top:8px;font-size:13px;font-weight:700;color:#166534">Roughly '+soldUnits+' unit'+(soldUnits===1?'':'s')+' sold \u2014 about £'+soldValue.toFixed(2)+'</div>'
+  + '</div>';
+  logAction('stock_recount', 'Eat at Home', succeeded.length+' items recounted, ~£'+soldValue.toFixed(2)+' implied sales');
+  showToast('Recount saved \u2713');
+  btn.disabled = false; btn.textContent = 'Save recount';
+}
+document.getElementById('eahRecountBtn').addEventListener('click', openStockRecount);
 
 // ── Till Mode lock — hides the bottom nav and back button so a busy
 // till doesn't get bumped out of a sale by an accidental tap. 💚
