@@ -912,9 +912,21 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       </div>
       <div class="field"><label>Title</label><input type="text" id="roomTitle" placeholder="e.g. Wellbeing Sunday planning"></div>
       <div class="field"><label>Notes (optional)</label><textarea id="roomNotes" placeholder="Anything the team should know"></textarea></div>
+
+      <div class="field" style="background:#f8fafc;border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;margin-bottom:16px">
+        <label style="margin-bottom:2px">Client details &amp; pricing <span style="font-weight:400;color:#9ca3af">(optional — only needed for paid room hire)</span></label>
+        <div class="helper-text" style="margin-bottom:10px">Fill this in if you'll need to send an invoice and payment link afterwards.</div>
+        <input type="text" id="roomContactName" placeholder="Contact name" style="margin-bottom:8px">
+        <input type="email" id="roomContactEmail" placeholder="Contact email" style="margin-bottom:8px">
+        <input type="tel" id="roomContactPhone" placeholder="Contact phone" style="margin-bottom:8px">
+        <input type="text" inputmode="decimal" id="roomPrice" placeholder="Price (£)">
+        <div class="helper-text" id="roomRateHint"></div>
+      </div>
+
       <div id="roomBusyWrap"></div>
       <div id="roomErrorWrap"></div>
       <button class="btn-primary" id="roomBookBtn" type="button">Book this room</button>
+      <div id="roomInvoiceWrap" style="display:none;margin-top:16px"></div>
     </div>
     <div class="section-label">Coming up in this room</div>
     <div class="cards" id="roomUpcoming"><div class="loading-row">Pick a room to see what's booked</div></div>
@@ -2256,6 +2268,114 @@ function renderAgendaList(wrap, items, compact){
    ============================================================ */
 var roomsCache = [];
 var bookingTypesCache = [];
+async function roomSuggestRate(){
+  var room = document.getElementById('roomSelect').value;
+  var date = document.getElementById('roomDate').value;
+  var start = document.getElementById('roomStart').value;
+  var end = document.getElementById('roomEnd').value;
+  var hint = document.getElementById('roomRateHint');
+  if(!room || !start || !end){ hint.textContent = ''; return; }
+  var hours = (timeToMins(end) - timeToMins(start)) / 60;
+  if(hours <= 0){ hint.textContent = ''; return; }
+  try{
+    var res = await SB('room_rates?room_name=eq.'+encodeURIComponent(room)+'&limit=1');
+    var rr = (res.data || [])[0] || null;
+    var result = calcRoomCost(rr, room, date, hours);
+    if(result.total > 0){
+      var suggested = result.total.toFixed(2);
+      hint.innerHTML = 'Suggested: <strong>£'+suggested+'</strong> — '+result.breakdown+' — tap to use';
+      hint.style.cursor = 'pointer';
+      hint.onclick = function(){ document.getElementById('roomPrice').value = suggested; };
+    } else {
+      hint.textContent = result.breakdown;
+      hint.style.cursor = 'default';
+      hint.onclick = null;
+    }
+  }catch(e){ hint.textContent = ''; }
+}
+['roomSelect','roomDate','roomStart','roomEnd'].forEach(function(id){
+  document.getElementById(id).addEventListener('change', roomSuggestRate);
+});
+
+// ── Generate an invoice and payment link for a room just booked
+// directly (not via the Quote Builder), then offer to send it
+// straight over WhatsApp or email — the bit that used to mean
+// switching to a different tool entirely. 💚
+function roomShowInvoiceOption(booking, d){
+  var wrap = document.getElementById('roomInvoiceWrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px">'
+    + '<div style="font-weight:700;color:#166534;margin-bottom:6px">Room booked — send the invoice?</div>'
+    + '<div class="helper-text" style="margin-bottom:10px">£'+d.price.toFixed(2)+' for '+esc(d.contactName)+'</div>'
+    + '<button type="button" id="roomGenInvoiceBtn" class="btn-primary" style="background:#006837">Generate invoice &amp; payment link</button>'
+    + '<div id="roomInvoiceResult" style="margin-top:10px"></div>'
+  + '</div>';
+  document.getElementById('roomGenInvoiceBtn').addEventListener('click', function(){
+    roomGenerateInvoice(booking, d, this);
+  });
+}
+
+async function roomGenerateInvoice(booking, d, btn){
+  btn.disabled = true; btn.textContent = 'Generating…';
+  var resultEl = document.getElementById('roomInvoiceResult');
+  try{
+    var invNum = 'INV-'+Date.now().toString().slice(-8);
+    var dayLabel = fmtDateLabel(d.date)+' · '+fmtTime(d.start)+'–'+fmtTime(d.end);
+
+    await SB('invoices', {
+      method:'POST', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({
+        invoice_number: invNum, client_name: d.contactName, customer_name: d.contactName,
+        client_email: d.contactEmail||null, customer_email: d.contactEmail||null,
+        description: d.room+' hire — '+dayLabel, amount: d.price, total: d.price,
+        quantity: 1, unit_price: d.price,
+        service_date: d.date, booking_date: d.date, issue_date: toISODate(new Date()), issued_date: toISODate(new Date()),
+        status: 'unpaid'
+      })
+    });
+
+    // Tag the booking so its status can follow the invoice automatically
+    // from here on, same as every other invoice-linked booking. 💚
+    await SB('room_bookings?id=eq.'+booking.id, {
+      method:'PATCH', headers:{Prefer:'return=minimal'},
+      body: JSON.stringify({ invoice_ref: invNum })
+    });
+
+    var payLinkUrl = null;
+    try{
+      var payRes = await fetch('/api/create-quote-payment-link', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          amount: d.price, description: d.room+' hire — '+invNum,
+          quoteRef: invNum, contactEmail: d.contactEmail||''
+        })
+      });
+      var payData = await payRes.json();
+      if(payRes.ok && payData.url) payLinkUrl = payData.url;
+    }catch(payErr){ /* invoice still created fine without a link */ }
+
+    var msg = 'Hi '+d.contactName+', here\u2019s your invoice for '+d.room+' hire on '+dayLabel+' \u2014 £'+d.price.toFixed(2)+'.'
+      + (payLinkUrl ? ' You can pay securely here: '+payLinkUrl : ' We\u2019ll be in touch about payment.')
+      + ' Thanks \u2014 H.O.M.E Hub';
+
+    var sendButtons = '';
+    if(d.contactPhone){
+      var waPhone = d.contactPhone.replace(/[^\d+]/g,'').replace(/^0/,'44');
+      sendButtons += '<a href="https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg)+'" target="_blank" style="display:block;padding:10px;border-radius:10px;border:none;background:#25D366;color:#fff;font-size:12.5px;font-weight:700;text-decoration:none;text-align:center;margin-bottom:8px">Send via WhatsApp</a>';
+    }
+    if(d.contactEmail){
+      var subject = 'Your H.O.M.E Hub invoice — '+invNum;
+      sendButtons += '<a href="mailto:'+encodeURIComponent(d.contactEmail)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" style="display:block;padding:10px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:700;text-decoration:none;text-align:center">Send via Email</a>';
+    }
+
+    resultEl.innerHTML = '<div style="font-size:11.5px;color:#166534;font-weight:700;margin-bottom:8px">Invoice '+invNum+' created'+(payLinkUrl?' with payment link':' — no payment link yet, add one from Heartwood')+' ✓</div>' + sendButtons;
+    logAction('create_room_invoice', 'Book', d.contactName+' — '+d.room+' — £'+d.price.toFixed(2));
+  }catch(e){
+    resultEl.innerHTML = '<div class="error-banner">Could not generate the invoice — '+e.message+'</div>';
+    btn.disabled = false; btn.textContent = 'Generate invoice & payment link';
+  }
+}
+
 async function loadBookRoomsData(){
   document.getElementById('roomDate').value = toISODate(new Date());
   try{
@@ -2319,8 +2439,14 @@ document.getElementById('roomBookBtn').addEventListener('click', async function(
   var title = document.getElementById('roomTitle').value.trim();
   var type = document.getElementById('roomType').value;
   var notes = document.getElementById('roomNotes').value.trim();
+  var contactName = document.getElementById('roomContactName').value.trim();
+  var contactEmail = document.getElementById('roomContactEmail').value.trim();
+  var contactPhone = document.getElementById('roomContactPhone').value.trim();
+  var priceRaw = document.getElementById('roomPrice').value.trim();
+  var price = priceRaw ? parseFloat(priceRaw) : 0;
   var errWrap = document.getElementById('roomErrorWrap');
   errWrap.innerHTML = '';
+  document.getElementById('roomInvoiceWrap').style.display = 'none';
 
   if(!room || !date || !start || !end || !title){
     errWrap.innerHTML = '<div class="error-banner">Room, date, start, end and a title are all needed before this can go in the diary.</div>';
@@ -2342,14 +2468,16 @@ document.getElementById('roomBookBtn').addEventListener('click', async function(
       return;
     }
     btn.textContent = 'Saving…';
-    await SB('room_bookings', {
+    var insertRes = await SB('room_bookings', {
       method:'POST', headers:{Prefer:'return=representation'},
       body: JSON.stringify({
         booking_title: title, room: room, booking_date: date,
         start_time: start, end_time: end, booked_by: u.display_name,
-        notes: notes, booking_type: type || null, is_recurring: false
+        notes: notes, booking_type: type || null, is_recurring: false,
+        estimated_cost: price > 0 ? price : null, status: 'confirmed'
       })
     });
+    var newBooking = (insertRes.data||[])[0];
     logAction('create_room_booking', 'Book', title + ' — ' + room + ' ' + date);
     showToast('Room booked — nice one.');
     document.getElementById('roomTitle').value = '';
@@ -2357,6 +2485,16 @@ document.getElementById('roomBookBtn').addEventListener('click', async function(
     document.getElementById('roomStart').value = '';
     document.getElementById('roomEnd').value = '';
     refreshRoomAvailability();
+
+    // Only offer to invoice when there's actually something to invoice
+    // for — a price and a way to reach the person. A quick internal
+    // room booking with neither stays exactly as fast as it always was. 💚
+    if(newBooking && price > 0 && (contactEmail || contactPhone)){
+      roomShowInvoiceOption(newBooking, {
+        contactName: contactName || title, contactEmail: contactEmail, contactPhone: contactPhone,
+        price: price, room: room, date: date, start: start, end: end
+      });
+    }
   }catch(e){
     errWrap.innerHTML = '<div class="error-banner">Couldn\'t save the booking — '+e.message+'</div>';
   }finally{
