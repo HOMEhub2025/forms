@@ -2844,7 +2844,7 @@ async function loadBookSessionsData(){
   var wrap = document.getElementById('sessionList');
   wrap.innerHTML = '<div class="loading-row">Loading everything bookable…</div>';
   try{
-    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&sync_to_hub_app=eq.true&order=name.asc');
+    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
     var sessions = sessRes.data || [];
     var offRes = await SB('offerings?is_active=eq.true&order=sort_order.asc');
     var offerings = offRes.data || [];
