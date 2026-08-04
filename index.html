@@ -1368,13 +1368,18 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 
     <div class="field" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:14px;margin-bottom:18px">
       <label style="color:#991b1b">Block a date</label>
-      <div class="helper-text" style="margin-bottom:10px">Stops this date being offered for booking \u2014 use for holidays, sick days, or any day the facilitator isn't free.</div>
+      <div class="helper-text" style="margin-bottom:10px">Stops this date being offered for booking — use for holidays, sick days, or any day the facilitator isn't free.</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
         <input type="date" id="swBlockDate" style="flex:1">
       </div>
       <input type="text" id="swBlockReason" placeholder="Reason (optional)" style="margin-bottom:8px">
       <button type="button" id="swBlockDateBtn" class="btn-secondary" style="width:100%">Block this date</button>
       <div id="swBlockedList" style="margin-top:12px"></div>
+    </div>
+
+    <div class="field" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:14px;margin-bottom:18px">
+      <label style="display:flex;align-items:center;gap:8px;color:#166534"><input type="checkbox" id="swConcentrated" style="width:18px;height:18px"> Keep bookings concentrated</label>
+      <div class="helper-text" style="margin-top:6px">Only offers the next slot right before or after an existing booking that day — so a fully open day stays fully open, but once someone books in, the day fills as one contiguous run instead of scattering across it. Best for 1:1 sessions.</div>
     </div>
 
     <div class="field"><label>Facilitator</label><input type="text" id="swFacilitator"></div>
@@ -3632,6 +3637,7 @@ function openSwSheet(s){
   document.getElementById('swPublicSlug').value = s.public_slug || '';
   document.getElementById('swRegisterSlug').value = s.register_slug || '';
   document.getElementById('swPaymentLink').value = s.payment_link_url || '';
+  document.getElementById('swConcentrated').checked = !!s.concentrated_booking;
   document.querySelectorAll('[data-sw-free]').forEach(function(chip){
     chip.classList.toggle('active', chip.getAttribute('data-sw-free') === String(!!s.is_free));
   });
@@ -3759,7 +3765,8 @@ document.getElementById('swSaveBtn').addEventListener('click', async function(){
       capacity_per_slot: capRaw ? parseInt(capRaw, 10) : null,
       public_slug: slugRaw || null,
       register_slug: regSlugRaw || null,
-      payment_link_url: document.getElementById('swPaymentLink').value.trim() || null
+      payment_link_url: document.getElementById('swPaymentLink').value.trim() || null,
+      concentrated_booking: document.getElementById('swConcentrated').checked
     };
     await SB('bookable_sessions?id=eq.'+currentSwSession.id, {
       method:'PATCH', headers:{Prefer:'return=minimal'},
