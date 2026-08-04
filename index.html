@@ -2427,64 +2427,127 @@ function roomShowInvoiceOption(booking, d){
   });
 }
 
+// ── SHARED INVOICE CREATION — the one place an invoice actually gets
+// built, so "Book a Room" and a confirmed Quote Builder quote can
+// never drift into having different-shaped invoices for what's
+// fundamentally the same outcome: a confirmed room booking that needs
+// paying for. Anything that needs to invoice a room booking should
+// call this, not build its own payload. 💚
+async function createRoomBookingInvoice(booking, d){
+  var invNum = 'INV-'+Date.now().toString().slice(-8);
+  var dayLabel = fmtDateLabel(d.date)+' · '+fmtTime(d.start)+'–'+fmtTime(d.end);
+
+  await SB('invoices', {
+    method:'POST', headers:{Prefer:'return=minimal'},
+    body: JSON.stringify({
+      invoice_number: invNum, client_name: d.contactName, customer_name: d.contactName,
+      client_email: d.contactEmail||null, customer_email: d.contactEmail||null,
+      description: d.room+' hire — '+dayLabel, amount: d.price, total: d.price,
+      quantity: 1, unit_price: d.price,
+      service_date: d.date, booking_date: d.date, issue_date: toISODate(new Date()), issued_date: toISODate(new Date()),
+      status: 'unpaid'
+    })
+  });
+
+  // Tag the booking so its status can follow the invoice automatically
+  // from here on, same as every other invoice-linked booking. 💚
+  await SB('room_bookings?id=eq.'+booking.id, {
+    method:'PATCH', headers:{Prefer:'return=minimal'},
+    body: JSON.stringify({ invoice_ref: invNum })
+  });
+
+  var payLinkUrl = null;
+  try{
+    var payRes = await fetch('/api/create-quote-payment-link', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        amount: d.price, description: d.room+' hire — '+invNum,
+        quoteRef: invNum, contactEmail: d.contactEmail||''
+      })
+    });
+    var payData = await payRes.json();
+    if(payRes.ok && payData.url) payLinkUrl = payData.url;
+  }catch(payErr){ /* invoice still created fine without a link */ }
+
+  var msg = 'Hi '+d.contactName+', here\u2019s your invoice for '+d.room+' hire on '+dayLabel+' \u2014 £'+d.price.toFixed(2)+'.'
+    + (payLinkUrl ? ' You can pay securely here: '+payLinkUrl : ' We\u2019ll be in touch about payment.')
+    + ' Thanks \u2014 H.O.M.E Hub';
+
+  var sendButtonsHtml = '';
+  if(d.contactPhone){
+    var waPhone = d.contactPhone.replace(/[^\d+]/g,'').replace(/^0/,'44');
+    sendButtonsHtml += '<a href="https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg)+'" target="_blank" style="display:block;padding:10px;border-radius:10px;border:none;background:#25D366;color:#fff;font-size:12.5px;font-weight:700;text-decoration:none;text-align:center;margin-bottom:8px">Send via WhatsApp</a>';
+  }
+  if(d.contactEmail){
+    var subject = 'Your H.O.M.E Hub invoice — '+invNum;
+    sendButtonsHtml += '<a href="mailto:'+encodeURIComponent(d.contactEmail)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" style="display:block;padding:10px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:700;text-decoration:none;text-align:center">Send via Email</a>';
+  }
+
+  return { invoiceNumber: invNum, payLinkUrl: payLinkUrl, message: msg, sendButtonsHtml: sendButtonsHtml };
+}
+
 async function roomGenerateInvoice(booking, d, btn){
   btn.disabled = true; btn.textContent = 'Generating…';
   var resultEl = document.getElementById('roomInvoiceResult');
   try{
-    var invNum = 'INV-'+Date.now().toString().slice(-8);
-    var dayLabel = fmtDateLabel(d.date)+' · '+fmtTime(d.start)+'–'+fmtTime(d.end);
-
-    await SB('invoices', {
-      method:'POST', headers:{Prefer:'return=minimal'},
-      body: JSON.stringify({
-        invoice_number: invNum, client_name: d.contactName, customer_name: d.contactName,
-        client_email: d.contactEmail||null, customer_email: d.contactEmail||null,
-        description: d.room+' hire — '+dayLabel, amount: d.price, total: d.price,
-        quantity: 1, unit_price: d.price,
-        service_date: d.date, booking_date: d.date, issue_date: toISODate(new Date()), issued_date: toISODate(new Date()),
-        status: 'unpaid'
-      })
-    });
-
-    // Tag the booking so its status can follow the invoice automatically
-    // from here on, same as every other invoice-linked booking. 💚
-    await SB('room_bookings?id=eq.'+booking.id, {
-      method:'PATCH', headers:{Prefer:'return=minimal'},
-      body: JSON.stringify({ invoice_ref: invNum })
-    });
-
-    var payLinkUrl = null;
-    try{
-      var payRes = await fetch('/api/create-quote-payment-link', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          amount: d.price, description: d.room+' hire — '+invNum,
-          quoteRef: invNum, contactEmail: d.contactEmail||''
-        })
-      });
-      var payData = await payRes.json();
-      if(payRes.ok && payData.url) payLinkUrl = payData.url;
-    }catch(payErr){ /* invoice still created fine without a link */ }
-
-    var msg = 'Hi '+d.contactName+', here\u2019s your invoice for '+d.room+' hire on '+dayLabel+' \u2014 £'+d.price.toFixed(2)+'.'
-      + (payLinkUrl ? ' You can pay securely here: '+payLinkUrl : ' We\u2019ll be in touch about payment.')
-      + ' Thanks \u2014 H.O.M.E Hub';
-
-    var sendButtons = '';
-    if(d.contactPhone){
-      var waPhone = d.contactPhone.replace(/[^\d+]/g,'').replace(/^0/,'44');
-      sendButtons += '<a href="https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg)+'" target="_blank" style="display:block;padding:10px;border-radius:10px;border:none;background:#25D366;color:#fff;font-size:12.5px;font-weight:700;text-decoration:none;text-align:center;margin-bottom:8px">Send via WhatsApp</a>';
-    }
-    if(d.contactEmail){
-      var subject = 'Your H.O.M.E Hub invoice — '+invNum;
-      sendButtons += '<a href="mailto:'+encodeURIComponent(d.contactEmail)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg)+'" style="display:block;padding:10px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:12.5px;font-weight:700;text-decoration:none;text-align:center">Send via Email</a>';
-    }
-
-    resultEl.innerHTML = '<div style="font-size:11.5px;color:#166534;font-weight:700;margin-bottom:8px">Invoice '+invNum+' created'+(payLinkUrl?' with payment link':' — no payment link yet, add one from Heartwood')+' ✓</div>' + sendButtons;
+    var result = await createRoomBookingInvoice(booking, d);
+    resultEl.innerHTML = '<div style="font-size:11.5px;color:#166534;font-weight:700;margin-bottom:8px">Invoice '+result.invoiceNumber+' created'+(result.payLinkUrl?' with payment link':' — no payment link yet, add one from Heartwood')+' ✓</div>' + result.sendButtonsHtml;
     logAction('create_room_invoice', 'Book', d.contactName+' — '+d.room+' — £'+d.price.toFixed(2));
   }catch(e){
     resultEl.innerHTML = '<div class="error-banner">Could not generate the invoice — '+e.message+'</div>';
     btn.disabled = false; btn.textContent = 'Generate invoice & payment link';
+  }
+}
+
+// A confirmed quote never stored a contact email or phone as its own
+// field — the Quote Builder only ever embedded the name into the
+// booking title — so this is the one moment that's actually asked for,
+// and only when there's a genuine invoice to send. Skippable, since a
+// booking can always be invoiced later from here or from Heartwood. 💚
+function openQuoteConfirmInvoicePrompt(row){
+  var existing = document.getElementById('qtInvoicePromptOverlay'); if(existing) existing.remove();
+  var o = document.createElement('div');
+  o.id = 'qtInvoicePromptOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9750;background:rgba(14,56,106,0.55);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.addEventListener('click', function(e){ if(e.target===o) o.remove(); });
+  var panel = document.createElement('div');
+  panel.style.cssText = 'background:#fff;border-radius:16px;max-width:360px;width:100%;padding:22px';
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+  panel.innerHTML = '<div style="font-weight:700;font-size:16px;color:#111827;margin-bottom:4px">Invoice this now?</div>'
+    + '<div style="font-size:11.5px;color:#9ca3af;margin-bottom:14px">'+esc(qtContactName(row))+' — £'+Number(row.estimated_cost||0).toFixed(2)+'</div>'
+    + '<input type="email" id="qtipEmail" placeholder="Contact email" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;margin-bottom:8px;box-sizing:border-box">'
+    + '<input type="tel" id="qtipPhone" placeholder="Contact phone (optional)" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;margin-bottom:14px;box-sizing:border-box">'
+    + '<div id="qtipErrorWrap"></div>'
+    + '<div id="qtipResult"></div>'
+    + '<button type="button" id="qtipCreateBtn" class="btn-primary" style="margin-bottom:8px">Create invoice &amp; payment link</button>'
+    + '<button type="button" onclick="document.getElementById(\'qtInvoicePromptOverlay\').remove()" style="width:100%;padding:10px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;color:#475569;font-size:13px;cursor:pointer">Skip for now</button>';
+  o.appendChild(panel);
+  document.body.appendChild(o);
+  document.getElementById('qtipCreateBtn').addEventListener('click', function(){ confirmQuoteInvoice(row, this); });
+}
+async function confirmQuoteInvoice(row, btn){
+  var email = document.getElementById('qtipEmail').value.trim();
+  var phone = document.getElementById('qtipPhone').value.trim();
+  var errWrap = document.getElementById('qtipErrorWrap');
+  errWrap.innerHTML = '';
+  if(!email && !phone){
+    errWrap.innerHTML = '<div class="error-banner">Add at least an email or phone number to send this to.</div>';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try{
+    var result = await createRoomBookingInvoice(row, {
+      contactName: qtContactName(row), contactEmail: email, contactPhone: phone,
+      price: Number(row.estimated_cost||0), room: row.room,
+      date: row.booking_date, start: row.start_time, end: row.end_time
+    });
+    row.invoice_ref = result.invoiceNumber;
+    document.getElementById('qtipResult').innerHTML = '<div style="font-size:11.5px;color:#166534;font-weight:700;margin:8px 0">Invoice '+result.invoiceNumber+' created ✓</div>' + result.sendButtonsHtml;
+    btn.style.display = 'none';
+    logAction('create_room_invoice', 'Bookings & Quotes', qtContactName(row)+' — '+row.room+' — £'+Number(row.estimated_cost||0).toFixed(2));
+  }catch(e){
+    errWrap.innerHTML = '<div class="error-banner">Could not create the invoice — '+e.message+'</div>';
+    btn.disabled = false; btn.textContent = 'Create invoice & payment link';
   }
 }
 
@@ -5224,8 +5287,15 @@ function renderQuotesView(){
           });
           row.status = newStatus;
           logAction('update_quote_status', 'Bookings & Quotes', qtContactName(row) + ' → ' + newStatus);
-          showToast(qtContactName(row).split(' ')[0] + ' marked ' + (newStatus === 'confirmed' ? 'confirmed' : 'lost'));
+          showToast(qtContactName(row).split(' ')[0] + ' marked confirmed');
           renderQuotesView();
+          // A confirmed quote is exactly the same thing as a confirmed
+          // direct booking — so it should end up with exactly the same
+          // formal invoice, not depend on someone remembering to raise
+          // one separately in Heartwood later. 💚
+          if(!row.invoice_ref && Number(row.estimated_cost) > 0){
+            openQuoteConfirmInvoicePrompt(row);
+          }
         }catch(err){
           showToast('Couldn\'t update — ' + err.message, true);
           btn.disabled = false;
