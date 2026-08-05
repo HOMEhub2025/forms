@@ -5484,7 +5484,13 @@ function getRoomTier(dateStr){
   return (day === 0 || day === 6) ? 'peak' : 'off_peak';
 }
 function calcRoomCost(roomRateRow, roomName, dateStr, hours){
-  var hrs = Math.max(hours || 0, ROOM_MIN_HOURS);
+  // This room's own minimum-hire setting takes priority over the
+  // shared global — matches the same fix in Heartwood, since this was
+  // the actual root cause of a booking's hours getting silently forced
+  // up to whatever Main Hall's own minimum happened to be. 💚
+  var rrForMin = roomRateRow || {};
+  var roomMinHrs = rrForMin.min_hire_hours != null ? parseInt(rrForMin.min_hire_hours) : ROOM_MIN_HOURS;
+  var hrs = Math.max(hours || 0, roomMinHrs);
   var graceMins = roomGraceMins(hrs);
   var isMainHall = /main hall/i.test(roomName || '');
   var rr = roomRateRow || {};
