@@ -2900,7 +2900,7 @@ async function loadBookSessionsData(){
   var wrap = document.getElementById('sessionList');
   wrap.innerHTML = '<div class="loading-row">Loading everything bookable…</div>';
   try{
-    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&order=name.asc');
+    var sessRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.draft&status=neq.archived&order=name.asc');
     var sessions = sessRes.data || [];
     var offRes = await SB('offerings?is_active=eq.true&order=sort_order.asc');
     var offerings = offRes.data || [];
@@ -3613,7 +3613,7 @@ async function loadSocialPicker(){
     label.textContent = 'Which session';
     try{
       if(!socialSessionsCache.length){
-        var res = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+        var res = await SB('bookable_sessions?status=neq.cancelled&status=neq.archived&order=name.asc');
         socialSessionsCache = res.data || [];
       }
       select.innerHTML = '<option value="">Choose a session…</option>' + socialSessionsCache.map(function(s){
@@ -3890,7 +3890,7 @@ async function loadVolunteerTargets(){
       socialGroupsCache = gRes.data || [];
     }
     if(!socialSessionsCache.length){
-      var sRes = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+      var sRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.archived&order=name.asc');
       socialSessionsCache = sRes.data || [];
     }
     socialVolTargets = [];
@@ -4056,7 +4056,7 @@ async function loadPaymentLinks(){
   var wrap = document.getElementById('paymentLinksList');
   wrap.innerHTML = '<div class="loading-row">Loading payment links…</div>';
   try{
-    var res = await SB('bookable_sessions?payment_link_url=not.is.null&status=neq.cancelled&order=name.asc');
+    var res = await SB('bookable_sessions?payment_link_url=not.is.null&status=neq.cancelled&status=neq.archived&order=name.asc');
     var sessions = res.data || [];
     if(!sessions.length){
       wrap.innerHTML = '<div class="agenda-empty">No sessions have a Stripe link set up yet.</div>';
@@ -4112,7 +4112,7 @@ async function loadSessionsWorkshops(){
   var wrap = document.getElementById('swList');
   wrap.innerHTML = '<div class="loading-row">Loading sessions &amp; workshops…</div>';
   try{
-    var res = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+    var res = await SB('bookable_sessions?status=neq.cancelled&status=neq.archived&order=name.asc');
     swSessionsCache = res.data || [];
     if(!swSessionsCache.length){
       wrap.innerHTML = '<div class="agenda-empty">No sessions or workshops set up yet.</div>';
@@ -4502,7 +4502,7 @@ async function loadFeedbackList(){
   // Populate the real group/workshop/session list once
   if(!fbSessionsCache.length){
     try{
-      var sRes = await SB('bookable_sessions?status=neq.cancelled&order=name.asc&select=name');
+      var sRes = await SB('bookable_sessions?status=neq.cancelled&status=neq.archived&order=name.asc&select=name');
       fbSessionsCache = (sRes.data||[]).map(function(s){ return s.name; }).filter(Boolean);
       var otherOpt = sel.querySelector('option[value="__other__"]');
       fbSessionsCache.forEach(function(name){
@@ -4958,7 +4958,7 @@ async function loadRegisterScreen(){
   sel.innerHTML = '<option value="">Loading…</option>';
   try{
     if(!regSessionsCache.length){
-      var res = await SB('bookable_sessions?status=neq.cancelled&order=name.asc');
+      var res = await SB('bookable_sessions?status=neq.cancelled&status=neq.archived&order=name.asc');
       regSessionsCache = res.data || [];
     }
     if(!regGroupsCache.length){
