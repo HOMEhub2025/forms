@@ -497,6 +497,14 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>The café till — same menu, same stock, same orders as Heartwood.</p>
   </div>
   <div class="form-wrap" style="padding-bottom:100px">
+    <div class="field" id="eahTrainingBox" style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#0a1928">Training mode</div>
+        <div style="font-size:10.5px;color:#9ca3af;margin-top:1px">Practise sales without touching real stock, sales or cash-up — works even with no till session open.</div>
+      </div>
+      <button type="button" id="eahTrainingToggle" onclick="eahToggleTrainingMode()" style="padding:8px 14px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Off</button>
+    </div>
+
     <div class="field" id="eahTillModeBox" style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;padding:12px 14px;margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:#c2410c;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Till Mode</div>
       <div class="chip-row">
@@ -1917,6 +1925,24 @@ var eahMenuByCategory = {};
 var eahActiveCategory = null;
 var eahTillSession = null;
 var eahView = 'categories'; // 'categories' | 'items'
+var eahTrainingMode = false;
+
+// Mirrors Heartwood's own Training Mode exactly — writes to the same
+// separate cafe_training_orders/cafe_training_order_items tables, never
+// touches real stock, and works with no Heartwood till session open at
+// all, since practising shouldn't require someone else to have opened
+// up first. 💚
+function eahToggleTrainingMode(){
+  eahTrainingMode = !eahTrainingMode;
+  var btn = document.getElementById('eahTrainingToggle');
+  if(btn){
+    btn.textContent = eahTrainingMode ? '\uD83C\uDF93 Training ON' : 'Off';
+    btn.style.borderColor = eahTrainingMode ? '#f59e0b' : '#e5e7eb';
+    btn.style.background = eahTrainingMode ? '#fef3c7' : '#fff';
+    btn.style.color = eahTrainingMode ? '#92400e' : '#6b7280';
+  }
+  loadEatAtHome();
+}
 
 async function loadEatAtHome(){
   document.getElementById('eahNoSession').style.display = 'none';
@@ -1924,7 +1950,7 @@ async function loadEatAtHome(){
   try{
     var sessRes = await SB('cafe_till_sessions?status=eq.open&order=opened_at.desc&limit=1');
     eahTillSession = (sessRes.data||[])[0] || null;
-    if(!eahTillSession){
+    if(!eahTillSession && !eahTrainingMode){
       document.getElementById('eahNoSession').style.display = 'block';
       return;
     }
@@ -2111,7 +2137,7 @@ function eahCloseReview(){
 // confirmation, for cash too, before the sale locks in and the till
 // resets for the next customer. 💚
 function eahConfirmCheckout(method){
-  if(!eahTillSession){ showToast('No till session open'); return; }
+  if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
   if(!eahBasket.length){ showToast('Basket is empty'); return; }
   var total = eahBasket.reduce(function(s,l){return s+l.price*l.qty;},0);
   var methodLabel = method==='cash' ? 'Cash' : 'Card';
@@ -2121,6 +2147,7 @@ function eahConfirmCheckout(method){
   o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,0.5);display:flex;align-items:center;justify-content:center;padding:20px';
   o.onclick = function(e){ if(e.target===o) o.remove(); };
   o.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">'
+    + (eahTrainingMode ? '<div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:8px">\uD83C\uDF93 TRAINING \u2014 not a real sale</div><br>' : '')
     + '<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">Confirm '+methodLabel+' \u2014 \u00a3'+total.toFixed(2)+'</div>'
     + '<div style="font-size:12.5px;color:#6b7280;line-height:1.5;margin-bottom:18px">'
       + (method==='card' ? 'No card terminal is connected to this phone \u2014 confirm the card payment has genuinely been taken before this locks in and moves to the next customer.' : 'Confirm the cash has been received before this locks in and moves to the next customer.')
@@ -2133,10 +2160,38 @@ function eahConfirmCheckout(method){
   document.body.appendChild(o);
 }
 async function eahCheckout(method){
-  if(!eahTillSession){ showToast('No till session open'); return; }
+  if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
   if(!eahBasket.length){ showToast('Basket is empty'); return; }
   var u = getUser();
   var total = eahBasket.reduce(function(s,l){return s+l.price*l.qty;},0);
+
+  // Training mode writes to a genuinely separate pair of tables — the
+  // exact same cafe_training_orders/cafe_training_order_items Heartwood's
+  // own till uses — so nothing here can ever touch real stock, real
+  // sales, or real cash-up figures, and no report anywhere queries them. 💚
+  if(eahTrainingMode){
+    try{
+      var trainOrderRes = await SB('cafe_training_orders', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify({ subtotal: total, payment_method: method, created_by: u ? u.display_name : null })
+      });
+      var trainOrder = (trainOrderRes.data||[])[0];
+      if(trainOrder){
+        var trainLineItems = eahBasket.map(function(l){
+          return { training_order_id: trainOrder.id, menu_item_id: l.id, item_name: l.name, unit_price: l.price, qty: l.qty, line_total: l.price*l.qty };
+        });
+        await SB('cafe_training_order_items', { method:'POST', body: JSON.stringify(trainLineItems) });
+      }
+      showToast('\uD83C\uDF93 Training order \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2014 logged to training records, no real stock or sales affected');
+    }catch(trainErr){ showToast('Couldn\u2019t log the training order \u2014 ' + trainErr.message); }
+    eahBasket = [];
+    eahSaveBasketToStorage();
+    eahReviewMethod = null;
+    eahCloseReview();
+    loadEatAtHome();
+    return;
+  }
+
   try{
     var orderRes = await SB('cafe_orders', {
       method:'POST', headers:{Prefer:'return=representation'},
