@@ -5142,16 +5142,7 @@ document.getElementById('regLoadBtn').addEventListener('click', async function()
       bookedWrap.innerHTML = '<div class="agenda-empty">This is a drop-in group — no advance booking list, just who signed in on the day.</div>';
     }
 
-    signedWrap.innerHTML = '<div class="loading-row">Loading sign-ins…</div>';
-    var dayStart = date + 'T00:00:00';
-    var dayEnd = date + 'T23:59:59';
-    var signedRes = await SB('sign_ins?session_name=ilike.*'+encodeURIComponent(target.name)+'*&signed_in_at=gte.'+dayStart+'&signed_in_at=lte.'+dayEnd+'&order=signed_in_at.asc');
-    regCurrentSignedIn = signedRes.data || [];
-    signedWrap.innerHTML = regCurrentSignedIn.length ? regCurrentSignedIn.map(function(v){
-      return '<div class="card accent-blue" style="cursor:default"><div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>' +
-        '<div class="card-body"><div class="card-title">'+v.visitor_name+'</div>' +
-        '<div class="card-desc">Signed in '+new Date(v.signed_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div></div></div>';
-    }).join('') : '<div class="agenda-empty">No sign-ins found matching "'+target.name+'" for that day — check the sign-in used the same name, or try a wider date.</div>';
+    await reloadSignedInList(target, date);
 
     var emailField = document.getElementById('regEmail');
     var facilitatorName = regCurrentKind === 'session' ? target.facilitator_name : target.facilitator;
@@ -5169,6 +5160,23 @@ document.getElementById('regLoadBtn').addEventListener('click', async function()
     btn.disabled = false; btn.textContent = 'Build register';
   }
 });
+
+// Pulled out so it can be re-run after a walk-in is added, refreshing
+// the Signed in section immediately rather than needing Build register
+// pressed again to see the person who was just signed in. 💚
+async function reloadSignedInList(target, date){
+  var signedWrap = document.getElementById('regSignedInList');
+  signedWrap.innerHTML = '<div class="loading-row">Loading sign-ins…</div>';
+  var dayStart = date + 'T00:00:00';
+  var dayEnd = date + 'T23:59:59';
+  var signedRes = await SB('sign_ins?session_name=ilike.*'+encodeURIComponent(target.name)+'*&signed_in_at=gte.'+dayStart+'&signed_in_at=lte.'+dayEnd+'&order=signed_in_at.asc');
+  regCurrentSignedIn = signedRes.data || [];
+  signedWrap.innerHTML = regCurrentSignedIn.length ? regCurrentSignedIn.map(function(v){
+    return '<div class="card accent-blue" style="cursor:default"><div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+      '<div class="card-body"><div class="card-title">'+v.visitor_name+'</div>' +
+      '<div class="card-desc">Signed in '+new Date(v.signed_in_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div></div></div>';
+  }).join('') : '<div class="agenda-empty">No sign-ins found matching "'+target.name+'" for that day — check the sign-in used the same name, or try a wider date.</div>';
+}
 
 function renderBookedList(){
   var bookedWrap = document.getElementById('regBookedList');
@@ -5297,7 +5305,27 @@ document.getElementById('regBookingSaveBtn').addEventListener('click', async fun
       var newRow = (insertRes.data || [])[0];
       if(newRow) regCurrentBooked.push(newRow);
       logAction('add_walkin_booking', 'Session Register', walkinLabel + ' — ' + s.name);
-      showToast('Walk-in added');
+      // A walk-in showing up and being added to the register is, by
+      // definition, someone who's actually here right now — sign them
+      // in at the same time rather than leaving that as a second,
+      // easy-to-forget step. 💚
+      try{
+        await SB('sign_ins', {
+          method:'POST', headers:{Prefer:'return=minimal'},
+          body: JSON.stringify({
+            visitor_name: walkinLabel,
+            session_name: s.name,
+            signed_in_at: new Date().toISOString(),
+            reason_for_attending: 'Session attendance'
+          })
+        });
+      }catch(signInErr){
+        console.warn('Walk-in booked but sign-in failed:', signInErr.message);
+      }
+      showToast('Walk-in added \u2014 booked and signed in \u2713');
+      if(regCurrentTarget && regCurrentDate){
+        reloadSignedInList(regCurrentTarget, regCurrentDate).catch(function(){});
+      }
     }
     closeRegBookingSheet();
     renderBookedList();
