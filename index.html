@@ -2453,7 +2453,7 @@ async function fetchAgendaForDate(iso){
     }
     sessionBookings.forEach(function(b){
       var s = sessionMap[b.bookable_session_id] || {};
-      items.push({type:'session', start: b.slot_start, end: b.slot_end, title: (s.name || 'Session') + ' — ' + b.client_name, sub: (s.room_name ? s.room_name + ' · ' : '') + (s.facilitator_name || '')});
+      items.push({type:'session', start: b.slot_start, end: b.slot_end, title: (s.name || 'Session') + ' — ' + b.client_name, sub: (s.room_name ? s.room_name + ' · ' : '') + (s.facilitator_name || ''), bookingId: b.id, paymentStatus: b.payment_status});
     });
   }
 
@@ -2475,15 +2475,48 @@ function renderAgendaList(wrap, items, compact){
   var tagLabel = {room:'Room', session:'Session', meeting:'Meeting'};
   var barColor = {room:'var(--or)', session:'var(--dg)', meeting:'var(--db)'};
   wrap.innerHTML = items.map(function(i){
+    var paidChip = '';
+    if(i.type === 'session' && i.bookingId){
+      var isPaid = i.paymentStatus === 'paid';
+      paidChip = '<button type="button" class="chip'+(isPaid ? ' active' : '')+'" data-agenda-paid-toggle="'+i.bookingId+'" style="flex-shrink:0;white-space:nowrap;margin-left:8px">'+(isPaid ? 'Paid' : 'Not paid')+'</button>';
+    }
     return '<div class="agenda-item">' +
       '<div class="agenda-bar" style="background:'+barColor[i.type]+'"></div>' +
       '<div class="agenda-time">'+fmtTime(i.start)+'</div>' +
-      '<div class="agenda-body">' +
-        '<div class="agenda-title">'+i.title+'</div>' +
+      '<div class="agenda-body" style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<div style="min-width:0"><div class="agenda-title">'+i.title+'</div>' +
         (i.sub ? '<div class="agenda-sub">'+i.sub+'</div>' : '') +
-        '<span class="agenda-tag '+tagClass[i.type]+'">'+tagLabel[i.type]+'</span>' +
+        '<span class="agenda-tag '+tagClass[i.type]+'">'+tagLabel[i.type]+'</span></div>' +
+        paidChip +
       '</div></div>';
   }).join('');
+
+  // Tap a Paid/Not paid chip right on the agenda to flip it, same
+  // action the Session Register already offers, just without having to
+  // navigate there and pick the session again — this is the point of
+  // showing payment status here at all. 💚
+  wrap.querySelectorAll('[data-agenda-paid-toggle]').forEach(function(btn){
+    btn.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var bookingId = btn.getAttribute('data-agenda-paid-toggle');
+      var wasPaid = btn.classList.contains('active');
+      var newStatus = wasPaid ? 'unpaid' : 'paid';
+      btn.disabled = true;
+      try{
+        await SB('session_bookings?id=eq.'+bookingId, {
+          method:'PATCH', headers:{Prefer:'return=minimal'},
+          body: JSON.stringify({payment_status: newStatus})
+        });
+        btn.classList.toggle('active', !wasPaid);
+        btn.textContent = !wasPaid ? 'Paid' : 'Not paid';
+        showToast(!wasPaid ? 'Marked as paid \u2713' : 'Marked as not paid');
+      }catch(err){
+        showToast('Couldn\'t update — '+err.message);
+      }finally{
+        btn.disabled = false;
+      }
+    });
+  });
 }
 
 /* ============================================================
