@@ -1454,6 +1454,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   <div class="sheet-subtitle" id="regBookingSheetSub">Name's optional for now — you can fill it in later once you know it</div>
   <div class="form-wrap">
     <div class="field"><label>Name (optional for now)</label><input type="text" id="regBookingName" placeholder="Leave blank if you don't know it yet"></div>
+    <div id="regBookingKnownMatch" style="display:none"></div>
     <div class="field"><label>Email (optional)</label><input type="email" id="regBookingEmail"></div>
     <div class="field"><label>Phone (optional)</label><input type="tel" id="regBookingPhone"></div>
     <div class="field">
@@ -5242,10 +5243,68 @@ function openRegBookingSheet(existingRow){
     c.classList.toggle('active', c.getAttribute('data-reg-book-paid') === (isPaid ? 'paid' : 'unpaid'));
   });
   document.getElementById('regBookingErrorWrap').innerHTML = '';
+  var matchWrap = document.getElementById('regBookingKnownMatch');
+  matchWrap.style.display = 'none'; matchWrap.innerHTML = '';
   regBookingOverlay.classList.add('open'); regBookingSheet.classList.add('open');
 }
 function closeRegBookingSheet(){ regBookingOverlay.classList.remove('open'); regBookingSheet.classList.remove('open'); }
 regBookingOverlay.addEventListener('click', function(e){ if(e.target===regBookingOverlay) closeRegBookingSheet(); });
+
+// ── KNOWN VISITOR LOOKUP — as a walk-in's name is typed, check whether
+// we already hold sign-in records for someone with that name, so a
+// walk-in never quietly becomes a disconnected duplicate of someone
+// already in the visitor data. Debounced so it doesn't fire on every
+// keystroke, and only ever a confirm-and-fill prompt — never silently
+// auto-fills anything without the person tapping to confirm it's them. 💚
+var regKnownMatchTimer = null;
+document.getElementById('regBookingName').addEventListener('input', function(){
+  var query = this.value.trim();
+  var matchWrap = document.getElementById('regBookingKnownMatch');
+  clearTimeout(regKnownMatchTimer);
+  if(query.length < 3){ matchWrap.style.display = 'none'; matchWrap.innerHTML = ''; return; }
+  regKnownMatchTimer = setTimeout(async function(){
+    try{
+      var res = await SB('sign_ins?visitor_name=ilike.*'+encodeURIComponent(query)+'*&order=signed_in_at.desc&limit=50');
+      var rows = res.data || [];
+      if(!rows.length){ matchWrap.style.display = 'none'; matchWrap.innerHTML = ''; return; }
+      // Collapse to unique names (case-insensitive), keeping the most
+      // recent sign-in for each so a tap can offer their latest known
+      // details.
+      var seen = {};
+      var unique = [];
+      rows.forEach(function(r){
+        var key = (r.visitor_name||'').trim().toLowerCase();
+        if(!key || seen[key]) return;
+        seen[key] = true;
+        unique.push(r);
+      });
+      unique = unique.slice(0, 4);
+      matchWrap.style.display = 'block';
+      matchWrap.innerHTML = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin:-6px 0 12px">' +
+        '<div style="font-size:12px;font-weight:600;color:#1e40af;margin-bottom:6px">We already hold sign-in records for:</div>' +
+        unique.map(function(r){
+          return '<div data-known-visitor="'+encodeURIComponent(JSON.stringify(r))+'" style="padding:7px 8px;background:#fff;border-radius:7px;margin-bottom:5px;cursor:pointer;font-size:13px;color:#0f172a;display:flex;justify-content:space-between;align-items:center">' +
+            '<span>'+r.visitor_name+'</span><span style="font-size:11px;color:#64748b">Use this \u2192</span></div>';
+        }).join('') +
+      '</div>';
+      matchWrap.querySelectorAll('[data-known-visitor]').forEach(function(el){
+        el.addEventListener('click', function(){
+          var r = JSON.parse(decodeURIComponent(el.getAttribute('data-known-visitor')));
+          document.getElementById('regBookingName').value = r.visitor_name || '';
+          // sign_ins may or may not carry contact fields depending on
+          // how that visitor originally signed in — fill in whatever's
+          // actually there rather than assuming a fixed shape.
+          var emailField = document.getElementById('regBookingEmail');
+          var phoneField = document.getElementById('regBookingPhone');
+          if(!emailField.value) emailField.value = r.email || r.visitor_email || '';
+          if(!phoneField.value) phoneField.value = r.phone || r.visitor_phone || r.mobile || '';
+          matchWrap.style.display = 'none'; matchWrap.innerHTML = '';
+          showToast('Using existing visitor details for '+r.visitor_name);
+        });
+      });
+    }catch(e){ /* lookup failing shouldn't block adding the walk-in */ }
+  }, 350);
+});
 document.querySelectorAll('[data-reg-book-paid]').forEach(function(chip){
   chip.addEventListener('click', function(){
     document.querySelectorAll('[data-reg-book-paid]').forEach(function(c){ c.classList.remove('active'); });
