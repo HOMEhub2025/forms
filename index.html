@@ -1503,6 +1503,252 @@ async function SB(path, opts){
   return {data: data, contentRange: contentRange};
 }
 
+/* ============================================================
+   WORLDPAY IPS CLOUD — STOMP over WebSocket client 💚
+   ------------------------------------------------------------
+   Talks straight from the browser to Worldpay's IPS Cloud gateway
+   to drive the countertop card terminal (register + take payments).
+   No bridge app needed — WebSocket is native to the browser, unlike
+   the Bluetooth drawer/printer which need Web Bluetooth.
+
+   PREREQUISITES (must come from Worldpay before this can connect):
+     - IPS Cloud activated on the merchant account (ask your Worldpay
+       Relationship Manager to confirm this — see memory note: "IPS
+       activation may require WorldPay contact")
+     - A Paypoint Reference (WP_IPS_CONFIG.paypointRef below)
+     - A Point of Sale Activation Code, 8 characters
+       (WP_IPS_CONFIG.activationCode below) — one-time use to register
+       this till, generated via the Worldpay IPS Control Center
+
+   None of this can be guessed or faked — until those three things
+   exist, registerPointOfSale() will get a clean error back from
+   Worldpay rather than silently failing, which is the correct
+   behaviour while we wait on activation.
+   ============================================================ */
+
+var WP_IPS_CONFIG = {
+  // 'muat' = Worldpay's test/sandbox gateway. Switch to 'prod' only once
+  // registration + a handful of test transactions succeed against muat.
+  environment: 'muat', // 'muat' | 'prod'
+
+  // Identifier for the paypoint (i.e. this till). 1-20 chars, must be
+  // agreed with Worldpay when they activate IPS Cloud for the account.
+  paypointRef: 'HOMEHUB01', // TODO: confirm real value with Worldpay
+
+  // A unique 6-character ID Companion generates for itself and keeps —
+  // this is NOT given by Worldpay, we invent it and it just needs to
+  // stay the same every time this till registers.
+  pointOfSaleId: 'HHTILL', // must be exactly 6 alphanumeric characters
+
+  // Merchant's own reference for this till, up to 15 chars.
+  pointOfSaleReference: 'HOMEHUBTILL1',
+
+  // 8-character one-time activation code from Worldpay's IPS Control
+  // Center. Used once to register — after that the license key
+  // returned is what authenticates every future connection.
+  activationCode: '' // TODO: paste from Worldpay IPS Control Center
+};
+
+var WP_IPS_HOSTS = {
+  muat: 'wss://ws.muat.worldpaypp.com:443',
+  prod: 'wss://ipscloud.worldpay.com:443'
+};
+
+// The license key returned by registration. Store this once obtained —
+// it authenticates all future payment/refresh connections, so it
+// should be saved (e.g. to Supabase against this till) rather than
+// re-registering every session. Left blank until first registration.
+var WP_IPS_LICENSE_KEY = ''; // TODO: persist this once registration succeeds
+
+/* ------------------------------------------------------------
+   Minimal STOMP-over-WebSocket helper.
+   IPS uses the STOMP 1.1 text protocol inside a WebSocket, with the
+   'v10.stomp' / 'v11.stomp' subprotocol. Frames are plain text:
+     COMMAND
+     header:value
+     header:value
+
+     body\0
+   ------------------------------------------------------------ */
+function wpBuildFrame(command, headers, body) {
+  var lines = [command];
+  for (var key in headers) {
+    if (headers[key] !== undefined && headers[key] !== null) {
+      lines.push(key + ':' + headers[key]);
+    }
+  }
+  lines.push('');
+  lines.push(body || '');
+  return lines.join('\n') + '\0';
+}
+
+function wpParseFrame(raw) {
+  var text = raw.replace(/\0$/, '');
+  var lines = text.split('\n');
+  var command = lines[0];
+  var headers = {};
+  var i = 1;
+  for (; i < lines.length; i++) {
+    if (lines[i] === '') { i++; break; }
+    var idx = lines[i].indexOf(':');
+    if (idx > -1) headers[lines[i].slice(0, idx)] = lines[i].slice(idx + 1);
+  }
+  var body = lines.slice(i).join('\n');
+  var payload = null;
+  if (body) { try { payload = JSON.parse(body); } catch (e) { payload = body; } }
+  return { command: command, headers: headers, payload: payload };
+}
+
+function wpUuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0;
+    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+/* ------------------------------------------------------------
+   WorldPayIPS — one connection per request, per Worldpay's spec
+   ("each request must be made in a new web socket connection").
+   Each public method opens its own socket, does its job, and the
+   caller's onComplete/onError/onResult callbacks are used to know
+   when it's safe to close and clean up. 💚
+   ------------------------------------------------------------ */
+var WorldPayIPS = {
+
+  // Register this till with Worldpay using the one-time activation
+  // code. Only needs to run once — after success, store the returned
+  // license key (WP_IPS_LICENSE_KEY) somewhere durable (e.g. a
+  // worldpay_till_config row in Supabase) rather than re-running this.
+  registerPointOfSale: function (onSuccess, onError) {
+    if (!WP_IPS_CONFIG.activationCode) {
+      onError && onError({ code: 'missing-activation-code',
+        message: 'No Worldpay activation code configured yet — this must come from Worldpay\'s IPS Control Center before registration can be attempted.' });
+      return;
+    }
+    var host = WP_IPS_HOSTS[WP_IPS_CONFIG.environment];
+    var url = host + '/ipc-app/payment/' + WP_IPS_CONFIG.paypointRef;
+    var ws = new WebSocket(url, ['v10.stomp', 'v11.stomp']);
+
+    ws.onopen = function () {
+      ws.send(wpBuildFrame('CONNECT', {
+        'accept-version': '1.1',
+        host: '/ipc-app/payment/' + WP_IPS_CONFIG.paypointRef
+      }));
+    };
+
+    ws.onmessage = function (evt) {
+      var frame = wpParseFrame(evt.data);
+      if (frame.command === 'CONNECTED') {
+        var corr = wpUuid();
+        // Subscribe to the registration reply + error channel first
+        ws.send(wpBuildFrame('SUBSCRIBE', { id: '0', destination: '/client/v1/pos/registration' }));
+        ws.send(wpBuildFrame('SUBSCRIBE', { id: '1', destination: '/client/v1/error' }));
+        ws.send(wpBuildFrame('SEND', {
+          destination: '/v1/pos/registration',
+          'content-type': 'application/json',
+          'x-wp-correlation-id': corr,
+          'x-wp-message-id': wpUuid()
+        }, JSON.stringify({
+          pointOfSaleId: WP_IPS_CONFIG.pointOfSaleId,
+          pointOfSaleReference: WP_IPS_CONFIG.pointOfSaleReference,
+          pointOfSaleActivationCode: WP_IPS_CONFIG.activationCode
+        })));
+      } else if (frame.command === 'MESSAGE' && frame.headers.destination === '/client/v1/pos/registration') {
+        WP_IPS_LICENSE_KEY = frame.payload.pointOfSaleLicenseKey;
+        ws.close();
+        onSuccess && onSuccess(WP_IPS_LICENSE_KEY);
+      } else if (frame.command === 'MESSAGE' && frame.headers.destination === '/client/v1/error') {
+        ws.close();
+        onError && onError(frame.payload);
+      }
+    };
+
+    ws.onerror = function (err) { onError && onError({ code: 'websocket-error', message: 'Could not reach Worldpay IPS Cloud.', raw: err }); };
+  },
+
+  // Take a card-present sale on the countertop terminal.
+  // amountMinorUnits: e.g. 550 for £5.50. reference: alphanumeric, <=30 chars.
+  // callbacks fire as the payment progresses on the terminal itself
+  // (insert card / please wait / approved etc).
+  takePayment: function (amountMinorUnits, reference, callbacks) {
+    callbacks = callbacks || {};
+    if (!WP_IPS_LICENSE_KEY) {
+      callbacks.onError && callbacks.onError({ code: 'not-registered',
+        message: 'This till has not registered with Worldpay IPS yet — run registerPointOfSale() first.' });
+      return;
+    }
+    var host = WP_IPS_HOSTS[WP_IPS_CONFIG.environment];
+    var url = host + '/ipc-app/payment/' + WP_IPS_CONFIG.paypointRef;
+    var ws = new WebSocket(url, ['v10.stomp', 'v11.stomp']);
+
+    ws.onopen = function () {
+      // TODO: confirm exact header Worldpay expects to carry the
+      // license key on this CONNECT frame once we have real
+      // credentials to test against — likely 'Authorization' or a
+      // dedicated 'x-wp-license-key' header. Flagging rather than
+      // guessing silently.
+      ws.send(wpBuildFrame('CONNECT', {
+        'accept-version': '1.1',
+        host: '/ipc-app/payment/' + WP_IPS_CONFIG.paypointRef,
+        Authorization: 'Bearer ' + WP_IPS_LICENSE_KEY
+      }));
+    };
+
+    ws.onmessage = function (evt) {
+      var frame = wpParseFrame(evt.data);
+
+      if (frame.command === 'CONNECTED') {
+        ['notification', 'action', 'receipt', 'result', 'complete'].forEach(function (topic, i) {
+          ws.send(wpBuildFrame('SUBSCRIBE', { id: String(i), destination: '/client/v1/payment/' + topic }));
+        });
+        ws.send(wpBuildFrame('SUBSCRIBE', { id: '9', destination: '/client/v1/error' }));
+
+        ws.send(wpBuildFrame('SEND', {
+          destination: '/v1/payment',
+          'content-type': 'application/json',
+          'x-wp-correlation-id': wpUuid(),
+          'x-wp-message-id': wpUuid()
+        }, JSON.stringify({
+          paymentType: 'sale',
+          merchantTransactionReference: reference,
+          instruction: {
+            value: { amount: amountMinorUnits },
+            paymentInstrument: { type: 'card/present' }
+          }
+        })));
+        return;
+      }
+
+      if (frame.command !== 'MESSAGE') return;
+      var dest = frame.headers.destination;
+
+      if (dest === '/client/v1/payment/notification') {
+        // e.g. "PLEASE INSERT CARD" — good for showing live status on screen
+        callbacks.onNotification && callbacks.onNotification(frame.payload.notificationText);
+      } else if (dest === '/client/v1/payment/result') {
+        callbacks.onResult && callbacks.onResult(frame.payload);
+      } else if (dest === '/client/v1/payment/receipt') {
+        callbacks.onReceipt && callbacks.onReceipt(frame.payload);
+      } else if (dest === '/client/v1/payment/complete') {
+        ws.close();
+        callbacks.onComplete && callbacks.onComplete();
+      } else if (dest === '/client/v1/error') {
+        ws.close();
+        callbacks.onError && callbacks.onError(frame.payload);
+      }
+      // action (referral/signature/AVS/cashback) deliberately left
+      // unhandled for now — H.O.M.E Hub's terminal flow is standard
+      // chip+PIN/contactless, so these prompts shouldn't fire day to
+      // day. Worth wiring up if a referral ever comes through blank.
+    };
+
+    ws.onerror = function (err) {
+      callbacks.onError && callbacks.onError({ code: 'websocket-error', message: 'Lost connection to Worldpay IPS Cloud mid-payment.', raw: err });
+    };
+  }
+};
+
 // ── PAGINATED FETCH — same fix as Heartwood's hwFetchAllRows: PostgREST
 // caps any single request at 1000 rows by default. This loops in pages
 // of 1000 until a short page confirms there's nothing left, so reports
