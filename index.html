@@ -5286,7 +5286,7 @@ async function loadStallApplications(){
 }
 screenLoaders['screen-stallholders'] = loadStallApplications;
 
-function shCardHtml(r){
+function shCardHtml(r, extraActionHtml){
   var name = ((r.first_name||'')+' '+(r.last_name||'')).trim() || 'Unnamed applicant';
   var payColor = r.payment_status==='paid' ? 'var(--dg)' : '#C16E1B';
   var payLabel = r.payment_status==='paid' ? 'Paid' : 'Awaiting payment';
@@ -5311,6 +5311,7 @@ function shCardHtml(r){
       (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'approved\',true)" style="padding:6px 12px;border:1.5px solid var(--dg);background:white;color:var(--dg);border-radius:7px;font-size:.7rem;font-weight:600">Auto-approve</button>' : '') +
       (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'declined\',false)" style="padding:6px 12px;border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:7px;font-size:.7rem;font-weight:600">Decline</button>' : '') +
       (r.email ? '<a href="mailto:'+r.email+'" style="padding:6px 12px;border:1px solid var(--border);background:white;color:var(--text);border-radius:7px;font-size:.7rem;font-weight:600;text-decoration:none">Email</a>' : '') +
+      (extraActionHtml || '') +
     '</div>' +
   '</div>';
 }
@@ -5339,8 +5340,26 @@ function renderStallGroups(){
     });
     var returning = rows.filter(function(r){ var k = seenKey(r); return k && priorKeys[k]; });
     var brandNew = rows.filter(function(r){ var k = seenKey(r); return !(k && priorKeys[k]); });
+    // Stallholders registered in the system with no event attached at
+    // all — genuinely separate from both of the above. Shown so you can
+    // pull one onto the current event when you want to. 💚
+    var unassigned = shAllRows.filter(function(r){ return !r.event_id; });
+    var unassignedHtml = '';
+    if(unassigned.length){
+      var cardsHtml = unassigned.map(function(r){
+        var btn = '<button onclick="shAssignToEvent(\''+r.id+'\',\''+filterId+'\')" style="padding:6px 12px;border:none;background:var(--or);color:white;border-radius:7px;font-size:.7rem;font-weight:600">Assign to this event</button>';
+        return shCardHtml(r, btn);
+      }).join('');
+      unassignedHtml = '<div class="tx-group open">' +
+        '<div class="tx-group-header" data-tx-toggle>' +
+          '<div class="chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+          '<div class="tx-group-title">📋 Registered, not yet assigned to any event <span class="tx-group-count">('+unassigned.length+')</span></div>' +
+        '</div>' +
+        '<div class="tx-group-body" style="display:flex;flex-direction:column;gap:8px;padding-top:8px">'+cardsHtml+'</div>' +
+      '</div>';
+    }
 
-    wrap.innerHTML = stallGroupBlock('🔁 Already registered in the system', returning) + stallGroupBlock('🆕 New registrations for this event', brandNew);
+    wrap.innerHTML = stallGroupBlock('🔁 Already registered in the system', returning) + stallGroupBlock('🆕 New registrations for this event', brandNew) + unassignedHtml;
     wrap.querySelectorAll('[data-tx-toggle]').forEach(function(h){
       h.addEventListener('click', function(){ h.closest('.tx-group').classList.toggle('open'); });
     });
@@ -5370,6 +5389,20 @@ async function shUpdate(id, status, autoApprove){
     loadStallApplications();
   }catch(e){
     showToast('Could not update — '+e.message, true);
+  }
+}
+
+// Pull a genuinely unassigned stallholder (registered, but never linked
+// to any event) onto the event currently being viewed.
+async function shAssignToEvent(id, eventId){
+  if(!eventId){ showToast('Pick a specific event first', true); return; }
+  try{
+    await SB('stall_applications?id=eq.'+id, {method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({event_id: eventId})});
+    showToast('Assigned to this event ✓');
+    logAction('stall_application_assign', 'Stallholders', id+' → event '+eventId);
+    loadStallApplications();
+  }catch(e){
+    showToast('Could not assign — '+e.message, true);
   }
 }
 
