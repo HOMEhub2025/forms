@@ -385,6 +385,11 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div class="card-body"><div class="card-title">Invoices &amp; Purchase Orders</div><div class="card-desc">Every one on record, grouped by status</div></div>
       <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </div>
+    <div class="card accent-orange" data-goto="screen-stallholders">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v10a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/><path d="M3 9h18"/><path d="M9 21V13h6v8"/></svg></div>
+      <div class="card-body"><div class="card-title">Stallholder Applications</div><div class="card-desc">Review, approve or decline &mdash; straight from here</div></div>
+      <div class="card-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
     <div class="card accent-green" data-goto="screen-manage" data-mg-open="financials">
       <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v16"/></svg></div>
       <div class="card-body"><div class="card-title">Financials &amp; Invoices</div><div class="card-desc">Balance, outstanding invoices, recent cash-ups</div></div>
@@ -832,6 +837,23 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="cards" id="docPOGroups" style="gap:8px;margin-top:14px">
       <div class="loading-row">Loading purchase orders…</div>
     </div>
+  </div>
+</div>
+
+<!-- ============ STALLHOLDER APPLICATIONS ============ -->
+<div class="screen" id="screen-stallholders">
+  <div class="hero">
+    <button class="back-btn" type="button"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>Stallholder <span>Applications</span></h2>
+    <p>Review, approve or decline &mdash; same real applications as Heartwood.</p>
+  </div>
+  <div class="form-wrap" style="padding-bottom:0">
+    <div class="field"><label>Event</label>
+      <select id="shEventFilter" onchange="loadStallApplications()" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-family:Montserrat,sans-serif;font-size:.85rem"><option value="">All events</option></select>
+    </div>
+  </div>
+  <div id="shGroups" style="padding:0 16px 24px;display:flex;flex-direction:column;gap:10px">
+    <div class="loading-row">Loading applications…</div>
   </div>
 </div>
 
@@ -5218,6 +5240,138 @@ async function loadDocsScreen(){
   }
 }
 screenLoaders['screen-docs'] = loadDocsScreen;
+
+/* ============================================================
+   STALLHOLDER APPLICATIONS — same real stall_applications table
+   and approval flow as Heartwood, with the same returning-vs-new
+   split for whichever event is selected.
+   ============================================================ */
+var shEventsById = {};
+var shAllRows = [];
+var shFilterBuilt = false;
+
+async function loadStallApplications(){
+  var wrap = document.getElementById('shGroups');
+  var filterEl = document.getElementById('shEventFilter');
+  wrap.innerHTML = '<div class="loading-row">Loading applications…</div>';
+  try{
+    var evRes = await SB('events?select=id,title,event_date&order=event_date.desc');
+    shEventsById = {};
+    (evRes.data||[]).forEach(function(e){ shEventsById[e.id] = e; });
+
+    var res = await SB('stall_applications?select=*&order=created_at.desc&limit=200');
+    if(res.error) throw new Error(res.error.message || 'Could not load');
+    shAllRows = res.data || [];
+
+    if(!shFilterBuilt){
+      var idsInUse = {};
+      shAllRows.forEach(function(r){ if(r.event_id) idsInUse[r.event_id] = true; });
+      var opts = '<option value="">All events</option>';
+      var newest = null;
+      Object.keys(idsInUse).forEach(function(eid){
+        var e = shEventsById[eid];
+        var label = e ? (e.title + ' — ' + new Date(e.event_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})) : 'Unknown event';
+        opts += '<option value="'+eid+'">'+label+'</option>';
+        if(e && (!newest || e.event_date > shEventsById[newest].event_date)) newest = eid;
+      });
+      filterEl.innerHTML = opts;
+      if(newest){ filterEl.value = newest; }
+      shFilterBuilt = true;
+    }
+
+    renderStallGroups();
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load applications — '+e.message+'</div>';
+  }
+}
+screenLoaders['screen-stallholders'] = loadStallApplications;
+
+function shCardHtml(r){
+  var name = ((r.first_name||'')+' '+(r.last_name||'')).trim() || 'Unnamed applicant';
+  var payColor = r.payment_status==='paid' ? 'var(--dg)' : '#C16E1B';
+  var payLabel = r.payment_status==='paid' ? 'Paid' : 'Awaiting payment';
+  var statusColor = r.status==='approved' ? 'var(--dg)' : r.status==='declined' ? '#dc2626' : 'var(--muted)';
+  var statusLabel = r.status==='approved' ? (r.auto_approve?'Auto-approved':'Approved') : r.status==='declined' ? 'Declined' : 'Pending';
+  var ev = r.event_id ? shEventsById[r.event_id] : null;
+  var evLabel = ev ? (ev.title+' · '+new Date(ev.event_date+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})) : 'No event linked';
+  return '<div class="card" style="flex-direction:column;align-items:stretch;gap:8px;cursor:default">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+      '<div style="min-width:0"><div class="card-title">'+(r.company_name||name)+'</div>' +
+      '<div class="card-desc">'+name+(r.email?' · '+r.email:'')+(r.mobile_phone?' · '+r.mobile_phone:'')+'</div>' +
+      '<div class="card-desc">'+(r.vendor_type||'—')+'</div>' +
+      '<div style="font-size:.68rem;font-weight:600;color:var(--db);margin-top:2px">📅 '+evLabel+'</div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">' +
+        '<span style="font-size:.62rem;font-weight:700;color:'+statusColor+';background:'+statusColor+'1a;padding:3px 8px;border-radius:10px;white-space:nowrap">'+statusLabel+'</span>' +
+        (r.status==='approved' ? '<span style="font-size:.62rem;font-weight:700;color:'+payColor+';background:'+payColor+'1a;padding:3px 8px;border-radius:10px;white-space:nowrap">'+payLabel+'</span>' : '') +
+      '</div>' +
+    '</div>' +
+    (r.product_service_description ? '<div style="font-size:.72rem;color:var(--text);background:#f9fafb;border-radius:8px;padding:8px 10px;line-height:1.5">'+r.product_service_description+'</div>' : '') +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'approved\',false)" style="padding:6px 12px;border:none;background:var(--dg);color:white;border-radius:7px;font-size:.7rem;font-weight:600">Approve</button>' : '') +
+      (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'approved\',true)" style="padding:6px 12px;border:1.5px solid var(--dg);background:white;color:var(--dg);border-radius:7px;font-size:.7rem;font-weight:600">Auto-approve</button>' : '') +
+      (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'declined\',false)" style="padding:6px 12px;border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:7px;font-size:.7rem;font-weight:600">Decline</button>' : '') +
+      (r.email ? '<a href="mailto:'+r.email+'" style="padding:6px 12px;border:1px solid var(--border);background:white;color:var(--text);border-radius:7px;font-size:.7rem;font-weight:600;text-decoration:none">Email</a>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function renderStallGroups(){
+  var wrap = document.getElementById('shGroups');
+  var filterEl = document.getElementById('shEventFilter');
+  var filterId = filterEl.value || null;
+  var rows = filterId ? shAllRows.filter(function(r){ return r.event_id === filterId; }) : shAllRows;
+
+  if(!rows.length){
+    wrap.innerHTML = '<div class="agenda-empty">No stallholder applications'+(filterId?' for this event':' yet')+'.</div>';
+    return;
+  }
+
+  if(filterId){
+    var thisEvent = shEventsById[filterId];
+    var thisDate = thisEvent ? thisEvent.event_date : null;
+    var seenKey = function(r){ return (r.email||'').toLowerCase().trim() || (r.company_name||'').toLowerCase().trim(); };
+    var priorKeys = {};
+    shAllRows.forEach(function(r){
+      if(r.event_id === filterId) return;
+      var ev2 = r.event_id ? shEventsById[r.event_id] : null;
+      var isEarlier = !thisDate || !ev2 || ev2.event_date < thisDate;
+      if(isEarlier){ var k = seenKey(r); if(k) priorKeys[k] = true; }
+    });
+    var returning = rows.filter(function(r){ var k = seenKey(r); return k && priorKeys[k]; });
+    var brandNew = rows.filter(function(r){ var k = seenKey(r); return !(k && priorKeys[k]); });
+
+    wrap.innerHTML = stallGroupBlock('🔁 Already registered in the system', returning) + stallGroupBlock('🆕 New registrations for this event', brandNew);
+    wrap.querySelectorAll('[data-tx-toggle]').forEach(function(h){
+      h.addEventListener('click', function(){ h.closest('.tx-group').classList.toggle('open'); });
+    });
+  } else {
+    wrap.innerHTML = rows.map(shCardHtml).join('');
+  }
+}
+
+function stallGroupBlock(title, list){
+  if(!list.length) return '';
+  return '<div class="tx-group open">' +
+    '<div class="tx-group-header" data-tx-toggle>' +
+      '<div class="chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+      '<div class="tx-group-title">'+title+' <span class="tx-group-count">('+list.length+')</span></div>' +
+    '</div>' +
+    '<div class="tx-group-body" style="display:flex;flex-direction:column;gap:8px;padding-top:8px">'+list.map(shCardHtml).join('')+'</div>' +
+  '</div>';
+}
+
+async function shUpdate(id, status, autoApprove){
+  try{
+    var payload = {status: status};
+    if(status==='approved') payload.auto_approve = !!autoApprove;
+    await SB('stall_applications?id=eq.'+id, {method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify(payload)});
+    showToast(status==='approved' ? (autoApprove?'Auto-approved ✓':'Approved ✓') : 'Declined');
+    logAction('stall_application_update', 'Stallholders', id+' → '+status);
+    loadStallApplications();
+  }catch(e){
+    showToast('Could not update — '+e.message, true);
+  }
+}
 
 document.querySelectorAll('[data-doc-tab]').forEach(function(tab){
   tab.addEventListener('click', function(){
