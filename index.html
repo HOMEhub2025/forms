@@ -1771,7 +1771,142 @@ var WorldPayIPS = {
   }
 };
 
-// ── PAGINATED FETCH — same fix as Heartwood's hwFetchAllRows: PostgREST
+/* ============================================================
+   TILL PRINTER & CASH DRAWER — MUNBYN P047 (via USB) 💚
+   ------------------------------------------------------------
+   Bluetooth was the original plan, but the P047's Bluetooth is
+   classic Bluetooth (SPP) rather than BLE — confirmed by Munbyn's own
+   docs (no iOS support, requires their own PosPrint/EMLabel app,
+   OS-level pairing flow). Web Bluetooth only ever supports BLE, so the
+   browser genuinely cannot reach it over Bluetooth — not a bug, a hard
+   platform limit. USB avoids the whole problem, and since this is a
+   fixed till (not something roaming the room), that's no real loss.
+
+   The Tera drawer plugs into the printer's own DK port via its RJ12
+   cable — the drawer never talks to Companion directly, only the
+   printer does. "Open Drawer" and "Print Receipt" are two completely
+   separate commands (ESC/POS spec, not our own invention), so a normal
+   cash sale can kick the drawer silently without ever printing paper.
+   ============================================================ */
+
+// USB vendor/product ID for the P047. TODO: confirm against the real
+// device once connected — this is Munbyn's commonly documented ID for
+// this printer family, not yet verified against Coxy's actual unit.
+var TILL_PRINTER_USB_FILTERS = [{ vendorId: 0x0483 }, { vendorId: 0x1a86 }];
+
+var TillPrinter = {
+  _device: null,
+  _endpointOut: null,
+
+  // Opens the browser's USB device picker — must be called from a real
+  // user click (browsers block USB permission prompts from firing on
+  // page load or any non-click trigger). Once picked, the connection
+  // is remembered by the browser for that device going forward.
+  connect: async function () {
+    if (!navigator.usb) {
+      showToast && showToast('This browser doesn\'t support WebUSB — use Chrome or Edge on Android/Windows.', 4000);
+      return false;
+    }
+    try {
+      var device = await navigator.usb.requestDevice({ filters: TILL_PRINTER_USB_FILTERS });
+      await device.open();
+      if (device.configuration === null) await device.selectConfiguration(1);
+
+      // Find the printer's OUT endpoint (bulk transfer) rather than
+      // hardcode interface numbers, since these vary between printer
+      // firmware revisions.
+      var iface = device.configuration.interfaces.find(function (i) {
+        return i.alternates.some(function (a) {
+          return a.endpoints.some(function (e) { return e.direction === 'out'; });
+        });
+      });
+      if (!iface) throw new Error('No usable USB interface found on this device.');
+      await device.claimInterface(iface.interfaceNumber);
+      var alt = iface.alternates.find(function (a) { return a.endpoints.some(function (e) { return e.direction === 'out'; }); });
+      var outEp = alt.endpoints.find(function (e) { return e.direction === 'out'; });
+
+      this._device = device;
+      this._endpointOut = outEp.endpointNumber;
+
+      // Persist which device was picked so future page loads can try a
+      // silent reconnect via getDevices() rather than asking again.
+      try { localStorage.setItem('till_printer_usb_picked', '1'); } catch (e) {}
+
+      showToast && showToast('Till printer connected \u2713', 2000);
+      return true;
+    } catch (e) {
+      showToast && showToast('Could not connect to printer \u2014 ' + e.message, 4000);
+      return false;
+    }
+  },
+
+  // Tries to reconnect to a previously-picked device without showing
+  // the picker again — call this on page load. Silently does nothing
+  // if no device was ever picked or it's not currently plugged in.
+  tryReconnectSilently: async function () {
+    if (!navigator.usb) return false;
+    try {
+      var devices = await navigator.usb.getDevices();
+      if (!devices.length) return false;
+      var device = devices[0];
+      await device.open();
+      if (device.configuration === null) await device.selectConfiguration(1);
+      var iface = device.configuration.interfaces.find(function (i) {
+        return i.alternates.some(function (a) { return a.endpoints.some(function (e) { return e.direction === 'out'; }); });
+      });
+      if (!iface) return false;
+      await device.claimInterface(iface.interfaceNumber);
+      var alt = iface.alternates.find(function (a) { return a.endpoints.some(function (e) { return e.direction === 'out'; }); });
+      var outEp = alt.endpoints.find(function (e) { return e.direction === 'out'; });
+      this._device = device;
+      this._endpointOut = outEp.endpointNumber;
+      return true;
+    } catch (e) { return false; }
+  },
+
+  isConnected: function () { return !!(this._device && this._device.opened); },
+
+  // Raw byte send — everything else builds on this.
+  _send: async function (bytes) {
+    if (!this.isConnected()) throw new Error('Printer not connected \u2014 call TillPrinter.connect() first.');
+    await this._device.transferOut(this._endpointOut, new Uint8Array(bytes).buffer);
+  },
+
+  // Fires the drawer-kick pulse only \u2014 no paper, no receipt. This is
+  // the ESC/POS spec's own drawer command (ESC p m t1 t2), sent to the
+  // printer, which then pulses the RJ12 line the Tera drawer is wired
+  // into. m=0 selects pin 2 (the standard wiring for most drawers).
+  openDrawer: async function () {
+    try {
+      await this._send([0x1B, 0x70, 0x00, 0x19, 0xFA]); // ESC p 0 25 250
+      return true;
+    } catch (e) {
+      showToast && showToast('Could not open drawer \u2014 ' + e.message, 3500);
+      return false;
+    }
+  },
+
+  // Prints a receipt \u2014 only ever called when the customer actually
+  // asks for one, kept deliberately separate from openDrawer(). lines
+  // is an array of plain text lines; keep formatting simple, this
+  // isn't trying to be a full ESC/POS layout engine.
+  printReceipt: async function (lines) {
+    try {
+      var bytes = [0x1B, 0x40]; // ESC @ \u2014 initialise printer
+      var encoder = new TextEncoder();
+      (lines || []).forEach(function (line) {
+        bytes = bytes.concat(Array.from(encoder.encode(line + '\n')));
+      });
+      bytes = bytes.concat([0x1B, 0x64, 0x02]); // ESC d 2 \u2014 feed 2 lines before cut
+      bytes = bytes.concat([0x1D, 0x56, 0x00]); // GS V 0 \u2014 full cut
+      await this._send(bytes);
+      return true;
+    } catch (e) {
+      showToast && showToast('Could not print receipt \u2014 ' + e.message, 3500);
+      return false;
+    }
+  }
+};
 // caps any single request at 1000 rows by default. This loops in pages
 // of 1000 until a short page confirms there's nothing left, so reports
 // built on cash_ups / invoices / financial_transactions (any of which can
