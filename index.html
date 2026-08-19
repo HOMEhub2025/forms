@@ -507,6 +507,14 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>The café till — same menu, same stock, same orders as Heartwood.</p>
   </div>
   <div class="form-wrap" style="padding-bottom:100px">
+    <div id="tillHwCard" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:11px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#0a1928">Till printer &amp; drawer</div>
+        <div id="tillHwStatus" style="font-size:10.5px;color:#9ca3af;margin-top:1px">Not connected \u2014 cash sales won\u2019t open the drawer until this is connected</div>
+      </div>
+      <button type="button" id="tillHwConnectBtn" onclick="tillHwConnect()" style="padding:8px 14px;border-radius:8px;border:1.5px solid #006837;background:#fff;color:#006837;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">Connect</button>
+    </div>
+
     <div class="field" id="eahTrainingBox" style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-size:12px;font-weight:700;color:#0a1928">Training mode</div>
@@ -706,19 +714,6 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>Same record Heartwood uses — this lands straight in the real ledger.</p>
   </div>
   <div class="form-wrap">
-    <div id="tillHwCard" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:11px;font-weight:700;color:#0e386a;text-transform:uppercase;letter-spacing:.06em">Till printer &amp; drawer</div>
-        <div id="tillHwStatus" style="font-size:11px;font-weight:600;color:#9ca3af">Not connected</div>
-      </div>
-      <div id="tillHwConnectWrap">
-        <button type="button" id="tillHwConnectBtn" onclick="tillHwConnect()" class="btn-secondary" style="padding:11px">Connect till printer</button>
-      </div>
-      <div id="tillHwActionsWrap" style="display:none;gap:8px">
-        <button type="button" onclick="tillHwOpenDrawer()" class="btn-secondary" style="flex:1;padding:11px;border-color:#006837;color:#006837">Open drawer</button>
-        <button type="button" onclick="tillHwTestReceipt()" class="btn-secondary" style="flex:1;padding:11px">Print test receipt</button>
-      </div>
-    </div>
     <div class="field"><label>Date</label><input type="date" id="cuDate"></div>
     <div class="field"><label>What's this takings from (optional)</label><input type="text" id="cuSource" list="cuSourceOptions" placeholder="e.g. Astrology Workshop, Room Hire"><datalist id="cuSourceOptions"></datalist></div>
     <div class="field-row">
@@ -1921,52 +1916,62 @@ var TillPrinter = {
   }
 };
 
-// ── TILL HARDWARE UI WIRING — connects the Cash-Up screen's buttons to
-// the TillPrinter module above. 💚
+// ── TILL HARDWARE UI WIRING — connects the Eat At Home till screen's
+// hardware card to the TillPrinter module above. 💚
 function tillHwRefreshStatus(){
   var statusEl = document.getElementById('tillHwStatus');
-  var connectWrap = document.getElementById('tillHwConnectWrap');
-  var actionsWrap = document.getElementById('tillHwActionsWrap');
+  var btn = document.getElementById('tillHwConnectBtn');
   var connected = TillPrinter.isConnected();
   if(statusEl){
-    statusEl.textContent = connected ? 'Connected \u2713' : 'Not connected';
+    statusEl.textContent = connected
+      ? 'Connected \u2713 \u2014 cash sales open the drawer automatically'
+      : 'Not connected \u2014 cash sales won\u2019t open the drawer until this is connected';
     statusEl.style.color = connected ? '#166534' : '#9ca3af';
   }
-  if(connectWrap) connectWrap.style.display = connected ? 'none' : 'block';
-  if(actionsWrap) actionsWrap.style.display = connected ? 'flex' : 'none';
+  if(btn) btn.style.display = connected ? 'none' : 'block';
 }
 
 async function tillHwConnect(){
   var btn = document.getElementById('tillHwConnectBtn');
   if(btn){ btn.disabled = true; btn.textContent = 'Connecting\u2026'; }
-  var ok = await TillPrinter.connect();
-  if(btn){ btn.disabled = false; btn.textContent = 'Connect till printer'; }
+  await TillPrinter.connect();
+  if(btn){ btn.disabled = false; btn.textContent = 'Connect'; }
   tillHwRefreshStatus();
-  if(!ok) return;
 }
 
-async function tillHwOpenDrawer(){
-  await TillPrinter.openDrawer();
-}
-
-async function tillHwTestReceipt(){
-  await TillPrinter.printReceipt([
-    '     H.O.M.E HUB CIC',
-    '   Till test receipt',
-    '------------------------------',
-    'This is a test print \u2014 not a',
-    'real transaction.',
-    '------------------------------',
-    new Date().toLocaleString('en-GB')
-  ]);
-}
-
-// Try a silent reconnect the moment the Cash-Up screen loads, so staff
-// don't have to tap "Connect" fresh every single day \u2014 only the very
-// first pairing ever needs the manual tap.
+// Try a silent reconnect the moment the app loads, so staff don't have
+// to tap "Connect" fresh every single day \u2014 only the very first
+// pairing ever needs the manual tap.
 document.addEventListener('DOMContentLoaded', function(){
   TillPrinter.tryReconnectSilently().then(tillHwRefreshStatus);
 });
+
+// ── POST-SALE RECEIPT PROMPT — receipts only ever print if someone
+// actually asks. This small bar appears for a few seconds after any
+// sale (cash or card) with a single "Print receipt" tap; if nobody
+// touches it, it disappears on its own and nothing gets printed. 💚
+function eahShowPostSaleReceiptPrompt(basketSnapshot, total, method){
+  var existing = document.getElementById('eahReceiptPrompt'); if(existing) existing.remove();
+  if(!TillPrinter.isConnected()) return; // nothing to offer if there's no printer to print to
+  var bar = document.createElement('div');
+  bar.id = 'eahReceiptPrompt';
+  bar.style.cssText = 'position:fixed;left:16px;right:16px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:9600;max-width:448px;margin:0 auto;background:#0a1928;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,0.25)';
+  bar.innerHTML = '<span style="color:#fff;font-size:12.5px;font-weight:600">Sale complete \u2014 receipt?</span>'
+    + '<button type="button" id="eahReceiptPromptBtn" style="padding:8px 14px;border-radius:8px;border:none;background:#f58221;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Print receipt</button>';
+  document.body.appendChild(bar);
+  document.getElementById('eahReceiptPromptBtn').onclick = function(){
+    var lines = ['     H.O.M.E HUB CIC', '   Eat @ Home', '------------------------------'];
+    basketSnapshot.forEach(function(l){
+      lines.push(l.qty+'x '+l.name+'  \u00a3'+(l.price*l.qty).toFixed(2));
+    });
+    lines.push('------------------------------');
+    lines.push('Total: \u00a3'+total.toFixed(2)+' ('+method+')');
+    lines.push(new Date().toLocaleString('en-GB'));
+    TillPrinter.printReceipt(lines);
+    bar.remove();
+  };
+  setTimeout(function(){ var b = document.getElementById('eahReceiptPrompt'); if(b) b.remove(); }, 8000);
+}
 
 // ── PAGINATED FETCH — same fix as Heartwood's hwFetchAllRows: PostgREST
 // caps any single request at 1000 rows by default. This loops in pages
@@ -2695,6 +2700,17 @@ async function eahCheckout(method){
     }
 
     showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
+
+    // Drawer only ever fires for cash \u2014 there's no cash to access on a
+    // card sale, so popping it then would just be an unnecessary habit
+    // to train staff into. Fully silent, no receipt touched.
+    if(method === 'cash' && TillPrinter.isConnected()){
+      TillPrinter.openDrawer();
+    }
+    // Receipt is never automatic \u2014 offered as a tap, for either payment
+    // method, and disappears on its own if nobody wants one.
+    eahShowPostSaleReceiptPrompt(eahBasket.slice(), total, method);
+
     eahBasket = [];
     eahSaveBasketToStorage();
     eahReviewMethod = null;
