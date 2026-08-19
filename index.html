@@ -706,6 +706,19 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <p>Same record Heartwood uses — this lands straight in the real ledger.</p>
   </div>
   <div class="form-wrap">
+    <div id="tillHwCard" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:#0e386a;text-transform:uppercase;letter-spacing:.06em">Till printer &amp; drawer</div>
+        <div id="tillHwStatus" style="font-size:11px;font-weight:600;color:#9ca3af">Not connected</div>
+      </div>
+      <div id="tillHwConnectWrap">
+        <button type="button" id="tillHwConnectBtn" onclick="tillHwConnect()" class="btn-secondary" style="padding:11px">Connect till printer</button>
+      </div>
+      <div id="tillHwActionsWrap" style="display:none;gap:8px">
+        <button type="button" onclick="tillHwOpenDrawer()" class="btn-secondary" style="flex:1;padding:11px;border-color:#006837;color:#006837">Open drawer</button>
+        <button type="button" onclick="tillHwTestReceipt()" class="btn-secondary" style="flex:1;padding:11px">Print test receipt</button>
+      </div>
+    </div>
     <div class="field"><label>Date</label><input type="date" id="cuDate"></div>
     <div class="field"><label>What's this takings from (optional)</label><input type="text" id="cuSource" list="cuSourceOptions" placeholder="e.g. Astrology Workshop, Room Hire"><datalist id="cuSourceOptions"></datalist></div>
     <div class="field-row">
@@ -1907,6 +1920,55 @@ var TillPrinter = {
     }
   }
 };
+
+// ── TILL HARDWARE UI WIRING — connects the Cash-Up screen's buttons to
+// the TillPrinter module above. 💚
+function tillHwRefreshStatus(){
+  var statusEl = document.getElementById('tillHwStatus');
+  var connectWrap = document.getElementById('tillHwConnectWrap');
+  var actionsWrap = document.getElementById('tillHwActionsWrap');
+  var connected = TillPrinter.isConnected();
+  if(statusEl){
+    statusEl.textContent = connected ? 'Connected \u2713' : 'Not connected';
+    statusEl.style.color = connected ? '#166534' : '#9ca3af';
+  }
+  if(connectWrap) connectWrap.style.display = connected ? 'none' : 'block';
+  if(actionsWrap) actionsWrap.style.display = connected ? 'flex' : 'none';
+}
+
+async function tillHwConnect(){
+  var btn = document.getElementById('tillHwConnectBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Connecting\u2026'; }
+  var ok = await TillPrinter.connect();
+  if(btn){ btn.disabled = false; btn.textContent = 'Connect till printer'; }
+  tillHwRefreshStatus();
+  if(!ok) return;
+}
+
+async function tillHwOpenDrawer(){
+  await TillPrinter.openDrawer();
+}
+
+async function tillHwTestReceipt(){
+  await TillPrinter.printReceipt([
+    '     H.O.M.E HUB CIC',
+    '   Till test receipt',
+    '------------------------------',
+    'This is a test print \u2014 not a',
+    'real transaction.',
+    '------------------------------',
+    new Date().toLocaleString('en-GB')
+  ]);
+}
+
+// Try a silent reconnect the moment the Cash-Up screen loads, so staff
+// don't have to tap "Connect" fresh every single day \u2014 only the very
+// first pairing ever needs the manual tap.
+document.addEventListener('DOMContentLoaded', function(){
+  TillPrinter.tryReconnectSilently().then(tillHwRefreshStatus);
+});
+
+// ── PAGINATED FETCH — same fix as Heartwood's hwFetchAllRows: PostgREST
 // caps any single request at 1000 rows by default. This loops in pages
 // of 1000 until a short page confirms there's nothing left, so reports
 // built on cash_ups / invoices / financial_transactions (any of which can
