@@ -18,7 +18,6 @@ input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .dt-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .dt-row label{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
 .dt-row input{width:100%;padding:9px 10px;border-radius:9px;border:1.5px solid var(--border)}
-.search{width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--border);margin-bottom:14px;background:var(--card)}
 .member{border:1.5px solid var(--border);border-radius:12px;background:var(--card);margin-bottom:8px;overflow:hidden}
 .member.checked{border-color:var(--dg);background:#f0fdf4}
 .member-row{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;touch-action:manipulation}
@@ -52,8 +51,6 @@ input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div><label>Date</label><input type="date" id="regDate"></div>
     <div><label>Time</label><input type="time" id="regTime"></div>
   </div>
-
-  <input type="text" class="search" id="searchBox" placeholder="Search names…" oninput="renderMembers(this.value)">
 
   <div id="memberList">
     <div class="loading">Loading everyone who's attended before…</div>
@@ -127,22 +124,19 @@ async function loadMembers(){
     });
     members.sort(function(a,b){ return a.name.localeCompare(b.name); });
     members.forEach(function(m){ reasons[m.name] = m.topReason || ''; });
-    renderMembers('');
+    renderMembers();
   }catch(e){
     document.getElementById('memberList').innerHTML = '<div class="empty">Couldn\u2019t load the register \u2014 please check the link, or try again in a moment.</div>';
   }
 }
 
-function renderMembers(filterText){
+function renderMembers(){
   var el = document.getElementById('memberList');
-  var filtered = filterText ? members.filter(function(m){ return m.name.toLowerCase().indexOf(filterText.toLowerCase())>-1; }) : members;
-  if(!filtered.length){
-    el.innerHTML = members.length
-      ? '<div class="empty">No matches \u2014 use "Add someone new" below.</div>'
-      : '<div class="empty">No previous attendees found yet for this group.<br>Use "Add someone new" below \u2014 they\u2019ll be remembered next time.</div>';
+  if(!members.length){
+    el.innerHTML = '<div class="empty">No previous attendees found yet for this group.<br>Use "Add someone new" below \u2014 they\u2019ll be remembered next time.</div>';
     return;
   }
-  el.innerHTML = filtered.map(function(m){
+  el.innerHTML = members.map(function(m){
     var checked = !!selected[m.name];
     var reason = reasons[m.name] || '';
     var opts = reasonOptions.map(function(r){ return '<option value="'+r.replace(/"/g,'&quot;')+'" '+(r===reason?'selected':'')+'>'+r+'</option>'; }).join('');
@@ -162,7 +156,7 @@ function toggleMember(name){
     var m = members.find(function(x){ return x.name===name; });
     reasons[name] = (m && m.topReason) || reasonOptions[0] || '';
   }
-  renderMembers(document.getElementById('searchBox').value);
+  renderMembers();
   updateBadge();
 }
 function setReason(name, val){ reasons[name] = val; }
@@ -186,7 +180,7 @@ document.getElementById('addBtn').addEventListener('click', function(){
   selected[name] = name;
   if(!reasons[name]) reasons[name] = reasonOptions[0] || '';
   input.value = '';
-  renderMembers(document.getElementById('searchBox').value);
+  renderMembers();
   updateBadge();
 });
 
@@ -239,8 +233,7 @@ document.getElementById('submitBtn').addEventListener('click', async function(){
     if(skipped.length) msg += ' (' + skipped.length + ' already signed in today, skipped)';
     alert(msg);
     selected = {};
-    document.getElementById('searchBox').value = '';
-    renderMembers('');
+    renderMembers();
     updateBadge();
   }catch(e){
     alert('Could not save \u2014 ' + e.message);
