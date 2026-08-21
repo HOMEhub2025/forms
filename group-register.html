@@ -7,13 +7,13 @@
 <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;--bg:#f5f6fa;--card:#fff;--border:#e2e8f0;--text:#1a202c;--muted:#64748b;--radius:14px;}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:120px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;min-width:0}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:120px;overflow-x:hidden}
 input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .header{background:var(--db);padding:16px 20px;position:sticky;top:0;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-.header-top{display:flex;justify-content:space-between;align-items:center;max-width:640px;margin:0 auto}
-.header h1{font-family:'League Spartan',sans-serif;font-size:1rem;font-weight:700;color:#fff}
-.badge{background:var(--lg);color:#fff;padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:700}
+.header-top{display:flex;justify-content:space-between;align-items:center;max-width:640px;margin:0 auto;gap:10px}
+.header h1{font-family:'League Spartan',sans-serif;font-size:1rem;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{background:var(--lg);color:#fff;padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:700;flex-shrink:0;white-space:nowrap}
 .wrap{max-width:640px;margin:0 auto;padding:18px 18px 0}
 .dt-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .dt-row label{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
@@ -59,7 +59,7 @@ input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <input type="text" id="addName" placeholder="Full name" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);margin-bottom:8px;box-sizing:border-box">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <input type="tel" id="addMobile" placeholder="Mobile" style="padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);box-sizing:border-box">
-      <input type="text" id="addPostcode" placeholder="Postcode area (e.g. SS7)" style="padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);box-sizing:border-box">
+      <input type="text" id="addPostcode" placeholder="Postcode area" style="padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);box-sizing:border-box">
     </div>
     <input type="email" id="addEmail" placeholder="Email" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);margin-bottom:10px;box-sizing:border-box">
     <button type="button" id="addBtn" style="width:100%;background:var(--db);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:.85rem;cursor:pointer">+ Add &amp; tick present</button>
