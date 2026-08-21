@@ -26,9 +26,7 @@ input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
 .member-name{font-size:.92rem;font-weight:600;color:var(--text);flex:1}
 .reason-wrap{padding:0 14px 12px 50px}
 .reason-wrap select{width:100%;padding:7px 9px;border-radius:8px;border:1px solid var(--border);font-size:.82rem}
-.add-row{display:flex;gap:8px;margin:16px 0}
-.add-row input{flex:1;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border)}
-.add-row button{background:var(--db);color:#fff;border:none;border-radius:10px;padding:0 18px;font-weight:700;font-size:.85rem;cursor:pointer}
+.add-panel{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin:16px 0}
 .empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:.85rem;line-height:1.6}
 .loading{text-align:center;padding:40px 16px;color:var(--muted);font-size:.9rem}
 .footer-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:14px 18px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -2px 10px rgba(0,0,0,.06)}
@@ -56,9 +54,15 @@ input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div class="loading">Loading everyone who's attended before…</div>
   </div>
 
-  <div class="add-row">
-    <input type="text" id="addName" placeholder="Add someone new">
-    <button type="button" id="addBtn">+ Add</button>
+  <div class="add-panel" id="addPanel">
+    <div style="font-size:.72rem;font-weight:700;color:var(--db);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Add someone new</div>
+    <input type="text" id="addName" placeholder="Full name" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);margin-bottom:8px;box-sizing:border-box">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input type="tel" id="addMobile" placeholder="Mobile" style="padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);box-sizing:border-box">
+      <input type="text" id="addPostcode" placeholder="Postcode area (e.g. SS7)" style="padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);box-sizing:border-box">
+    </div>
+    <input type="email" id="addEmail" placeholder="Email" style="width:100%;padding:11px 12px;border-radius:9px;border:1.5px solid var(--border);margin-bottom:10px;box-sizing:border-box">
+    <button type="button" id="addBtn" style="width:100%;background:var(--db);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:.85rem;cursor:pointer">+ Add &amp; tick present</button>
   </div>
 </div>
 
@@ -168,20 +172,59 @@ function updateBadge(){
   document.getElementById('submitBtn').textContent = count ? 'Sign in '+count+' '+(count===1?'person':'people') : 'Sign in selected';
 }
 
-document.getElementById('addBtn').addEventListener('click', function(){
-  var input = document.getElementById('addName');
-  var name = input.value.trim();
-  if(!name) return;
-  var exists = members.some(function(m){ return m.name.toLowerCase()===name.toLowerCase(); });
-  if(!exists){
-    members.push({id:null, name:name, topReason:''});
-    members.sort(function(a,b){ return a.name.localeCompare(b.name); });
+document.getElementById('addBtn').addEventListener('click', async function(){
+  var nameInput = document.getElementById('addName');
+  var name = nameInput.value.trim();
+  if(!name){ alert('Please enter a name first.'); return; }
+  var mobile = document.getElementById('addMobile').value.trim();
+  var postcode = document.getElementById('addPostcode').value.trim();
+  var email = document.getElementById('addEmail').value.trim();
+
+  var existingLocal = members.find(function(m){ return m.name.toLowerCase()===name.toLowerCase(); });
+  if(existingLocal){
+    selected[existingLocal.name] = existingLocal.name;
+    if(!reasons[existingLocal.name]) reasons[existingLocal.name] = reasonOptions[0] || '';
+    nameInput.value=''; document.getElementById('addMobile').value=''; document.getElementById('addPostcode').value=''; document.getElementById('addEmail').value='';
+    renderMembers(); updateBadge();
+    return;
   }
-  selected[name] = name;
-  if(!reasons[name]) reasons[name] = reasonOptions[0] || '';
-  input.value = '';
-  renderMembers();
-  updateBadge();
+
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Adding\u2026';
+  try{
+    // Same case-insensitive check Heartwood's own sign-in uses, so
+    // "sarah jones" typed here never creates a second record for someone
+    // who's already a known visitor under a slightly different case. 💚
+    var existingRes = await sb('visitors?select=id,full_name&full_name=ilike.'+encodeURIComponent(name)+'&limit=1');
+    var visitorId = null, fullName = name;
+    if(existingRes && existingRes.length){
+      visitorId = existingRes[0].id;
+      fullName = existingRes[0].full_name;
+    } else {
+      var todayStr = localDateStr(new Date());
+      var created = await sb('visitors', {
+        method:'POST', headers:{Prefer:'return=representation'},
+        body: JSON.stringify({
+          full_name: name, is_co_creator: false, first_visit_date: todayStr,
+          email: email || null, mobile: mobile || null, postcode: postcode || null
+        })
+      });
+      if(!created || !created.length) throw new Error('Visitor record didn\u2019t save properly');
+      visitorId = created[0].id;
+      fullName = created[0].full_name;
+    }
+    members.push({id: visitorId, name: fullName, topReason: ''});
+    members.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    selected[fullName] = fullName;
+    if(!reasons[fullName]) reasons[fullName] = reasonOptions[0] || '';
+    nameInput.value=''; document.getElementById('addMobile').value=''; document.getElementById('addPostcode').value=''; document.getElementById('addEmail').value='';
+    renderMembers();
+    updateBadge();
+  }catch(e){
+    alert('Could not add ' + name + ' \u2014 ' + e.message);
+  }finally{
+    btn.disabled = false; btn.textContent = '+ Add & tick present';
+  }
 });
 
 document.getElementById('submitBtn').addEventListener('click', async function(){
