@@ -1797,10 +1797,10 @@ var WorldPayIPS = {
    cash sale can kick the drawer silently without ever printing paper.
    ============================================================ */
 
-// USB vendor/product ID for the P047. TODO: confirm against the real
-// device once connected — this is Munbyn's commonly documented ID for
-// this printer family, not yet verified against Coxy's actual unit.
-var TILL_PRINTER_USB_FILTERS = [{ vendorId: 0x0483 }, { vendorId: 0x1a86 }];
+// No vendor/product ID filter here \u2014 an earlier guess at Munbyn's IDs
+// turned out wrong against the real unit (empty picker, "no device
+// selected"). acceptAllDevices shows every USB device instead, so
+// Coxy can actually pick the real printer regardless of its true ID.
 
 var TillPrinter = {
   _device: null,
@@ -1816,7 +1816,7 @@ var TillPrinter = {
       return false;
     }
     try {
-      var device = await navigator.usb.requestDevice({ filters: TILL_PRINTER_USB_FILTERS });
+      var device = await navigator.usb.requestDevice({ acceptAllDevices: true });
       await device.open();
       if (device.configuration === null) await device.selectConfiguration(1);
 
@@ -1840,6 +1840,8 @@ var TillPrinter = {
       // silent reconnect via getDevices() rather than asking again.
       try { localStorage.setItem('till_printer_usb_picked', '1'); } catch (e) {}
 
+      var idHex = 'vendorId 0x' + device.vendorId.toString(16) + ', productId 0x' + device.productId.toString(16);
+      console.log('Till printer connected \u2014 ' + idHex);
       showToast && showToast('Till printer connected \u2713', 2000);
       return true;
     } catch (e) {
