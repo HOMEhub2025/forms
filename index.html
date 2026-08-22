@@ -559,7 +559,7 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       </div>
       <div style="display:flex;gap:8px">
         <button type="button" onclick="eahConfirmCheckout('cash')" style="padding:11px 16px;border-radius:9px;border:none;background:#006837;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Cash</button>
-        <button type="button" onclick="eahConfirmCheckout('card')" style="padding:11px 16px;border-radius:9px;border:none;background:#0e386a;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Card</button>
+        <button type="button" onclick="eahStartCardPayment()" style="padding:11px 16px;border-radius:9px;border:none;background:#0e386a;color:#fff;font-weight:700;font-size:13px;cursor:pointer">Card</button>
       </div>
     </div>
   </div>
@@ -2644,6 +2644,75 @@ function eahConfirmCheckout(method){
     + '</div>'
   + '</div>';
   document.body.appendChild(o);
+}
+
+// ── CARD PAYMENT — VIA THE ACTUAL TERMINAL 💚
+// Real card payments go straight to the Worldpay IPS terminal: the till
+// sends the amount, the terminal itself confirms whether the payment
+// genuinely went through \u2014 no more staff manually clicking "yes, card
+// taken" on trust. Falls back to the old manual confirm automatically
+// if Worldpay/Clear Business haven't activated IPS Cloud yet (checked
+// live each time, so this starts working on its own the moment
+// WP_IPS_LICENSE_KEY gets set \u2014 no code change needed then).
+function eahStartCardPayment(){
+  if(!eahBasket.length){ showToast('Basket is empty'); return; }
+  if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
+  if(!WP_IPS_LICENSE_KEY){
+    // Terminal not yet activated \u2014 same manual "has card been taken?"
+    // confirm as before, so the till keeps working in the meantime.
+    eahConfirmCheckout('card');
+    return;
+  }
+
+  var total = eahBasket.reduce(function(s,l){return s+l.price*l.qty;},0);
+  var amountMinorUnits = Math.round(total*100);
+  var reference = 'HH'+Date.now();
+
+  var existing = document.getElementById('eahCardPaymentOverlay'); if(existing) existing.remove();
+  var o = document.createElement('div');
+  o.id = 'eahCardPaymentOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,0.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center">'
+    + '<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">\u00a3'+total.toFixed(2)+'</div>'
+    + '<div id="eahCardPaymentStatus" style="font-size:13px;color:#6b7280;line-height:1.5;margin:10px 0 20px">Sending to terminal\u2026</div>'
+    + '<button type="button" id="eahCardPaymentCancelBtn" onclick="eahCancelCardPayment()" style="width:100%;padding:11px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#475569;font-weight:600;font-size:13px;cursor:pointer">Cancel</button>'
+  + '</div>';
+  document.body.appendChild(o);
+
+  var statusEl = document.getElementById('eahCardPaymentStatus');
+  var settled = false;
+
+  WorldPayIPS.takePayment(amountMinorUnits, reference, {
+    onNotification: function(text){
+      if(statusEl) statusEl.textContent = text || 'Waiting on terminal\u2026';
+    },
+    onResult: function(result){
+      if(statusEl) statusEl.textContent = (result && result.outcome) || 'Processing\u2026';
+    },
+    onComplete: function(){
+      if(settled) return; settled = true;
+      var el = document.getElementById('eahCardPaymentOverlay'); if(el) el.remove();
+      // Terminal itself has confirmed the payment \u2014 no further manual
+      // "has card been taken" click needed, this genuinely happened.
+      eahCheckout('card');
+    },
+    onError: function(err){
+      if(settled) return; settled = true;
+      if(statusEl){
+        statusEl.style.color = '#dc2626';
+        statusEl.textContent = 'Payment failed \u2014 ' + ((err && err.message) || 'terminal error') + '. Nothing has been charged.';
+      }
+      var cancelBtn = document.getElementById('eahCardPaymentCancelBtn');
+      if(cancelBtn) cancelBtn.textContent = 'Close';
+    }
+  });
+}
+function eahCancelCardPayment(){
+  var el = document.getElementById('eahCardPaymentOverlay'); if(el) el.remove();
+  // Note: this closes the on-screen dialog but can't reliably cancel a
+  // request already in flight to the terminal itself \u2014 if the customer
+  // has already tapped/inserted by the time Cancel is pressed, check the
+  // terminal screen before trying again to avoid taking payment twice.
 }
 async function eahCheckout(method){
   if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
