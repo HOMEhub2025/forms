@@ -1799,7 +1799,7 @@ var WorldPayIPS = {
 
 // No vendor/product ID filter here \u2014 an earlier guess at Munbyn's IDs
 // turned out wrong against the real unit (empty picker, "no device
-// selected"). acceptAllDevices shows every USB device instead, so
+// selected"). An empty filters array shows every USB device instead, so
 // Coxy can actually pick the real printer regardless of its true ID.
 
 var TillPrinter = {
@@ -1816,7 +1816,11 @@ var TillPrinter = {
       return false;
     }
     try {
-      var device = await navigator.usb.requestDevice({ acceptAllDevices: true });
+      // WebUSB (unlike Web Bluetooth) has no acceptAllDevices flag \u2014 an
+      // earlier version of this wrongly borrowed that from the Bluetooth
+      // API. WebUSB always requires a filters array; an empty one is how
+      // you show every connected device in the picker.
+      var device = await navigator.usb.requestDevice({ filters: [] });
       await device.open();
       if (device.configuration === null) await device.selectConfiguration(1);
 
