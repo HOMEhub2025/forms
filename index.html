@@ -2460,13 +2460,15 @@ screenLoaders['screen-eat-at-home'] = loadEatAtHome;
 function eahRenderCategoryTiles(){
   document.getElementById('eahCategoryTabs').innerHTML = '';
   var grid = document.getElementById('eahMenuGrid');
+  grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  grid.style.gap = '8px';
   var cats = Object.keys(eahMenuByCategory);
   if(!cats.length){ grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:12px;padding:20px 0">No menu items set up yet</div>'; return; }
   grid.innerHTML = cats.map(function(c){
     var count = eahMenuByCategory[c].length;
-    return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="text-align:center;padding:22px 12px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
-      + '<div style="font-size:14px;font-weight:700;color:#0a1928;margin-bottom:4px">'+c+'</div>'
-      + '<div style="font-size:10.5px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
+    return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
+      + '<div style="font-size:12.5px;font-weight:700;color:#0a1928;margin-bottom:3px;line-height:1.2">'+c+'</div>'
+      + '<div style="font-size:10px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
     + '</button>';
   }).join('');
 }
@@ -2487,6 +2489,8 @@ function eahBackToCategories(){
 function eahRenderMenuGrid(){
   if(eahView === 'categories'){ eahRenderCategoryTiles(); return; }
   var grid = document.getElementById('eahMenuGrid');
+  grid.style.gridTemplateColumns = '1fr 1fr';
+  grid.style.gap = '10px';
   var items = eahMenuByCategory[eahActiveCategory] || [];
   grid.innerHTML = items.map(function(m){
     var price = parseFloat(m.sell_price)||0;
@@ -2666,6 +2670,13 @@ async function eahCheckout(method){
       }
       showToast('\uD83C\uDF93 Training order \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2014 logged to training records, no real stock or sales affected');
     }catch(trainErr){ showToast('Couldn\u2019t log the training order \u2014 ' + trainErr.message); }
+    // Drawer still fires for practice \u2014 lets staff get used to the
+    // physical action of a cash sale without it being a real one. Training
+    // mode only ever skips the database writes (stock/sales/cash-up),
+    // never the hardware, since there's no real money involved either way.
+    if(method === 'cash' && TillPrinter.isConnected()){
+      TillPrinter.openDrawer();
+    }
     eahBasket = [];
     eahSaveBasketToStorage();
     eahReviewMethod = null;
