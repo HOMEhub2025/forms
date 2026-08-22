@@ -521,6 +521,12 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
         <div class="chip active" data-eah-mode="normal" style="border-radius:999px;padding:4px 9px;font-size:10px">Normal</div>
         <div class="chip" data-eah-mode="locked" style="border-radius:999px;padding:4px 9px;font-size:10px">Lock</div>
       </div>
+
+      <button type="button" id="eahNoSaleBtn" onclick="eahOpenNoSale()" title="Open the drawer without a sale (e.g. giving change) — always logged with a reason" style="flex-shrink:0;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">No sale</button>
+
+      <button type="button" id="eahVoidBtn" onclick="eahOpenVoidRefund()" title="Void or correct a recent sale, with a reason" style="flex-shrink:0;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">Void/Refund</button>
+
+      <span id="eahOfflineBadge" style="display:none;flex-shrink:0;align-items:center;padding:6px 12px;border-radius:999px;border:1px solid;font-size:10.5px;font-weight:700;white-space:nowrap"></span>
     </div>
 
     <div id="eahUnlockBar" style="display:none;position:sticky;top:0;z-index:50;background:#0e386a;border-radius:10px;padding:9px 14px;margin-bottom:12px;justify-content:space-between;align-items:center">
@@ -1938,6 +1944,8 @@ async function tillHwConnect(){
 // pairing ever needs the manual tap.
 document.addEventListener('DOMContentLoaded', function(){
   TillPrinter.tryReconnectSilently().then(tillHwRefreshStatus);
+  eahUpdateOfflineIndicator();
+  eahFlushOfflineQueue();
 });
 
 // ── POST-SALE RECEIPT PROMPT — receipts only ever print if someone
@@ -2702,6 +2710,38 @@ function eahCancelCardPayment(){
   // has already tapped/inserted by the time Cancel is pressed, check the
   // terminal screen before trying again to avoid taking payment twice.
 }
+// Real order-writing pulled out on its own so a live sale and a later
+// offline-queue sync call the exact same logic \u2014 no separate code
+// path that could quietly drift out of sync with the real one. 💚
+async function eahWriteRealSale(basket, total, method, tillSessionId, createdBy){
+  var orderRes = await SB('cafe_orders', {
+    method:'POST', headers:{Prefer:'return=representation'},
+    body: JSON.stringify({ till_session_id: tillSessionId, subtotal: total, payment_method: method, created_by: createdBy })
+  });
+  var order = (orderRes.data||[])[0];
+  var lineItems = basket.map(function(l){
+    return { order_id: order.id, menu_item_id: l.id, item_name: l.name, unit_price: l.price, qty: l.qty, line_total: l.price*l.qty };
+  });
+  await SB('cafe_order_items', { method:'POST', body: JSON.stringify(lineItems) });
+
+  // Decrement stock atomically via the same database function Heartwood
+  // uses \u2014 with two phones potentially selling the same item at once,
+  // reading a value and writing it back later could silently overwrite
+  // another till's decrement. The database does the subtraction itself
+  // now, correct no matter how many tills are selling at the same time.
+  for(var i=0;i<basket.length;i++){
+    var line = basket[i];
+    try{
+      var itemRes = await SB('cafe_menu_items?id=eq.'+line.id+'&select=track_stock');
+      var item = (itemRes.data||[])[0];
+      if(item && item.track_stock){
+        await SB('rpc/decrement_cafe_stock', { method:'POST', body: JSON.stringify({item_id: line.id, decrement_qty: line.qty}) });
+      }
+    }catch(stockErr){ console.warn('[eahWriteRealSale] stock decrement failed:', stockErr.message); }
+  }
+  return order;
+}
+
 async function eahCheckout(method){
   if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
   if(!eahBasket.length){ showToast('Basket is empty'); return; }
@@ -2743,41 +2783,29 @@ async function eahCheckout(method){
   }
 
   try{
-    var orderRes = await SB('cafe_orders', {
-      method:'POST', headers:{Prefer:'return=representation'},
-      body: JSON.stringify({
-        till_session_id: eahTillSession.id, subtotal: total, payment_method: method,
-        created_by: u ? u.display_name : null
-      })
-    });
-    var order = (orderRes.data||[])[0];
-    var lineItems = eahBasket.map(function(l){
-      return { order_id: order.id, menu_item_id: l.id, item_name: l.name, unit_price: l.price, qty: l.qty, line_total: l.price*l.qty };
-    });
-    await SB('cafe_order_items', { method:'POST', body: JSON.stringify(lineItems) });
-
-    // Decrement stock atomically via the same database function
-    // Heartwood uses \u2014 with two phones potentially selling the same
-    // item at once, reading a value and writing it back later could
-    // silently overwrite another till's decrement. The database does
-    // the subtraction itself now, correct no matter how many tills are
-    // selling at the same time.
-    for(var i=0;i<eahBasket.length;i++){
-      var line = eahBasket[i];
+    var willQueue = !navigator.onLine;
+    if(!willQueue){
       try{
-        var itemRes = await SB('cafe_menu_items?id=eq.'+line.id+'&select=track_stock');
-        var item = (itemRes.data||[])[0];
-        if(item && item.track_stock){
-          await SB('rpc/decrement_cafe_stock', { method:'POST', body: JSON.stringify({item_id: line.id, decrement_qty: line.qty}) });
-        }
-      }catch(stockErr){ console.warn('[eahCheckout] stock decrement failed:', stockErr.message); }
+        await eahWriteRealSale(eahBasket, total, method, eahTillSession.id, u ? u.display_name : null);
+      }catch(writeErr){
+        if(eahIsNetworkError(writeErr)){ willQueue = true; } else { throw writeErr; }
+      }
     }
-
-    showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
+    if(willQueue){
+      // No signal reaching Supabase right now \u2014 the sale still happens
+      // for real (drawer fires, basket clears) and gets saved on this
+      // device, syncing itself the moment connectivity returns. Nothing
+      // lost, nothing double-entered.
+      eahQueueOffline({ type:'sale', basket: eahBasket.slice(), total: total, method: method, tillSessionId: eahTillSession.id, createdBy: u ? u.display_name : null });
+      showToast('\uD83D\uDCF6 No connection \u2014 sale saved on this device, will sync automatically \u2014 \u00a3'+total.toFixed(2)+' ('+method+')');
+    } else {
+      showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
+    }
 
     // Drawer only ever fires for cash \u2014 there's no cash to access on a
     // card sale, so popping it then would just be an unnecessary habit
-    // to train staff into. Fully silent, no receipt touched.
+    // to train staff into. Fully silent, no receipt touched. Works
+    // offline too, since it's talking to local USB hardware, not Supabase.
     if(method === 'cash' && TillPrinter.isConnected()){
       TillPrinter.openDrawer();
     }
@@ -2792,6 +2820,217 @@ async function eahCheckout(method){
     loadEatAtHome();
   }catch(e){
     showToast('Couldn\u2019t complete the order \u2014 ' + e.message);
+  }
+}
+
+// ── OFFLINE RESILIENCE — a dropped connection shouldn't mean a lost
+// sale or a forced pen-and-paper fallback. Sales, no-sale drawer opens,
+// all queue locally and sync themselves the instant the connection's
+// back, in the order they happened. 💚
+var EAH_OFFLINE_QUEUE_KEY = 'eah_offline_queue';
+
+function eahIsNetworkError(e){
+  if(!navigator.onLine) return true;
+  var msg = ((e && e.message) || '').toLowerCase();
+  return msg.indexOf('failed to fetch') > -1 || msg.indexOf('networkerror') > -1 || msg.indexOf('load failed') > -1;
+}
+function eahLoadOfflineQueue(){
+  try{ return JSON.parse(localStorage.getItem(EAH_OFFLINE_QUEUE_KEY) || '[]'); }catch(e){ return []; }
+}
+function eahSaveOfflineQueue(q){
+  try{ localStorage.setItem(EAH_OFFLINE_QUEUE_KEY, JSON.stringify(q)); }catch(e){}
+  eahUpdateOfflineIndicator();
+}
+function eahQueueOffline(entry){
+  var q = eahLoadOfflineQueue();
+  entry.queuedAt = new Date().toISOString();
+  q.push(entry);
+  eahSaveOfflineQueue(q);
+}
+function eahUpdateOfflineIndicator(){
+  var el = document.getElementById('eahOfflineBadge');
+  if(!el) return;
+  var q = eahLoadOfflineQueue();
+  if(!navigator.onLine){
+    el.style.display = 'inline-flex';
+    el.style.background = '#fef2f2'; el.style.borderColor = '#fecaca'; el.style.color = '#991b1b';
+    el.textContent = '\uD83D\uDCF6 Offline' + (q.length ? (' \u2014 '+q.length+' queued') : '');
+  } else if(q.length){
+    el.style.display = 'inline-flex';
+    el.style.background = '#fffbeb'; el.style.borderColor = '#fde68a'; el.style.color = '#92400e';
+    el.textContent = '\u23F3 Syncing '+q.length+'\u2026';
+  } else {
+    el.style.display = 'none';
+  }
+}
+async function eahFlushOfflineQueue(){
+  if(!navigator.onLine) return;
+  var q = eahLoadOfflineQueue();
+  if(!q.length) return;
+  var remaining = [];
+  var syncedCount = 0;
+  for(var i=0;i<q.length;i++){
+    var entry = q[i];
+    try{
+      if(entry.type === 'sale'){
+        await eahWriteRealSale(entry.basket, entry.total, entry.method, entry.tillSessionId, entry.createdBy);
+      } else if(entry.type === 'no-sale'){
+        await SB('till_no_sale_log', { method:'POST', body: JSON.stringify({ till_session_id: entry.tillSessionId, reason: entry.reason, opened_by: entry.openedBy }) });
+      }
+      syncedCount++;
+    }catch(e){
+      remaining.push(entry); // still offline or a genuine error — keep it queued, try again next time
+    }
+  }
+  eahSaveOfflineQueue(remaining);
+  if(syncedCount) showToast(syncedCount+' queued item'+(syncedCount===1?'':'s')+' synced \u2713');
+}
+window.addEventListener('online', function(){ eahUpdateOfflineIndicator(); eahFlushOfflineQueue(); });
+window.addEventListener('offline', eahUpdateOfflineIndicator);
+
+// ── NO SALE — opening the drawer without a real sale (giving change,
+// checking the float) is sometimes genuinely needed, but it should
+// never be a silent, unaccountable action \u2014 always a reason, always
+// logged, always who and when. 💚
+var eahNoSaleReason = null;
+function eahOpenNoSale(){
+  if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
+  var existing = document.getElementById('eahNoSaleOverlay'); if(existing) existing.remove();
+  eahNoSaleReason = null;
+  var o = document.createElement('div');
+  o.id = 'eahNoSaleOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,0.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.onclick = function(e){ if(e.target===o) o.remove(); };
+  var reasons = ['Giving change','Checking float','Testing drawer','Other'];
+  o.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">'
+    + '<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:4px">Open drawer \u2014 no sale</div>'
+    + '<div style="font-size:12px;color:#6b7280;margin-bottom:14px">Logged with a reason, not a silent open \u2014 keeps the till accountable.</div>'
+    + '<div id="eahNoSaleReasons" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'
+      + reasons.map(function(r){ return '<button type="button" onclick="eahSelectNoSaleReason(this,\''+r+'\')" style="text-align:left;padding:10px 12px;border-radius:9px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer">'+r+'</button>'; }).join('')
+    + '</div>'
+    + '<textarea id="eahNoSaleOther" placeholder="Details\u2026" style="display:none;width:100%;border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 12px;font-size:13px;font-family:Montserrat,sans-serif;margin-bottom:12px;box-sizing:border-box;min-height:60px"></textarea>'
+    + '<div style="display:flex;gap:8px">'
+      + '<button type="button" onclick="document.getElementById(\'eahNoSaleOverlay\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#475569;font-weight:600;font-size:13px;cursor:pointer">Cancel</button>'
+      + '<button type="button" id="eahNoSaleConfirmBtn" onclick="eahConfirmNoSale()" disabled style="flex:1;padding:11px;border-radius:10px;border:none;background:#9ca3af;color:#fff;font-weight:700;font-size:13px;cursor:not-allowed">Open drawer</button>'
+    + '</div>'
+  + '</div>';
+  document.body.appendChild(o);
+}
+function eahSelectNoSaleReason(btn, reason){
+  document.querySelectorAll('#eahNoSaleReasons button').forEach(function(b){ b.style.borderColor='#e5e7eb'; b.style.background='#fff'; });
+  btn.style.borderColor = '#006837'; btn.style.background = '#f0fdf4';
+  eahNoSaleReason = reason;
+  document.getElementById('eahNoSaleOther').style.display = reason === 'Other' ? 'block' : 'none';
+  var confirmBtn = document.getElementById('eahNoSaleConfirmBtn');
+  confirmBtn.disabled = false;
+  confirmBtn.style.background = '#006837';
+  confirmBtn.style.cursor = 'pointer';
+}
+async function eahConfirmNoSale(){
+  if(!eahNoSaleReason) return;
+  var reasonText = eahNoSaleReason === 'Other' ? (document.getElementById('eahNoSaleOther').value.trim() || 'Other') : eahNoSaleReason;
+  var u = getUser();
+  var tillSessionId = eahTillSession ? eahTillSession.id : null;
+  var openedBy = u ? u.display_name : null;
+  var overlay = document.getElementById('eahNoSaleOverlay'); if(overlay) overlay.remove();
+  eahNoSaleReason = null;
+  try{
+    if(!navigator.onLine) throw new Error('offline');
+    await SB('till_no_sale_log', { method:'POST', body: JSON.stringify({ till_session_id: tillSessionId, reason: reasonText, opened_by: openedBy }) });
+  }catch(e){
+    eahQueueOffline({ type:'no-sale', tillSessionId: tillSessionId, reason: reasonText, openedBy: openedBy });
+    showToast('\uD83D\uDCF6 Logged locally, will sync \u2014 opening drawer');
+  }
+  if(TillPrinter.isConnected()){
+    TillPrinter.openDrawer();
+  } else {
+    showToast('Reason logged, but no printer connected to fire the drawer');
+  }
+}
+
+// ── VOID / REFUND — corrects a sale rather than deleting it. The
+// original record stays, marked voided with who, when and why, so the
+// figures explain themselves rather than a sale just quietly vanishing. 💚
+async function eahOpenVoidRefund(){
+  var existing = document.getElementById('eahVoidOverlay'); if(existing) existing.remove();
+  var o = document.createElement('div');
+  o.id = 'eahVoidOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9800;background:#f8fafc;overflow-y:auto';
+  o.innerHTML = '<div style="background:#0e386a;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10">'
+    + '<div style="color:#fff;font-weight:700;font-size:16px">Void / Refund a sale</div>'
+    + '<button type="button" onclick="document.getElementById(\'eahVoidOverlay\').remove()" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Close</button>'
+  + '</div>'
+  + '<div style="padding:16px" id="eahVoidList">Loading recent sales\u2026</div>';
+  document.body.appendChild(o);
+
+  if(!navigator.onLine){
+    document.getElementById('eahVoidList').innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:13px;padding:30px 0">No connection right now \u2014 voiding a sale needs to reach the server, try again once back online.</div>';
+    return;
+  }
+  try{
+    var res = await SB('cafe_orders?voided=eq.false&order=created_at.desc&limit=25&select=id,created_at,subtotal,payment_method');
+    var orders = res.data || [];
+    var listEl = document.getElementById('eahVoidList');
+    if(!orders.length){ listEl.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:13px;padding:30px 0">No recent sales to show</div>'; return; }
+    listEl.innerHTML = orders.map(function(ord){
+      var time = new Date(ord.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      return '<div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">'
+        + '<div><div style="font-size:13px;font-weight:700;color:#111827">\u00a3'+Number(ord.subtotal).toFixed(2)+' \u2014 '+ord.payment_method+'</div><div style="font-size:11px;color:#9ca3af">'+time+'</div></div>'
+        + '<button type="button" onclick="eahOpenVoidReason(\''+ord.id+'\','+Number(ord.subtotal).toFixed(2)+',\''+ord.payment_method+'\')" style="padding:8px 14px;border-radius:8px;border:1.5px solid #dc2626;background:#fff;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer">Void</button>'
+      + '</div>';
+    }).join('');
+  }catch(e){
+    document.getElementById('eahVoidList').innerHTML = '<div style="text-align:center;color:#dc2626;font-size:13px;padding:30px 0">Could not load recent sales \u2014 '+e.message+'</div>';
+  }
+}
+var eahVoidReason = null;
+function eahOpenVoidReason(orderId, amount, method){
+  var existing = document.getElementById('eahVoidReasonOverlay'); if(existing) existing.remove();
+  eahVoidReason = null;
+  var o = document.createElement('div');
+  o.id = 'eahVoidReasonOverlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,0.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  o.onclick = function(e){ if(e.target===o) o.remove(); };
+  var reasons = ['Rang up wrong item','Customer changed their mind','Duplicate sale','Other'];
+  o.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">'
+    + '<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:4px">Void \u00a3'+amount+' ('+method+')</div>'
+    + '<div style="font-size:12px;color:#6b7280;margin-bottom:14px">'+(method==='cash' ? 'Return the cash to the customer once this is confirmed.' : 'Card refunds still need doing manually through your card terminal \u2014 this only corrects Heartwood\u2019s figures.')+'</div>'
+    + '<div id="eahVoidReasons" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">'
+      + reasons.map(function(r){ return '<button type="button" onclick="eahSelectVoidReason(this,\''+r+'\')" style="text-align:left;padding:10px 12px;border-radius:9px;border:1.5px solid #e5e7eb;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer">'+r+'</button>'; }).join('')
+    + '</div>'
+    + '<textarea id="eahVoidOther" placeholder="Details\u2026" style="display:none;width:100%;border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 12px;font-size:13px;font-family:Montserrat,sans-serif;margin-bottom:12px;box-sizing:border-box;min-height:60px"></textarea>'
+    + '<div style="display:flex;gap:8px">'
+      + '<button type="button" onclick="document.getElementById(\'eahVoidReasonOverlay\').remove()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;color:#475569;font-weight:600;font-size:13px;cursor:pointer">Cancel</button>'
+      + '<button type="button" id="eahVoidConfirmBtn" onclick="eahConfirmVoid(\''+orderId+'\')" disabled style="flex:1;padding:11px;border-radius:10px;border:none;background:#9ca3af;color:#fff;font-weight:700;font-size:13px;cursor:not-allowed">Confirm void</button>'
+    + '</div>'
+  + '</div>';
+  document.body.appendChild(o);
+}
+function eahSelectVoidReason(btn, reason){
+  document.querySelectorAll('#eahVoidReasons button').forEach(function(b){ b.style.borderColor='#e5e7eb'; b.style.background='#fff'; });
+  btn.style.borderColor = '#dc2626'; btn.style.background = '#fef2f2';
+  eahVoidReason = reason;
+  document.getElementById('eahVoidOther').style.display = reason === 'Other' ? 'block' : 'none';
+  var confirmBtn = document.getElementById('eahVoidConfirmBtn');
+  confirmBtn.disabled = false;
+  confirmBtn.style.background = '#dc2626';
+  confirmBtn.style.cursor = 'pointer';
+}
+async function eahConfirmVoid(orderId){
+  if(!eahVoidReason) return;
+  var reasonText = eahVoidReason === 'Other' ? (document.getElementById('eahVoidOther').value.trim() || 'Other') : eahVoidReason;
+  var u = getUser();
+  try{
+    await SB('cafe_orders?id=eq.'+orderId, {
+      method:'PATCH',
+      body: JSON.stringify({ voided:true, void_reason:reasonText, voided_at:new Date().toISOString(), voided_by: u ? u.display_name : null })
+    });
+    showToast('Sale voided \u2713');
+    var reasonOverlay = document.getElementById('eahVoidReasonOverlay'); if(reasonOverlay) reasonOverlay.remove();
+    var listOverlay = document.getElementById('eahVoidOverlay'); if(listOverlay) listOverlay.remove();
+    eahVoidReason = null;
+  }catch(e){
+    showToast('Could not void \u2014 ' + e.message);
   }
 }
 
