@@ -12,7 +12,9 @@
   --text:#1a202c;--muted:#64748b;--radius:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:78px}
+html{overflow-x:hidden}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:78px;overflow-x:hidden;max-width:100vw}
+*{word-wrap:break-word;overflow-wrap:break-word}
 input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
 
 /* HEADER */
@@ -2956,11 +2958,11 @@ async function eahOpenVoidRefund(){
   var o = document.createElement('div');
   o.id = 'eahVoidOverlay';
   o.style.cssText = 'position:fixed;inset:0;z-index:9800;background:#f8fafc;overflow-y:auto';
-  o.innerHTML = '<div style="background:#0e386a;padding:16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10">'
-    + '<div style="color:#fff;font-weight:700;font-size:16px">Void / Refund a sale</div>'
-    + '<button type="button" onclick="document.getElementById(\'eahVoidOverlay\').remove()" style="background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Close</button>'
+  o.innerHTML = '<div style="background:#0e386a;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:10">'
+    + '<div style="color:#fff;font-weight:700;font-size:16px;min-width:0">Void / Refund</div>'
+    + '<button type="button" onclick="document.getElementById(\'eahVoidOverlay\').remove()" style="flex-shrink:0;background:rgba(255,255,255,0.18);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">Close</button>'
   + '</div>'
-  + '<div style="padding:16px" id="eahVoidList">Loading recent sales\u2026</div>';
+  + '<div style="padding:16px;word-wrap:break-word" id="eahVoidList">Loading recent sales\u2026</div>';
   document.body.appendChild(o);
 
   if(!navigator.onLine){
