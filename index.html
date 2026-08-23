@@ -508,14 +508,15 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <h2 style="font-size:17px;margin:0">Eat @ <span>Home</span></h2>
   </div>
   <div class="form-wrap" style="padding-bottom:100px">
-    <div id="eahStatusBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-      <div id="tillHwCard" title="Cash sales won’t open the drawer until this is connected" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 4px 4px 10px;white-space:nowrap">
+    <div id="eahStatusBar" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px">
+      <div id="tillHwCard" title="Cash sales won’t open the drawer until this is connected" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 4px 4px 9px;white-space:nowrap">
         <span id="tillHwDot" style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0"></span>
-        <button type="button" id="tillHwConnectBtn" onclick="tillHwConnect()" style="padding:5px 9px;border-radius:999px;border:none;background:#006837;color:#fff;font-size:10px;font-weight:700;cursor:pointer">Connect printer</button>
+        <span style="font-size:12px">🖨️</span>
+        <button type="button" id="tillHwConnectBtn" onclick="tillHwConnect()" style="padding:5px 9px;border-radius:999px;border:none;background:#006837;color:#fff;font-size:10px;font-weight:700;cursor:pointer">Connect</button>
       </div>
 
-      <div id="eahTrainingBox" title="Practise sales without touching real stock, sales or cash-up" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 4px 4px 10px;white-space:nowrap">
-        <span style="font-size:10.5px;font-weight:600;color:#374151">🎓 Training</span>
+      <div id="eahTrainingBox" title="Practise sales without touching real stock, sales or cash-up" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 4px 4px 9px;white-space:nowrap">
+        <span style="font-size:12px">🎓</span>
         <button type="button" id="eahTrainingToggle" onclick="eahToggleTrainingMode()" style="padding:5px 9px;border-radius:999px;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;font-size:10px;font-weight:700;cursor:pointer">Off</button>
       </div>
 
@@ -524,11 +525,15 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
         <div class="chip" data-eah-mode="locked" style="border-radius:999px;padding:4px 9px;font-size:10px">Lock</div>
       </div>
 
-      <button type="button" id="eahNoSaleBtn" onclick="eahOpenNoSale()" title="Open the drawer without a sale (e.g. giving change) — always logged with a reason" style="flex-shrink:0;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">No sale</button>
+      <span id="eahOfflineBadge" style="display:none;flex-shrink:0;align-items:center;padding:5px 10px;border-radius:999px;border:1px solid;font-size:10px;font-weight:700;white-space:nowrap"></span>
 
-      <button type="button" id="eahVoidBtn" onclick="eahOpenVoidRefund()" title="Void or correct a recent sale, with a reason" style="flex-shrink:0;padding:6px 12px;border-radius:999px;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">Void/Refund</button>
-
-      <span id="eahOfflineBadge" style="display:none;flex-shrink:0;align-items:center;padding:6px 12px;border-radius:999px;border:1px solid;font-size:10.5px;font-weight:700;white-space:nowrap"></span>
+      <div style="position:relative;margin-left:auto;flex-shrink:0">
+        <button type="button" onclick="eahToggleMoreMenu()" title="More till actions" style="width:30px;height:30px;border-radius:50%;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:14px;font-weight:700;cursor:pointer;line-height:1">⋯</button>
+        <div id="eahMoreMenu" style="display:none;position:absolute;top:36px;right:0;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:170px;overflow:hidden;z-index:200">
+          <button type="button" onclick="eahToggleMoreMenu();eahOpenNoSale()" style="display:block;width:100%;text-align:left;padding:11px 14px;border:none;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer;border-bottom:1px solid #f3f4f6">🔓 No sale (open drawer)</button>
+          <button type="button" onclick="eahToggleMoreMenu();eahOpenVoidRefund()" style="display:block;width:100%;text-align:left;padding:11px 14px;border:none;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer">↩️ Void / Refund a sale</button>
+        </div>
+      </div>
     </div>
 
     <div id="eahUnlockBar" style="display:none;position:sticky;top:0;z-index:50;background:#0e386a;border-radius:10px;padding:9px 14px;margin-bottom:12px;justify-content:space-between;align-items:center">
@@ -2895,6 +2900,21 @@ window.addEventListener('offline', eahUpdateOfflineIndicator);
 // never be a silent, unaccountable action \u2014 always a reason, always
 // logged, always who and when. 💚
 var eahNoSaleReason = null;
+// ── MORE MENU — occasional-use actions (No Sale, Void/Refund) live
+// here rather than permanently cluttering the status bar, since they're
+// exceptions, not something used on every sale. 💚
+function eahToggleMoreMenu(){
+  var menu = document.getElementById('eahMoreMenu');
+  if(!menu) return;
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', function(e){
+  var menu = document.getElementById('eahMoreMenu');
+  if(!menu || menu.style.display !== 'block') return;
+  if(e.target.closest('#eahMoreMenu') || e.target.closest('[onclick="eahToggleMoreMenu()"]')) return;
+  menu.style.display = 'none';
+});
+
 function eahOpenNoSale(){
   if(!eahTillSession && !eahTrainingMode){ showToast('No till session open'); return; }
   var existing = document.getElementById('eahNoSaleOverlay'); if(existing) existing.remove();
