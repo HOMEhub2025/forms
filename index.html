@@ -511,12 +511,12 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
     <div id="eahStatusBar" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px">
       <div id="tillHwCard" title="Cash sales won’t open the drawer until this is connected" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 4px 4px 9px;white-space:nowrap">
         <span id="tillHwDot" style="width:6px;height:6px;border-radius:50%;background:#d1d5db;flex-shrink:0"></span>
-        <span style="font-size:12px">🖨️</span>
+        <span style="display:inline-flex"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg></span>
         <button type="button" id="tillHwConnectBtn" onclick="tillHwConnect()" style="padding:5px 9px;border-radius:999px;border:none;background:#006837;color:#fff;font-size:10px;font-weight:700;cursor:pointer">Connect</button>
       </div>
 
       <div id="eahTrainingBox" title="Practise sales without touching real stock, sales or cash-up" style="flex-shrink:0;display:flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:999px;padding:4px 4px 4px 9px;white-space:nowrap">
-        <span style="font-size:12px">🎓</span>
+        <span style="display:inline-flex"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg></span>
         <button type="button" id="eahTrainingToggle" onclick="eahToggleTrainingMode()" style="padding:5px 9px;border-radius:999px;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;font-size:10px;font-weight:700;cursor:pointer">Off</button>
       </div>
 
@@ -530,8 +530,8 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
       <div style="position:relative;margin-left:auto;flex-shrink:0">
         <button type="button" onclick="eahToggleMoreMenu()" title="More till actions" style="width:30px;height:30px;border-radius:50%;border:1px solid #e5e7eb;background:#f8fafc;color:#374151;font-size:14px;font-weight:700;cursor:pointer;line-height:1">⋯</button>
         <div id="eahMoreMenu" style="display:none;position:absolute;top:36px;right:0;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:170px;overflow:hidden;z-index:200">
-          <button type="button" onclick="eahToggleMoreMenu();eahOpenNoSale()" style="display:block;width:100%;text-align:left;padding:11px 14px;border:none;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer;border-bottom:1px solid #f3f4f6">🔓 No sale (open drawer)</button>
-          <button type="button" onclick="eahToggleMoreMenu();eahOpenVoidRefund()" style="display:block;width:100%;text-align:left;padding:11px 14px;border:none;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer">↩️ Void / Refund a sale</button>
+          <button type="button" onclick="eahToggleMoreMenu();eahOpenNoSale()" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:11px 14px;border:none;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer;border-bottom:1px solid #f3f4f6"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>No sale (open drawer)</button>
+          <button type="button" onclick="eahToggleMoreMenu();eahOpenVoidRefund()" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:11px 14px;border:none;background:#fff;color:#374151;font-size:12.5px;font-weight:600;cursor:pointer"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>Void / Refund a sale</button>
         </div>
       </div>
     </div>
@@ -2421,7 +2421,7 @@ function eahToggleTrainingMode(){
   eahTrainingMode = !eahTrainingMode;
   var btn = document.getElementById('eahTrainingToggle');
   if(btn){
-    btn.textContent = eahTrainingMode ? '\uD83C\uDF93 Training ON' : 'Off';
+    btn.textContent = eahTrainingMode ? 'Training ON' : 'Off';
     btn.style.borderColor = eahTrainingMode ? '#f59e0b' : '#e5e7eb';
     btn.style.background = eahTrainingMode ? '#fef3c7' : '#fff';
     btn.style.color = eahTrainingMode ? '#92400e' : '#6b7280';
@@ -2463,15 +2463,33 @@ screenLoaders['screen-eat-at-home'] = loadEatAtHome;
 // Category names are admin-editable free text, not a fixed list, so
 // this is a best-effort lookup for common ones with a sensible default
 // for anything new \u2014 add more pairs here any time a category needs
-// its own icon rather than the generic plate. 💚
-var EAH_CATEGORY_ICONS = {
-  'biscuits': '🍪', 'cakes & treats': '🍰', 'cakes': '🍰', 'cold drinks': '🥤',
-  'crisps': '🍟', 'food': '🍽️', 'fruit': '🍎', 'general': '🛒',
-  'hot drinks': '☕', 'ice cream': '🍦', 'ice lollies': '🍧', 'sandwiches': '🥪',
-  'snacks': '🍿', 'cakes and treats': '🍰'
+// its own icon rather than the generic plate. Genuine wireframe SVGs
+// (Lucide, stroke-based, matching the back-btn icon style already used
+// throughout the app) \u2014 never emoji in the apps. 💚
+var EAH_ICON_SVG_INNER = {
+  cookie: '<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/>',
+  cake: '<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/>',
+  'cup-soda': '<path d="m6 8 1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8"/><path d="M5 8h14"/><path d="M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0"/><path d="m12 8 1-6h2"/>',
+  package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/>',
+  utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+  cherry: '<path d="M2 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z"/><path d="M12 17a5 5 0 0 0 10 0c0-2.76-2.5-5-5-3-2.5-2-5 .24-5 3Z"/><path d="M7 14c3.22-2.91 4.29-8.75 5-12 1.66 2.38 4.94 9 5 12"/><path d="M22 9c-4.29 0-7.14-2.33-10-7 5.71 0 10 4.67 10 7Z"/>',
+  'shopping-basket': '<path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/>',
+  coffee: '<path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/>',
+  'ice-cream-cone': '<path d="m7 11 4.08 10.35a1 1 0 0 0 1.84 0L17 11"/><path d="M17 7A5 5 0 0 0 7 7"/><path d="M17 7a2 2 0 0 1 0 4H7a2 2 0 0 1 0-4"/>',
+  popsicle: '<path d="M18.6 14.4c.8-.8.8-2 0-2.8l-8.1-8.1a4.95 4.95 0 1 0-7.1 7.1l8.1 8.1c.9.7 2.1.7 2.9-.1Z"/><path d="m22 22-5.5-5.5"/>',
+  sandwich: '<path d="m2.37 11.223 8.372-6.777a2 2 0 0 1 2.516 0l8.371 6.777"/><path d="M21 15a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5.25"/><path d="M3 15a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h9"/><path d="m6.67 15 6.13 4.6a2 2 0 0 0 2.8-.4l3.15-4.2"/><rect width="20" height="4" x="2" y="11" rx="1"/>',
+  popcorn: '<path d="M18 8a2 2 0 0 0 0-4 2 2 0 0 0-4 0 2 2 0 0 0-4 0 2 2 0 0 0-4 0 2 2 0 0 0 0 4"/><path d="M10 22 9 8"/><path d="m14 22 1-14"/><path d="M20 8c.5 0 .9.4.8 1l-2.6 12c-.1.5-.7 1-1.2 1H7c-.6 0-1.1-.4-1.2-1L3.2 9c-.1-.6.3-1 .8-1Z"/>'
+};
+var EAH_CATEGORY_ICON_NAME = {
+  'biscuits': 'cookie', 'cakes & treats': 'cake', 'cakes': 'cake', 'cakes and treats': 'cake',
+  'cold drinks': 'cup-soda', 'crisps': 'package', 'food': 'utensils', 'fruit': 'cherry',
+  'general': 'shopping-basket', 'hot drinks': 'coffee', 'ice cream': 'ice-cream-cone',
+  'ice lollies': 'popsicle', 'sandwiches': 'sandwich', 'snacks': 'popcorn'
 };
 function eahCategoryIcon(name){
-  return EAH_CATEGORY_ICONS[(name||'').toLowerCase().trim()] || '🍽️';
+  var iconName = EAH_CATEGORY_ICON_NAME[(name||'').toLowerCase().trim()] || 'shopping-basket';
+  var inner = EAH_ICON_SVG_INNER[iconName] || EAH_ICON_SVG_INNER['shopping-basket'];
+  return '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#006837" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>';
 }
 
 function eahRenderCategoryTiles(){
@@ -2484,7 +2502,7 @@ function eahRenderCategoryTiles(){
   grid.innerHTML = cats.map(function(c){
     var count = eahMenuByCategory[c].length;
     return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
-      + '<div style="font-size:30px;margin-bottom:6px;line-height:1">'+eahCategoryIcon(c)+'</div>'
+      + '<div style="margin-bottom:6px">'+eahCategoryIcon(c)+'</div>'
       + '<div style="font-size:16px;font-weight:700;color:#0a1928;margin-bottom:3px;line-height:1.2">'+c+'</div>'
       + '<div style="font-size:12.5px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
     + '</button>';
@@ -2651,7 +2669,7 @@ function eahConfirmCheckout(method){
   o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(14,56,106,0.5);display:flex;align-items:center;justify-content:center;padding:20px';
   o.onclick = function(e){ if(e.target===o) o.remove(); };
   o.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:340px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.3)" onclick="event.stopPropagation()">'
-    + (eahTrainingMode ? '<div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:8px">\uD83C\uDF93 TRAINING \u2014 not a real sale</div><br>' : '')
+    + (eahTrainingMode ? '<div style="display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:8px">TRAINING \u2014 not a real sale</div><br>' : '')
     + '<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">Confirm '+methodLabel+' \u2014 \u00a3'+total.toFixed(2)+'</div>'
     + '<div style="font-size:12.5px;color:#6b7280;line-height:1.5;margin-bottom:18px">'
       + (method==='card' ? 'No card terminal is connected to this phone \u2014 confirm the card payment has genuinely been taken before this locks in and moves to the next customer.' : 'Confirm the cash has been received before this locks in and moves to the next customer.')
@@ -2787,7 +2805,7 @@ async function eahCheckout(method){
         });
         await SB('cafe_training_order_items', { method:'POST', body: JSON.stringify(trainLineItems) });
       }
-      showToast('\uD83C\uDF93 Training order \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2014 logged to training records, no real stock or sales affected');
+      showToast('Training order \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2014 logged to training records, no real stock or sales affected');
     }catch(trainErr){ showToast('Couldn\u2019t log the training order \u2014 ' + trainErr.message); }
     // Drawer still fires for practice \u2014 lets staff get used to the
     // physical action of a cash sale without it being a real one. Training
@@ -2819,7 +2837,7 @@ async function eahCheckout(method){
       // device, syncing itself the moment connectivity returns. Nothing
       // lost, nothing double-entered.
       eahQueueOffline({ type:'sale', basket: eahBasket.slice(), total: total, method: method, tillSessionId: eahTillSession.id, createdBy: u ? u.display_name : null });
-      showToast('\uD83D\uDCF6 No connection \u2014 sale saved on this device, will sync automatically \u2014 \u00a3'+total.toFixed(2)+' ('+method+')');
+      showToast('No connection \u2014 sale saved on this device, will sync automatically \u2014 \u00a3'+total.toFixed(2)+' ('+method+')');
     } else {
       showToast('Order taken \u2014 \u00a3'+total.toFixed(2)+' ('+method+') \u2713');
     }
@@ -2876,11 +2894,11 @@ function eahUpdateOfflineIndicator(){
   if(!navigator.onLine){
     el.style.display = 'inline-flex';
     el.style.background = '#fef2f2'; el.style.borderColor = '#fecaca'; el.style.color = '#991b1b';
-    el.textContent = '\uD83D\uDCF6 Offline' + (q.length ? (' \u2014 '+q.length+' queued') : '');
+    el.textContent = 'Offline' + (q.length ? (' \u2014 '+q.length+' queued') : '');
   } else if(q.length){
     el.style.display = 'inline-flex';
     el.style.background = '#fffbeb'; el.style.borderColor = '#fde68a'; el.style.color = '#92400e';
-    el.textContent = '\u23F3 Syncing '+q.length+'\u2026';
+    el.textContent = 'Syncing '+q.length+'\u2026';
   } else {
     el.style.display = 'none';
   }
@@ -2976,7 +2994,7 @@ async function eahConfirmNoSale(){
     await SB('till_no_sale_log', { method:'POST', body: JSON.stringify({ till_session_id: tillSessionId, reason: reasonText, opened_by: openedBy }) });
   }catch(e){
     eahQueueOffline({ type:'no-sale', tillSessionId: tillSessionId, reason: reasonText, openedBy: openedBy });
-    showToast('\uD83D\uDCF6 Logged locally, will sync \u2014 opening drawer');
+    showToast('Logged locally, will sync \u2014 opening drawer');
   }
   if(TillPrinter.isConnected()){
     TillPrinter.openDrawer();
