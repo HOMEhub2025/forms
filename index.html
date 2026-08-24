@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>H.O.M.E Hub</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0e386a">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -7358,6 +7362,12 @@ document.addEventListener('DOMContentLoaded', async function(){
     enterPractitionerMode();
   } else {
     loadHome();
+  }
+  // Registering this is what makes Chrome offer a real "Install app"
+  // rather than just a bookmark shortcut \u2014 needed for Fully Single App
+  // Kiosk to actually see Companion as an installed app to lock to.
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(function(e){ console.warn('SW registration failed:', e.message); });
   }
 });
 </script>
