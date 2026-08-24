@@ -2460,6 +2460,20 @@ screenLoaders['screen-eat-at-home'] = loadEatAtHome;
 // scan at a glance), then the items inside whichever one you tap, with
 // a clear way back. The basket and its footer never reset between the
 // two \u2014 only which items are actually on screen changes. 💚
+// Category names are admin-editable free text, not a fixed list, so
+// this is a best-effort lookup for common ones with a sensible default
+// for anything new \u2014 add more pairs here any time a category needs
+// its own icon rather than the generic plate. 💚
+var EAH_CATEGORY_ICONS = {
+  'biscuits': '🍪', 'cakes & treats': '🍰', 'cakes': '🍰', 'cold drinks': '🥤',
+  'crisps': '🍟', 'food': '🍽️', 'fruit': '🍎', 'general': '🛒',
+  'hot drinks': '☕', 'ice cream': '🍦', 'ice lollies': '🍧', 'sandwiches': '🥪',
+  'snacks': '🍿', 'cakes and treats': '🍰'
+};
+function eahCategoryIcon(name){
+  return EAH_CATEGORY_ICONS[(name||'').toLowerCase().trim()] || '🍽️';
+}
+
 function eahRenderCategoryTiles(){
   document.getElementById('eahCategoryTabs').innerHTML = '';
   var grid = document.getElementById('eahMenuGrid');
@@ -2469,9 +2483,10 @@ function eahRenderCategoryTiles(){
   if(!cats.length){ grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:12px;padding:20px 0">No menu items set up yet</div>'; return; }
   grid.innerHTML = cats.map(function(c){
     var count = eahMenuByCategory[c].length;
-    return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
-      + '<div style="font-size:12.5px;font-weight:700;color:#0a1928;margin-bottom:3px;line-height:1.2">'+c+'</div>'
-      + '<div style="font-size:10px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
+    return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
+      + '<div style="font-size:30px;margin-bottom:6px;line-height:1">'+eahCategoryIcon(c)+'</div>'
+      + '<div style="font-size:16px;font-weight:700;color:#0a1928;margin-bottom:3px;line-height:1.2">'+c+'</div>'
+      + '<div style="font-size:12.5px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
     + '</button>';
   }).join('');
 }
