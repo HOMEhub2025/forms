@@ -2486,10 +2486,15 @@ var EAH_CATEGORY_ICON_NAME = {
   'general': 'shopping-basket', 'hot drinks': 'coffee', 'ice cream': 'ice-cream-cone',
   'ice lollies': 'popsicle', 'sandwiches': 'sandwich', 'snacks': 'popcorn'
 };
-function eahCategoryIcon(name){
+// Rotating brand palette \u2014 same five colours already used across
+// Heartwood/Companion, cycled per category so tiles read apart from
+// each other at a glance without introducing any off-brand colour.
+var EAH_ICON_COLOURS = ['#006837', '#0e386a', '#f58221', '#39b54a', '#004d25'];
+function eahCategoryIcon(name, index){
   var iconName = EAH_CATEGORY_ICON_NAME[(name||'').toLowerCase().trim()] || 'shopping-basket';
   var inner = EAH_ICON_SVG_INNER[iconName] || EAH_ICON_SVG_INNER['shopping-basket'];
-  return '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#006837" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>';
+  var colour = EAH_ICON_COLOURS[index % EAH_ICON_COLOURS.length];
+  return '<svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="'+colour+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>';
 }
 
 function eahRenderCategoryTiles(){
@@ -2499,10 +2504,10 @@ function eahRenderCategoryTiles(){
   grid.style.gap = '8px';
   var cats = Object.keys(eahMenuByCategory);
   if(!cats.length){ grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:12px;padding:20px 0">No menu items set up yet</div>'; return; }
-  grid.innerHTML = cats.map(function(c){
+  grid.innerHTML = cats.map(function(c, i){
     var count = eahMenuByCategory[c].length;
     return '<button type="button" onclick="eahSelectCategory(\''+c.replace(/'/g,"\\'")+'\')" style="aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;border-radius:14px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer">'
-      + '<div style="margin-bottom:6px">'+eahCategoryIcon(c)+'</div>'
+      + '<div style="margin-bottom:7px">'+eahCategoryIcon(c, i)+'</div>'
       + '<div style="font-size:16px;font-weight:700;color:#0a1928;margin-bottom:3px;line-height:1.2">'+c+'</div>'
       + '<div style="font-size:12.5px;color:#9ca3af">'+count+' item'+(count===1?'':'s')+'</div>'
     + '</button>';
