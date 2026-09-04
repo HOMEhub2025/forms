@@ -566,6 +566,7 @@ function loadEvents() {
       opt.dataset.date = ev.event_date;
       opt.dataset.price = ev.stall_price;
       opt.dataset.table = ev.table_hire_price;
+      opt.dataset.description = ev.description || '';
       opt.textContent = lbl;
       sel.appendChild(opt);
     });
@@ -577,7 +578,8 @@ function showBanner(ev) {
   var fmt = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   var b = document.getElementById('event-banner');
   b.style.display = 'block';
-  b.innerHTML = '<div class="event-banner-name">' + ev.name + '</div><div class="event-banner-meta">' + fmt + '</div><div class="event-banner-meta">H.O.M.E Hub, 88 Brook Road, South Benfleet, SS7 5JF</div>';
+  b.innerHTML = '<div class="event-banner-name">' + ev.name + '</div><div class="event-banner-meta">' + fmt + '</div><div class="event-banner-meta">H.O.M.E Hub, 88 Brook Road, South Benfleet, SS7 5JF</div>'
+    + (ev.description ? '<div class="event-banner-meta" style="margin-top:6px;font-weight:600;color:#0e386a">' + ev.description + '</div>' : '');
 }
 
 // ── NAVIGATION ─────────────────────────────────────────────────────────────
@@ -718,7 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var o = this.options[this.selectedIndex];
     if (!o.value) { document.getElementById('event-banner').style.display = 'none'; eventId = ''; eventData = null; return; }
     eventId = o.value;
-    eventData = { name: o.dataset.name, date: o.dataset.date, stallPrice: o.dataset.price, tablePrice: o.dataset.table };
+    eventData = { name: o.dataset.name, date: o.dataset.date, stallPrice: o.dataset.price, tablePrice: o.dataset.table, description: o.dataset.description };
     showBanner(eventData);
     saveDraft();
   });
