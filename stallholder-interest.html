@@ -379,16 +379,16 @@ footer a{color:rgba(255,255,255,.65);text-decoration:none}
 
     <div style="margin-bottom:14px">
       <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px">Public Liability Insurance
-        <span style="font-weight:400;color:var(--mut);font-size:11px;display:block;margin-top:1px">Required for all vendors. Upload your certificate.</span>
+        <span style="font-weight:400;color:var(--mut);font-size:11px;display:block;margin-top:1px">Optional — if you have a certificate, upload it now. If not, don't worry, we can talk through options with you.</span>
       </div>
       <div class="upload-zone" id="upload-zone">
         <input type="file" id="pli_file" accept=".pdf,.jpg,.jpeg,.png">
         <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></div>
-        <div class="upload-lbl">Click to upload your PLI document</div>
+        <div class="upload-lbl">Click to upload your PLI document (optional)</div>
         <div class="upload-hint">PDF, JPG or PNG — max 5MB</div>
         <div class="upload-fname" id="upload-fname"></div>
       </div>
-      <span class="field-err" id="err-pli">Please upload your PLI certificate — it's required for all vendors</span>
+      <span class="field-err" id="err-pli">There was a problem with your upload — please try again</span>
     </div>
 
     <div class="field-row">
@@ -423,7 +423,7 @@ footer a{color:rgba(255,255,255,.65);text-decoration:none}
       <h4>Before you submit</h4>
       <ul>
         <li>Your application is reviewed before your place is confirmed</li>
-        <li>Valid Public Liability Insurance is required on the day</li>
+        <li>If you hold Public Liability Insurance please bring proof on the day — if you don't, that's okay, just let us know</li>
         <li>Stall fees are due within 7 days of authorisation</li>
         <li>All fees are non-refundable unless H.O.M.E Hub cancels the event</li>
         <li>You must comply with our H&amp;S guidelines in the Stallholder Brief</li>
@@ -621,10 +621,8 @@ function validate(s) {
     desc.classList.toggle('err', noDesc);
     document.getElementById('err-description').classList.toggle('show', noDesc);
     if (noDesc) ok = false;
-    var noPli = !pliFile;
-    document.getElementById('upload-zone').classList.toggle('err', noPli);
-    document.getElementById('err-pli').classList.toggle('show', noPli);
-    if (noPli) ok = false;
+    // PLI is optional — no vendor can't take part in the celebration just because
+    // they don't have a certificate to hand. No validation block here. 💚
   }
   return ok;
 }
