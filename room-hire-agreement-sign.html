@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room Hire Agreement — H.O.M.E Hub CIC</title>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@600;700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--dg:#006837;--db:#0e386a;--or:#f58221;--bg:#f5f6fa;--border:#e2e8f0;--text:#1a202c;--muted:#64748b}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px 14px 60px}
+  .card{background:#fff;border-radius:16px;padding:32px;max-width:820px;margin:0 auto;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:20px;border-bottom:3px solid var(--db);margin-bottom:24px;flex-wrap:wrap;gap:10px}
+  .header img{height:40px;margin-bottom:10px}
+  h1{font-family:'League Spartan',sans-serif;font-size:1.4rem;font-weight:700;color:var(--db)}
+  .sub{font-size:.75rem;color:var(--muted);margin-top:3px}
+  .ref{font-size:.75rem;color:var(--muted);line-height:2;text-align:right}
+  .badge{display:inline-block;background:rgba(0,104,55,.1);border:1px solid rgba(0,104,55,.35);border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:600;color:var(--dg);margin-top:4px}
+  .sec{font-family:'League Spartan',sans-serif;font-size:.9rem;font-weight:600;color:var(--db);text-transform:uppercase;letter-spacing:.06em;margin:24px 0 10px;padding-bottom:5px;border-bottom:2px solid rgba(14,56,106,.15)}
+  table{width:100%;border-collapse:collapse;margin-bottom:8px}
+  td{padding:9px 4px;font-size:.85rem;border-bottom:1px solid var(--border);vertical-align:top}
+  td:first-child{font-weight:600;color:var(--muted);width:38%}
+  p{font-size:.85rem;line-height:1.7;margin-bottom:10px}
+  .sig{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:28px;padding-top:20px;border-top:1px solid var(--border)}
+  .sig-block .line{border-bottom:1px solid #374151;margin-bottom:4px;height:32px;display:flex;align-items:flex-end}
+  .sig-block p{font-size:.75rem;color:var(--muted)}
+  .cursive{font-family:cursive;font-style:italic;font-size:1.1rem;color:var(--db)}
+  .sign-area{background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:18px;margin-top:8px}
+  .sign-area label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:6px}
+  .sign-area input[type=text]{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:'Montserrat',sans-serif;margin-bottom:14px;box-sizing:border-box}
+  canvas{border:1.5px dashed #cbd5e1;border-radius:8px;width:100%;height:150px;touch-action:none;background:#fff;display:block}
+  .canvas-actions{display:flex;gap:8px;margin-top:10px}
+  .canvas-actions button{flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:'Montserrat',sans-serif}
+  .agree-row{display:flex;align-items:flex-start;gap:8px;margin:16px 0;font-size:12.5px;color:#374151}
+  .agree-row input{margin-top:3px}
+  .submit-btn{width:100%;background:var(--dg);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+  .submit-btn:disabled{background:#9ca3af;cursor:not-allowed}
+  .state-msg{text-align:center;padding:60px 20px;font-size:14px;color:var(--muted)}
+  .state-msg.error{color:#b91c1c}
+  .signed-banner{background:rgba(0,104,55,.08);border:1px solid rgba(0,104,55,.3);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--dg);margin-bottom:20px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app" class="card">
+  <div class="state-msg" id="loading">Loading your agreement…</div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fmtDate(d){ if(!d) return ''; var dt = new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}); }
+function fmtDateTime(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}); }
+
+function getRef(){
+  var params = new URLSearchParams(window.location.search);
+  return (params.get('ref')||'').trim();
+}
+
+async function loadAgreement(){
+  var ref = getRef();
+  var app = document.getElementById('app');
+  if(!ref){
+    app.innerHTML = '<div class="state-msg error">No agreement reference found in this link. Please check the link you were sent, or contact H.O.M.E Hub.</div>';
+    return;
+  }
+  try{
+    var res = await fetch(SUPABASE_URL + '/rest/v1/room_hire_agreements?select=*&ref_no=eq.' + encodeURIComponent(ref), {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+    });
+    var rows = await res.json();
+    if(!rows || !rows.length){
+      app.innerHTML = '<div class="state-msg error">We couldn\'t find this agreement, or it\'s not ready to be viewed yet. Please contact H.O.M.E Hub if you think this is a mistake.</div>';
+      return;
+    }
+    renderAgreement(rows[0]);
+  }catch(e){
+    app.innerHTML = '<div class="state-msg error">Something went wrong loading the agreement. Please try again in a moment.</div>';
+  }
+}
+
+function renderAgreement(a){
+  var app = document.getElementById('app');
+  var periodStr = a.end_date ? (fmtDate(a.start_date) + ' to ' + fmtDate(a.end_date)) : (fmtDate(a.start_date) + ' (ongoing, subject to termination clause below)');
+  var isSigned = a.status === 'fully_executed';
+
+  var html = '<div class="header"><div><img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png"><h1>Room Hire Agreement</h1><div class="sub">H.O.M.E Hub CIC &middot; 88 Brook Road, South Benfleet, Essex SS7 5JF</div></div>'
+    + '<div class="ref"><div>Ref: <strong>' + esc(a.ref_no) + '</strong></div><div class="badge">' + (isSigned ? 'Fully executed' : 'Awaiting your signature') + '</div></div></div>';
+
+  if(isSigned){
+    html += '<div class="signed-banner">This agreement was fully signed on ' + fmtDateTime(a.hirer_signed_at) + '. Thank you.</div>';
+  }
+
+  html += '<div class="sec">Parties</div>'
+    + '<table><tr><td>Licensor</td><td>H.O.M.E Hub CIC, Company No. 16104567, 88 Brook Road, South Benfleet, Essex SS7 5JF</td></tr>'
+    + '<tr><td>Hirer</td><td>' + esc(a.hirer_name) + (a.hirer_email ? ' (' + esc(a.hirer_email) + ')' : '') + '</td></tr></table>'
+    + '<div class="sec">Terms</div>'
+    + '<table><tr><td>Room</td><td>' + esc(a.room) + '</td></tr>'
+    + '<tr><td>Days &amp; times</td><td>' + esc(a.pattern) + '</td></tr>'
+    + '<tr><td>Hire period</td><td>' + periodStr + '</td></tr>'
+    + '<tr><td>Rate</td><td>&pound;' + Number(a.rate).toFixed(2) + ' per session</td></tr>'
+    + '<tr><td>Payment terms</td><td>' + esc(a.payment_terms) + '</td></tr></table>'
+    + '<div class="sec">General Terms</div>'
+    + '<p>1. The Hirer must hold valid Public Liability Insurance covering their activity, and provide evidence on request.</p>'
+    + '<p>2. The Hirer is responsible for the safety and conduct of their own attendees during all hired sessions.</p>'
+    + '<p>3. Cancellation of an individual session requires a minimum of 48 hours\u2019 written notice. Late cancellations may still be charged at the full session rate.</p>'
+    + '<p>4. The Hirer is responsible for the room being left in the condition it was found, and liable for the cost of repairing any damage caused during the hire.</p>'
+    + '<p>5. The Hirer must comply with H.O.M.E Hub CIC\u2019s policies at all times whilst on the premises, including fire safety and site access arrangements agreed with staff.</p>'
+    + '<p>6. This agreement may be terminated by either party with 14 days\u2019 written notice.</p>'
+    + '<p>7. H.O.M.E Hub CIC is an alcohol-free community space. This policy applies during all hired sessions.</p>'
+    + (a.additional_conditions ? '<p>8. Additional conditions: ' + esc(a.additional_conditions) + '</p>' : '')
+    + '<div class="sec">Signatures</div>'
+    + '<div class="sig">'
+    + '<div class="sig-block"><div class="line"><span class="cursive">' + esc(a.hub_signed_by) + '</span></div><p>Signed digitally for H.O.M.E Hub CIC</p><p>Name: ' + esc(a.hub_signed_by) + '</p><p>Date: ' + fmtDateTime(a.hub_signed_at) + '</p></div>';
+
+  if(isSigned){
+    html += '<div class="sig-block"><div class="line"><img src="' + a.hirer_signature_png + '" style="height:40px"></div><p>Signed by Hirer</p><p>Name: ' + esc(a.hirer_signed_name) + '</p><p>Date: ' + fmtDateTime(a.hirer_signed_at) + '</p></div></div>';
+    html += '<div style="text-align:center;margin-top:20px"><button onclick="window.print()" class="submit-btn" style="width:auto;padding:12px 28px">Print / Save as PDF</button></div>';
+    app.innerHTML = html;
+    return;
+  } else {
+    html += '<div class="sig-block"><div class="line"></div><p>Awaiting your signature below</p></div></div>';
+  }
+
+  html += '<div class="sign-area">'
+    + '<label>Your full name</label>'
+    + '<input type="text" id="sign-name" placeholder="Type your full name">'
+    + '<label>Draw your signature</label>'
+    + '<canvas id="sig-canvas" width="600" height="150"></canvas>'
+    + '<div class="canvas-actions"><button onclick="clearCanvas()">Clear</button></div>'
+    + '<div class="agree-row"><input type="checkbox" id="agree-check"><label for="agree-check">I have read and agree to the terms of this Room Hire Agreement.</label></div>'
+    + '<button class="submit-btn" id="submit-btn" onclick="submitSignature(\'' + esc(a.ref_no).replace(/'/g,"\\'") + '\')" disabled>Sign agreement</button>'
+    + '</div>';
+
+  app.innerHTML = html;
+  initCanvas();
+  document.getElementById('agree-check').addEventListener('change', updateSubmitState);
+  document.getElementById('sign-name').addEventListener('input', updateSubmitState);
+}
+
+var drawing=false, last=null, hasDrawn=false;
+function initCanvas(){
+  var c = document.getElementById('sig-canvas');
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle = '#0e386a'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  function pos(e){
+    var r = c.getBoundingClientRect();
+    var cx = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
+    var cy = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
+    return { x: cx*(c.width/r.width), y: cy*(c.height/r.height) };
+  }
+  function start(e){ drawing=true; last=pos(e); e.preventDefault(); }
+  function move(e){
+    if(!drawing) return;
+    var p = pos(e);
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    last = p; hasDrawn = true; e.preventDefault();
+    updateSubmitState();
+  }
+  function end(){ drawing=false; }
+  c.addEventListener('mousedown', start); c.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  c.addEventListener('touchstart', start, {passive:false}); c.addEventListener('touchmove', move, {passive:false}); c.addEventListener('touchend', end);
+}
+function clearCanvas(){
+  var c = document.getElementById('sig-canvas');
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+  hasDrawn = false;
+  updateSubmitState();
+}
+function updateSubmitState(){
+  var name = (document.getElementById('sign-name')||{}).value || '';
+  var agreed = (document.getElementById('agree-check')||{}).checked;
+  var btn = document.getElementById('submit-btn');
+  if(btn) btn.disabled = !(name.trim() && agreed && hasDrawn);
+}
+
+async function submitSignature(refNo){
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Signing…';
+  var name = document.getElementById('sign-name').value.trim();
+  var canvas = document.getElementById('sig-canvas');
+  var pngData = canvas.toDataURL('image/png');
+
+  try{
+    var res = await fetch(SUPABASE_URL + '/rest/v1/rpc/sign_room_hire_agreement', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_ref_no: refNo, p_signature_png: pngData, p_signed_name: name })
+    });
+    if(!res.ok){ throw new Error('Sign failed'); }
+    loadAgreement();
+  }catch(e){
+    btn.disabled = false; btn.textContent = 'Sign agreement';
+    alert('Something went wrong saving your signature. Please try again, or contact H.O.M.E Hub.');
+  }
+}
+
+loadAgreement();
+</script>
+</body>
+</html>
