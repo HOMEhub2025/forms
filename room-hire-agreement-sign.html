@@ -112,7 +112,7 @@ function renderAgreement(a){
     + (a.additional_conditions ? '<p>8. Additional conditions: ' + esc(a.additional_conditions) + '</p>' : '')
     + '<div class="sec">Signatures</div>'
     + '<div class="sig">'
-    + '<div class="sig-block"><div class="line"><span class="cursive">' + esc(a.hub_signed_by) + '</span></div><p>Signed digitally for H.O.M.E Hub CIC</p><p>Name: ' + esc(a.hub_signed_by) + '</p><p>Date: ' + fmtDateTime(a.hub_signed_at) + '</p></div>';
+    + '<div class="sig-block"><div class="line">' + (a.hub_signature ? '<img src="' + a.hub_signature + '" style="height:40px">' : '<span class="cursive">' + esc(a.hub_signed_by) + '</span>') + '</div><p>Signed digitally for H.O.M.E Hub CIC</p><p>Name: ' + esc(a.hub_signed_by) + '</p><p>Date: ' + fmtDateTime(a.hub_signed_at) + '</p></div>';
 
   if(isSigned){
     html += '<div class="sig-block"><div class="line"><img src="' + a.hirer_signature_png + '" style="height:40px"></div><p>Signed by Hirer</p><p>Name: ' + esc(a.hirer_signed_name) + '</p><p>Date: ' + fmtDateTime(a.hirer_signed_at) + '</p></div></div>';
