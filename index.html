@@ -4194,12 +4194,19 @@ async function loadCalendarWeek(){
   wrap.innerHTML = '<div class="loading-row">Loading the week…</div>';
   var mon = startOfWeek(calDate);
   var sun = new Date(mon); sun.setDate(mon.getDate()+6);
-  document.getElementById('calDateLabel').textContent = mon.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2013 '+sun.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  var today = new Date(); today.setHours(0,0,0,0);
+  // If today falls inside the week being shown, start from today rather
+  // than Monday — no point seeing Monday and Tuesday again on a
+  // Wednesday. A future or past week (navigated to via the arrows)
+  // still shows in full, since "start from today" only makes sense for
+  // the week you're actually in. 💚
+  var rangeStart = (today >= mon && today <= sun) ? today : mon;
+  document.getElementById('calDateLabel').textContent = rangeStart.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2013 '+sun.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   if(calMode === 'mine' && !getUser()){ wrap.innerHTML = '<div class="agenda-empty">Pick who you are up top to see your calendar.</div>'; return; }
   try{
     var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     var days = [];
-    for(var i=0;i<7;i++){ var d = new Date(mon); d.setDate(mon.getDate()+i); days.push(d); }
+    for(var d = new Date(rangeStart); d <= sun; d.setDate(d.getDate()+1)){ days.push(new Date(d)); }
     var results = await Promise.all(days.map(function(d){ return fetchCalItemsForDate(toISODate(d)); }));
     var todayIso = toISODate(new Date());
     wrap.innerHTML = days.map(function(d, idx){
