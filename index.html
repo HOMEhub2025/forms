@@ -999,8 +999,13 @@ input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
   </div>
 
   <div class="subtabs">
-    <div class="subtab active" data-cal-tab="mine">My calendar</div>
-    <div class="subtab" data-cal-tab="group">Group calendar</div>
+    <div class="subtab" data-cal-tab="mine">My calendar</div>
+    <div class="subtab active" data-cal-tab="group">Group calendar</div>
+  </div>
+
+  <div class="subtabs" style="margin-top:8px">
+    <div class="subtab active" data-cal-view="day">Day</div>
+    <div class="subtab" data-cal-view="week">Week</div>
   </div>
 
   <div class="date-nav">
@@ -4095,74 +4100,120 @@ screenLoaders['screen-book'] = loadBookRoomsData;
    CALENDAR
    ============================================================ */
 var calDate = new Date();
-var calMode = 'mine';
-async function loadCalendar(){
-  document.getElementById('calDateLabel').textContent = fmtDateLabel(toISODate(calDate));
-  var wrap = document.getElementById('calendarList');
-  wrap.innerHTML = '<div class="loading-row">Loading the calendar…</div>';
-  var u = getUser();
-  var iso = toISODate(calDate);
-  try{
-    var items = [];
+var calMode = 'group';
+var calView = 'day';
 
-    // Meetings — governance/trustee-type calendar entries, same as before.
-    var meetingFilter;
-    if(calMode === 'mine'){
-      if(!u){ wrap.innerHTML = '<div class="agenda-empty">Pick who you are up top to see your calendar.</div>'; return; }
-      meetingFilter = 'meeting_date=eq.'+iso+'&or=(organiser_name.eq.'+encodeURIComponent(u.display_name)+',attendee_names.cs.{'+encodeURIComponent(u.display_name)+'})&order=start_time.asc';
-    } else {
-      meetingFilter = 'meeting_date=eq.'+iso+'&calendar_type=eq.group&order=start_time.asc';
-    }
-    var meetingsRes = await SB('meetings?'+meetingFilter);
-    (meetingsRes.data||[]).forEach(function(m){
+// Shared fetch — same three sources (meetings, room bookings, session
+// bookings) used by both the single-day view and the week view, so the
+// two can never show a different picture of the same day. 💚
+async function fetchCalItemsForDate(iso){
+  var u = getUser();
+  var items = [];
+
+  var meetingFilter;
+  if(calMode === 'mine'){
+    if(!u) return items;
+    meetingFilter = 'meeting_date=eq.'+iso+'&or=(organiser_name.eq.'+encodeURIComponent(u.display_name)+',attendee_names.cs.{'+encodeURIComponent(u.display_name)+'})&order=start_time.asc';
+  } else {
+    meetingFilter = 'meeting_date=eq.'+iso+'&calendar_type=eq.group&order=start_time.asc';
+  }
+  var meetingsRes = await SB('meetings?'+meetingFilter);
+  (meetingsRes.data||[]).forEach(function(m){
+    items.push({
+      start: m.start_time, end: m.end_time,
+      title: m.title,
+      sub: fmtTime(m.start_time)+'\u2013'+fmtTime(m.end_time)+(m.location_name ? ' \u00b7 '+m.location_name : '')+(m.organiser_name ? ' \u00b7 '+m.organiser_name : ''),
+      color: 'var(--db)'
+    });
+  });
+
+  if(calMode !== 'mine'){
+    var roomRes = await SB('room_bookings?booking_date=eq.'+iso+'&status=eq.confirmed&deleted_at=is.null&order=start_time.asc');
+    (roomRes.data||[]).forEach(function(r){
       items.push({
-        start: m.start_time, end: m.end_time,
-        title: m.title,
-        sub: fmtTime(m.start_time)+'\u2013'+fmtTime(m.end_time)+(m.location_name ? ' \u00b7 '+m.location_name : '')+(m.organiser_name ? ' \u00b7 '+m.organiser_name : ''),
-        color: 'var(--db)'
+        start: r.start_time, end: r.end_time,
+        title: (r.room_name||r.room||'Room hire')+' \u2014 '+(r.session_name||r.booking_title||r.contact_name||'Booking'),
+        sub: (r.facilitator_name ? r.facilitator_name+' \u00b7 ' : '')+(r.contact_name||''),
+        color: 'var(--or)'
       });
     });
 
-    // Room hire and confirmed room bookings — the actual gap: this
-    // calendar showed meetings only, so a fully confirmed room hire or
-    // a practitioner's own session never appeared here at all, no
-    // matter who was looking or which tab they were on. 💚
-    if(calMode !== 'mine'){
-      var roomRes = await SB('room_bookings?booking_date=eq.'+iso+'&status=eq.confirmed&deleted_at=is.null&order=start_time.asc');
-      (roomRes.data||[]).forEach(function(r){
-        items.push({
-          start: r.start_time, end: r.end_time,
-          title: (r.room_name||r.room||'Room hire')+' \u2014 '+(r.session_name||r.booking_title||r.contact_name||'Booking'),
-          sub: (r.facilitator_name ? r.facilitator_name+' \u00b7 ' : '')+(r.contact_name||''),
-          color: 'var(--or)'
-        });
+    var sessRes = await SB('session_bookings?booking_date=eq.'+iso+'&order=slot_start.asc&select=*,bookable_sessions(name,room_name,facilitator_name)');
+    (sessRes.data||[]).forEach(function(b){
+      var s = b.bookable_sessions || {};
+      items.push({
+        start: b.slot_start, end: b.slot_end,
+        title: (s.name||'Session')+' \u2014 '+(b.client_name||''),
+        sub: (s.room_name ? s.room_name+' \u00b7 ' : '')+(s.facilitator_name||''),
+        color: 'var(--dg)'
       });
+    });
+  }
 
-      var sessRes = await SB('session_bookings?booking_date=eq.'+iso+'&order=slot_start.asc&select=*,bookable_sessions(name,room_name,facilitator_name)');
-      (sessRes.data||[]).forEach(function(b){
-        var s = b.bookable_sessions || {};
-        items.push({
-          start: b.slot_start, end: b.slot_end,
-          title: (s.name||'Session')+' \u2014 '+(b.client_name||''),
-          sub: (s.room_name ? s.room_name+' \u00b7 ' : '')+(s.facilitator_name||''),
-          color: 'var(--dg)'
-        });
-      });
-    }
+  items.sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
+  return items;
+}
 
-    items.sort(function(a,b){ return (a.start||'').localeCompare(b.start||''); });
+function calItemsHtml(items, emptyMsg){
+  if(!items.length) return '<div class="agenda-empty">'+emptyMsg+'</div>';
+  return items.map(function(i){
+    return '<div class="agenda-item"><div class="agenda-bar" style="background:'+i.color+'"></div>' +
+      '<div class="agenda-time">'+fmtTime(i.start)+'</div>' +
+      '<div class="agenda-body"><div class="agenda-title">'+i.title+'</div>' +
+      '<div class="agenda-sub">'+i.sub+'</div></div></div>';
+  }).join('');
+}
 
-    if(!items.length){ wrap.innerHTML = '<div class="agenda-empty">Nothing on '+ (calMode==='mine' ? 'your' : 'the group') +' calendar for this day.</div>'; return; }
-    wrap.innerHTML = items.map(function(i){
-      return '<div class="agenda-item"><div class="agenda-bar" style="background:'+i.color+'"></div>' +
-        '<div class="agenda-time">'+fmtTime(i.start)+'</div>' +
-        '<div class="agenda-body"><div class="agenda-title">'+i.title+'</div>' +
-        '<div class="agenda-sub">'+i.sub+'</div></div></div>';
-    }).join('');
+function startOfWeek(d){
+  var day = d.getDay(); // 0=Sun
+  var diff = (day===0 ? -6 : 1-day); // Monday-based week
+  var mon = new Date(d);
+  mon.setDate(d.getDate()+diff);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+async function loadCalendar(){
+  if(calView === 'week') return loadCalendarWeek();
+
+  document.getElementById('calDateLabel').textContent = fmtDateLabel(toISODate(calDate));
+  var wrap = document.getElementById('calendarList');
+  wrap.innerHTML = '<div class="loading-row">Loading the calendar…</div>';
+  var iso = toISODate(calDate);
+  if(calMode === 'mine' && !getUser()){ wrap.innerHTML = '<div class="agenda-empty">Pick who you are up top to see your calendar.</div>'; return; }
+  try{
+    var items = await fetchCalItemsForDate(iso);
+    wrap.innerHTML = calItemsHtml(items, 'Nothing on '+(calMode==='mine' ? 'your' : 'the group') +' calendar for this day.');
   }catch(e){
     wrap.innerHTML = '<div class="error-banner">Couldn\'t load the calendar — '+e.message+'</div>';
   }
 }
+
+async function loadCalendarWeek(){
+  var wrap = document.getElementById('calendarList');
+  wrap.innerHTML = '<div class="loading-row">Loading the week…</div>';
+  var mon = startOfWeek(calDate);
+  var sun = new Date(mon); sun.setDate(mon.getDate()+6);
+  document.getElementById('calDateLabel').textContent = mon.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' \u2013 '+sun.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  if(calMode === 'mine' && !getUser()){ wrap.innerHTML = '<div class="agenda-empty">Pick who you are up top to see your calendar.</div>'; return; }
+  try{
+    var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var days = [];
+    for(var i=0;i<7;i++){ var d = new Date(mon); d.setDate(mon.getDate()+i); days.push(d); }
+    var results = await Promise.all(days.map(function(d){ return fetchCalItemsForDate(toISODate(d)); }));
+    var todayIso = toISODate(new Date());
+    wrap.innerHTML = days.map(function(d, idx){
+      var iso = toISODate(d);
+      var isToday = iso === todayIso;
+      var heading = dayNames[d.getDay()]+' '+d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+(isToday ? ' \u2014 Today' : '');
+      return '<div class="section-label" style="margin-top:14px'+(isToday?';color:var(--dg)':'')+'">'+heading+'</div>' +
+        calItemsHtml(results[idx], 'Nothing booked.');
+    }).join('');
+  }catch(e){
+    wrap.innerHTML = '<div class="error-banner">Couldn\'t load the week — '+e.message+'</div>';
+  }
+}
+
 document.querySelectorAll('[data-cal-tab]').forEach(function(tab){
   tab.addEventListener('click', function(){
     document.querySelectorAll('[data-cal-tab]').forEach(function(t){ t.classList.remove('active'); });
@@ -4171,8 +4222,16 @@ document.querySelectorAll('[data-cal-tab]').forEach(function(tab){
     loadCalendar();
   });
 });
-document.getElementById('calPrev').addEventListener('click', function(){ calDate.setDate(calDate.getDate()-1); loadCalendar(); });
-document.getElementById('calNext').addEventListener('click', function(){ calDate.setDate(calDate.getDate()+1); loadCalendar(); });
+document.querySelectorAll('[data-cal-view]').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('[data-cal-view]').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    calView = tab.getAttribute('data-cal-view');
+    loadCalendar();
+  });
+});
+document.getElementById('calPrev').addEventListener('click', function(){ calDate.setDate(calDate.getDate()-(calView==='week'?7:1)); loadCalendar(); });
+document.getElementById('calNext').addEventListener('click', function(){ calDate.setDate(calDate.getDate()+(calView==='week'?7:1)); loadCalendar(); });
 screenLoaders['screen-calendar'] = loadCalendar;
 
 /* MEETING SHEET (used from Calendar, Home, Manage FABs) */
