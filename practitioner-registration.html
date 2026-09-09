@@ -214,7 +214,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 3. YOUR PRACTICE -->
-  <div class="card">
+  <div class="card" id="card-practice">
     <div class="card-header">
       <div class="card-num">3</div>
       <div>
@@ -258,7 +258,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 4. AGREEMENT TYPE -->
-  <div class="card">
+  <div class="card" id="card-agreement">
     <div class="card-header">
       <div class="card-num orange">4</div>
       <div>
@@ -295,7 +295,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 5. LONE WORKING -->
-  <div class="card">
+  <div class="card" id="card-lone-working">
     <div class="card-header">
       <div class="card-num blue">5</div>
       <div>
@@ -337,7 +337,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 6. DBS -->
-  <div class="card">
+  <div class="card" id="card-dbs">
     <div class="card-header">
       <div class="card-num">6</div>
       <div>
@@ -371,7 +371,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 7. SAFEGUARDING -->
-  <div class="card">
+  <div class="card" id="card-safeguarding">
     <div class="card-header">
       <div class="card-num">7</div>
       <div>
@@ -405,7 +405,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 8. FIRST AID -->
-  <div class="card">
+  <div class="card" id="card-first-aid">
     <div class="card-header">
       <div class="card-num">8</div>
       <div>
@@ -429,7 +429,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   </div>
 
   <!-- 9. INSURANCE -->
-  <div class="card">
+  <div class="card" id="card-insurance">
     <div class="card-header">
       <div class="card-num">9</div>
       <div>
@@ -474,12 +474,24 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="declaration-box" id="lwa-declaration-box" style="background:#fff7ed;border-color:#fed7aa;margin-top:14px;display:none">
       <h4>Lone Working Declaration</h4>
       <p>Where I work alone on site at H.O.M.E Hub CIC, I confirm I will do so within the boundaries of the Lone Working &amp; Key Holding Framework provided to me, and I accept responsibility for my own safety while working alone within those agreed procedures. I understand that H.O.M.E Hub CIC&rsquo;s responsibility in respect of lone working extends to providing a safe system of work, adequate training and safe premises, and does not extend to risks I choose to accept or to actions taken outside the agreed framework. I will report any incident, near-miss or safety concern arising from lone working to H.O.M.E Hub without delay.</p>
+      <p id="lwa-self-employed-clause" style="display:none;margin-top:8px">As a self-employed practitioner hiring this space independently, I further understand that my lone working arrangements are my own responsibility to manage safely, and that H.O.M.E Hub&rsquo;s support in this respect extends to the premises and the agreed Lone Working &amp; Key Holding Framework, not to the supervision or conduct of the service I independently provide.</p>
     </div>
 
     <label class="consent-row" id="lwa-declaration-row" style="display:none">
       <input type="checkbox" id="lwa_declaration_signed"/>
       <span>I confirm and agree to the Lone Working Declaration above <span style="color:var(--or)">*</span></span>
     </label>
+
+    <div class="declaration-box" id="independence-declaration-box" style="background:#eff6ff;border-color:#bfdbfe;margin-top:14px;display:none">
+      <h4>Self-Employed Independence Declaration</h4>
+      <p>I confirm that I operate as a self-employed practitioner (or through my own registered business), and that in providing my service I act entirely on my own behalf and not as an agent, employee, partner or representative of H.O.M.E Hub CIC. I am responsible for my own tax, insurance, professional conduct, and the safety and quality of the service I provide to my own clients. H.O.M.E Hub CIC&rsquo;s role under this agreement is limited to the hire of space to me, and H.O.M.E Hub CIC accepts no responsibility or liability for the service I deliver, any claims arising from it, or my relationship with my own clients.</p>
+    </div>
+
+    <label class="consent-row" id="independence-declaration-row" style="display:none">
+      <input type="checkbox" id="independence_declaration_signed"/>
+      <span>I confirm and agree to the Self-Employed Independence Declaration above <span style="color:var(--or)">*</span></span>
+    </label>
+
 
     <div class="declaration-box" style="background:#f0faf4;border-color:#bfe3cc;margin-top:14px">
       <h4>Working with H.O.M.E Hub &mdash; the shape of our agreement</h4>
@@ -524,6 +536,55 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <script>
 const SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+
+// ── FORM TEMPLATE (via ?form=slug) — tailors which sections show, whether the
+// agreement type is locked, and which policy wording variants apply ──
+let activeFormTemplate = null;
+async function loadFormTemplate(){
+  var params = new URLSearchParams(window.location.search);
+  var slug = params.get('form');
+  if(!slug) return;
+  try{
+    var res = await fetch(SUPABASE_URL + '/rest/v1/practitioner_form_templates?select=*&slug=eq.' + encodeURIComponent(slug), {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+    });
+    var rows = await res.json();
+    if(rows && rows.length) applyFormTemplate(rows[0]);
+  }catch(e){ /* fall back silently to the full, default form */ }
+}
+
+function applyFormTemplate(cfg){
+  activeFormTemplate = cfg;
+  if(!cfg.show_practice) document.getElementById('card-practice').style.display = 'none';
+  if(!cfg.show_lone_working) document.getElementById('card-lone-working').style.display = 'none';
+  if(!cfg.show_dbs) document.getElementById('card-dbs').style.display = 'none';
+  if(!cfg.show_safeguarding) document.getElementById('card-safeguarding').style.display = 'none';
+  if(!cfg.show_first_aid) document.getElementById('card-first-aid').style.display = 'none';
+  if(!cfg.show_insurance) document.getElementById('card-insurance').style.display = 'none';
+
+  if(cfg.lone_working_variant === 'self_employed'){
+    var clause = document.getElementById('lwa-self-employed-clause');
+    if(clause) clause.style.display = 'block';
+  }
+
+  if(cfg.include_independence_clause){
+    document.getElementById('independence-declaration-box').style.display = 'block';
+    document.getElementById('independence-declaration-row').style.display = 'flex';
+  }
+
+  if(cfg.agreement_type_mode === 'locked' && cfg.agreement_type_locked){
+    document.querySelectorAll('.agreement-opt').forEach(function(opt){
+      if(opt.getAttribute('data-type') !== cfg.agreement_type_locked){
+        opt.style.display = 'none';
+      } else {
+        opt.click();
+        opt.style.pointerEvents = 'none';
+        opt.style.opacity = '1';
+      }
+    });
+  }
+}
+
 
 // ── TOGGLE STATE ──
 const toggleState = { dbs: false, sg: false, fa: false, pli: false, alone: false, lwa: false, kh: false };
@@ -570,6 +631,9 @@ document.querySelectorAll('.agreement-opt').forEach(function(opt) {
   });
 });
 
+loadFormTemplate();
+
+
 // ── SUBMIT ──
 document.getElementById('submit-btn').addEventListener('click', async function() {
   const errorEl = document.getElementById('error-msg');
@@ -612,6 +676,13 @@ document.getElementById('submit-btn').addEventListener('click', async function()
   const lwa_signed = document.getElementById('lwa_declaration_signed').checked;
   if (toggleState.alone && !lwa_signed) {
     errorEl.textContent = 'Please confirm the Lone Working Declaration before submitting.';
+    errorEl.style.display = 'block';
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
+  }
+  const independence_signed = document.getElementById('independence_declaration_signed').checked;
+  if (activeFormTemplate && activeFormTemplate.include_independence_clause && !independence_signed) {
+    errorEl.textContent = 'Please confirm the Self-Employed Independence Declaration before submitting.';
     errorEl.style.display = 'block';
     window.scrollTo({top:0,behavior:'smooth'});
     return;
@@ -660,6 +731,8 @@ document.getElementById('submit-btn').addEventListener('click', async function()
     terms_accepted:            terms_accepted,
     terms_accepted_at:         (function(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })(),
     portal_visible:            document.getElementById('portal_consent').checked,
+    independence_declaration_signed: (activeFormTemplate && activeFormTemplate.include_independence_clause) ? independence_signed : null,
+    form_template_used:        activeFormTemplate ? activeFormTemplate.slug : null,
     status:                    'pending'
   };
 
