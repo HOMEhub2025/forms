@@ -126,17 +126,65 @@ function renderAgreement(a){
   html += '<div class="sign-area">'
     + '<label>Your full name</label>'
     + '<input type="text" id="sign-name" placeholder="Type your full name">'
-    + '<label>Draw your signature</label>'
-    + '<canvas id="sig-canvas" width="600" height="150"></canvas>'
-    + '<div class="canvas-actions"><button onclick="clearCanvas()">Clear</button></div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:10px">'
+      + '<button type="button" id="mode-draw-btn" onclick="setSignMode(\'draw\')" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--db);background:var(--db);color:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:Montserrat,sans-serif">Draw signature</button>'
+      + '<button type="button" id="mode-type-btn" onclick="setSignMode(\'type\')" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:#374151;cursor:pointer;font-size:12px;font-weight:600;font-family:Montserrat,sans-serif">Type signature</button>'
+    + '</div>'
+    + '<div id="draw-mode-wrap">'
+      + '<label>Draw your signature</label>'
+      + '<canvas id="sig-canvas" width="600" height="150"></canvas>'
+      + '<div class="canvas-actions"><button onclick="clearCanvas()">Clear</button></div>'
+    + '</div>'
+    + '<div id="type-mode-wrap" style="display:none">'
+      + '<label>Type your signature</label>'
+      + '<input type="text" id="typed-sig-input" placeholder="Type your name as your signature" oninput="renderTypedSignature()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:\'Montserrat\',sans-serif;margin-bottom:10px;box-sizing:border-box">'
+      + '<canvas id="typed-sig-canvas" width="600" height="150" style="border:1.5px dashed #cbd5e1;border-radius:8px;width:100%;height:150px;background:#fff;display:block"></canvas>'
+    + '</div>'
     + '<div class="agree-row"><input type="checkbox" id="agree-check"><label for="agree-check">I have read and agree to the terms of this Room Hire Agreement.</label></div>'
     + '<button class="submit-btn" id="submit-btn" onclick="submitSignature(\'' + esc(a.ref_no).replace(/'/g,"\\'") + '\')" disabled>Sign agreement</button>'
     + '</div>';
 
   app.innerHTML = html;
   initCanvas();
+  initTypedCanvas();
   document.getElementById('agree-check').addEventListener('change', updateSubmitState);
   document.getElementById('sign-name').addEventListener('input', updateSubmitState);
+}
+
+var signMode = 'draw';
+function setSignMode(mode){
+  signMode = mode;
+  document.getElementById('draw-mode-wrap').style.display = mode==='draw' ? 'block' : 'none';
+  document.getElementById('type-mode-wrap').style.display = mode==='type' ? 'block' : 'none';
+  var drawBtn = document.getElementById('mode-draw-btn'), typeBtn = document.getElementById('mode-type-btn');
+  if(mode==='draw'){
+    drawBtn.style.background='var(--db)'; drawBtn.style.color='#fff'; drawBtn.style.borderColor='var(--db)';
+    typeBtn.style.background='#fff'; typeBtn.style.color='#374151'; typeBtn.style.borderColor='var(--border)';
+  } else {
+    typeBtn.style.background='var(--db)'; typeBtn.style.color='#fff'; typeBtn.style.borderColor='var(--db)';
+    drawBtn.style.background='#fff'; drawBtn.style.color='#374151'; drawBtn.style.borderColor='var(--border)';
+  }
+  updateSubmitState();
+}
+
+var typedSigCtx = null;
+function initTypedCanvas(){
+  var c = document.getElementById('typed-sig-canvas');
+  typedSigCtx = c.getContext('2d');
+  typedSigCtx.fillStyle = '#fff'; typedSigCtx.fillRect(0,0,c.width,c.height);
+}
+function renderTypedSignature(){
+  var text = document.getElementById('typed-sig-input').value;
+  var c = document.getElementById('typed-sig-canvas');
+  typedSigCtx.fillStyle = '#fff'; typedSigCtx.fillRect(0,0,c.width,c.height);
+  if(text.trim()){
+    typedSigCtx.fillStyle = '#0e386a';
+    var size = text.length > 22 ? 34 : 46;
+    typedSigCtx.font = 'italic 600 ' + size + 'px cursive';
+    typedSigCtx.textBaseline = 'middle';
+    typedSigCtx.fillText(text, 20, c.height/2);
+  }
+  updateSubmitState();
 }
 
 var drawing=false, last=null, hasDrawn=false;
@@ -174,14 +222,15 @@ function updateSubmitState(){
   var name = (document.getElementById('sign-name')||{}).value || '';
   var agreed = (document.getElementById('agree-check')||{}).checked;
   var btn = document.getElementById('submit-btn');
-  if(btn) btn.disabled = !(name.trim() && agreed && hasDrawn);
+  var hasContent = signMode==='draw' ? hasDrawn : !!((document.getElementById('typed-sig-input')||{}).value||'').trim();
+  if(btn) btn.disabled = !(name.trim() && agreed && hasContent);
 }
 
 async function submitSignature(refNo){
   var btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = 'Signing…';
   var name = document.getElementById('sign-name').value.trim();
-  var canvas = document.getElementById('sig-canvas');
+  var canvas = document.getElementById(signMode==='type' ? 'typed-sig-canvas' : 'sig-canvas');
   var pngData = canvas.toDataURL('image/png');
 
   try{
