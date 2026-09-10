@@ -6004,8 +6004,8 @@ screenLoaders['screen-stallholders'] = loadStallApplications;
 
 function shCardHtml(r, extraActionHtml){
   var name = ((r.first_name||'')+' '+(r.last_name||'')).trim() || 'Unnamed applicant';
-  var payColor = r.payment_status==='paid' ? 'var(--dg)' : '#C16E1B';
-  var payLabel = r.payment_status==='paid' ? 'Paid' : 'Awaiting payment';
+  var payColor = r.payment_status==='paid' ? 'var(--dg)' : r.payment_status==='pay_on_day' ? '#075985' : r.complimentary ? '#166534' : '#C16E1B';
+  var payLabel = r.payment_status==='paid' ? 'Paid' : r.payment_status==='pay_on_day' ? 'Paying on the day' : r.complimentary ? 'Complimentary' : 'Awaiting payment';
   var statusColor = r.status==='approved' ? 'var(--dg)' : r.status==='declined' ? '#dc2626' : 'var(--muted)';
   var statusLabel = r.status==='approved' ? (r.auto_approve?'Auto-approved':'Approved') : r.status==='declined' ? 'Declined' : 'Pending';
   var ev = r.event_id ? shEventsById[r.event_id] : null;
@@ -6026,6 +6026,8 @@ function shCardHtml(r, extraActionHtml){
       (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'approved\',false)" style="padding:6px 12px;border:none;background:var(--dg);color:white;border-radius:7px;font-size:.7rem;font-weight:600">Approve</button>' : '') +
       (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'approved\',true)" style="padding:6px 12px;border:1.5px solid var(--dg);background:white;color:var(--dg);border-radius:7px;font-size:.7rem;font-weight:600">Auto-approve</button>' : '') +
       (r.status==='pending' ? '<button onclick="shUpdate(\''+r.id+'\',\'declined\',false)" style="padding:6px 12px;border:1.5px solid var(--border);background:white;color:var(--muted);border-radius:7px;font-size:.7rem;font-weight:600">Decline</button>' : '') +
+      (r.status==='approved' && r.payment_status!=='paid' ? '<button onclick="shMarkPayment(\''+r.id+'\',\'paid\')" style="padding:6px 12px;border:none;background:var(--dg);color:white;border-radius:7px;font-size:.7rem;font-weight:600">Mark Paid</button>' : '') +
+      (r.status==='approved' && r.payment_status!=='pay_on_day' ? '<button onclick="shMarkPayment(\''+r.id+'\',\'pay_on_day\')" style="padding:6px 12px;border:1.5px solid #075985;background:white;color:#075985;border-radius:7px;font-size:.7rem;font-weight:600">Paying on the Day</button>' : '') +
       (r.email ? '<a href="mailto:'+r.email+'" style="padding:6px 12px;border:1px solid var(--border);background:white;color:var(--text);border-radius:7px;font-size:.7rem;font-weight:600;text-decoration:none">Email</a>' : '') +
       (extraActionHtml || '') +
     '</div>' +
@@ -6102,6 +6104,22 @@ async function shUpdate(id, status, autoApprove){
     await SB('stall_applications?id=eq.'+id, {method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify(payload)});
     showToast(status==='approved' ? (autoApprove?'Auto-approved ✓':'Approved ✓') : 'Declined');
     logAction('stall_application_update', 'Stallholders', id+' → '+status);
+    loadStallApplications();
+  }catch(e){
+    showToast('Could not update — '+e.message, true);
+  }
+}
+
+// Marks a stallholder as paid or paying-on-the-day — the same two
+// payment states Heartwood's Kanban board uses, so a change made here
+// shows up there identically and vice versa. 💚
+async function shMarkPayment(id, paymentStatus){
+  try{
+    var payload = {payment_status: paymentStatus};
+    if(paymentStatus === 'paid') payload.paid_at = new Date().toISOString();
+    await SB('stall_applications?id=eq.'+id, {method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify(payload)});
+    showToast(paymentStatus==='paid' ? 'Marked Paid ✓' : 'Marked Paying on the Day ✓');
+    logAction('stall_application_payment', 'Stallholders', id+' → '+paymentStatus);
     loadStallApplications();
   }catch(e){
     showToast('Could not update — '+e.message, true);
