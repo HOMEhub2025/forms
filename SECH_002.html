@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SECH at H.O.M.E</title>
+<meta name="theme-color" content="#0e386a">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@700;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dg:#006837;--lg:#39b54a;--db:#0e386a;--or:#f58221;
+  --bg:#f5f6fa;--card:#fff;--border:#e2e8f0;
+  --text:#1a202c;--muted:#64748b;--radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{overflow-x:hidden}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+input,select,textarea,button{font-family:'Montserrat',sans-serif;font-size:16px}
+
+/* Header */
+.pr-header{background:var(--db);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:50}
+.pr-header-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.pr-header img{height:32px}
+.pr-header h1{font-family:'League Spartan',sans-serif;font-size:1rem;font-weight:700;color:#fff}
+.pr-signout{background:rgba(255,255,255,.12);border:none;color:#fff;font-size:.72rem;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;touch-action:manipulation;flex-shrink:0}
+.pr-empty{text-align:center;padding:30px 16px;color:var(--muted);font-size:.82rem}
+
+/* Sign-in */
+#loginScreen{min-height:100vh;display:flex;flex-direction:column}
+.login-hero{background:linear-gradient(135deg,var(--dg),#004d28);padding:34px 20px 30px;text-align:center;color:#fff}
+.login-hero img{height:54px;margin-bottom:12px}
+.login-hero h2{font-family:'League Spartan',sans-serif;font-size:1.35rem;font-weight:700}
+.login-hero h2 span{color:var(--or)}
+.login-hero p{font-size:.78rem;color:rgba(255,255,255,.82);margin-top:6px;line-height:1.55}
+.login-card{max-width:420px;width:100%;margin:-14px auto 0;background:#fff;border-radius:16px;border:1.5px solid var(--border);padding:20px 18px;box-shadow:0 6px 24px rgba(14,56,106,.08)}
+.login-help{text-align:center;font-size:.72rem;color:var(--muted);margin:16px 20px;line-height:1.6}
+
+/* Fields + buttons */
+.form-wrap{display:flex;flex-direction:column;gap:12px}
+.field label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.field input,.field textarea{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-weight:500}
+.field textarea{resize:vertical;min-height:70px}
+.btn-primary{background:var(--or);color:#fff;border:none;border-radius:12px;padding:15px;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%}
+.btn-primary:disabled{background:#cbd5e1;cursor:not-allowed}
+.btn-secondary{background:#fff;color:var(--db);border:1.5px solid var(--db);border-radius:12px;padding:13px;font-size:.85rem;font-weight:700;cursor:pointer;touch-action:manipulation;width:100%}
+.sheet-cancel{display:block;text-align:center;padding:14px;font-size:.85rem;font-weight:700;color:var(--muted);cursor:pointer;background:none;border:none;width:100%}
+.helper-text{font-size:.72rem;color:var(--muted);font-weight:500;line-height:1.5}
+.error-banner{background:#fef2f2;border:1.5px solid #fecaca;color:#dc2626;padding:12px 14px;border-radius:10px;font-size:.78rem;font-weight:600;line-height:1.4}
+.chip{padding:9px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:.78rem;font-weight:700;color:var(--text);cursor:pointer;background:#fff}
+.chip.active{background:var(--dg);border-color:var(--dg);color:#fff}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#0a1928;color:#fff;font-size:.8rem;font-weight:600;padding:10px 20px;border-radius:20px;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:900;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#dc2626}
+
+/* SECH PARTNER SCREEN */
+#spScreen{display:none;flex-direction:column;min-height:100vh;background:var(--bg)}
+.sp-wrap{max-width:560px;margin:0 auto;padding:14px 16px 110px;width:100%}
+.sp-banner{border-radius:12px;padding:11px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;background:#fff7ed;border:1.5px solid #fed7aa}
+.sp-banner.activity{background:#f0fdf4;border-color:#bbf7d0}
+.sp-banner-icon{flex-shrink:0;color:var(--or);margin-top:1px}
+.sp-banner.activity .sp-banner-icon{color:var(--dg)}
+.sp-ico{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+.sp-banner-text{flex:1;font-size:.8rem;font-weight:600;color:var(--text);line-height:1.45}
+.sp-banner-time{display:block;font-size:.66rem;color:var(--muted);font-weight:500;margin-top:2px}
+.sp-banner-x{background:none;border:none;color:var(--muted);font-size:1.15rem;line-height:1;cursor:pointer;padding:2px 6px;touch-action:manipulation}
+.sp-linkbtn{font-size:.72rem;font-weight:700;color:var(--dg);background:none;border:none;cursor:pointer;padding:2px 0 10px;margin-right:14px}
+.sp-intro{margin:6px 2px 14px}
+.sp-intro h2{font-family:'League Spartan',sans-serif;font-size:1.25rem;color:var(--db)}
+.sp-intro p{font-size:.74rem;color:var(--muted);margin-top:2px;font-weight:600}
+.sp-section-title{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:4px 2px 8px;display:flex;justify-content:space-between;align-items:center}
+.sp-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.sp-daylabel{font-size:.7rem;font-weight:700;color:var(--db);background:#f8fafc;padding:7px 14px;border-top:1px solid #f1f5f9}
+.sp-daylabel:first-child{border-top:none}
+.sp-appt{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid #f1f5f9;cursor:pointer;touch-action:manipulation;width:100%;background:none;border-left:none;border-right:none;border-bottom:none;text-align:left;font:inherit;color:inherit}
+.sp-daylabel + .sp-appt{border-top:none}
+.sp-appt:hover{background:#fafafa}
+.sp-appt-time{font-family:'League Spartan',sans-serif;font-weight:700;font-size:.95rem;color:var(--db);min-width:48px}
+.sp-appt-who{flex:1;min-width:0;font-size:.85rem;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-appt-who span{display:block;font-size:.7rem;color:var(--muted);font-weight:500}
+.sp-appt-edit{font-size:.7rem;font-weight:700;color:var(--dg);flex-shrink:0}
+.sp-empty{padding:22px 16px;text-align:center;color:var(--muted);font-size:.8rem;line-height:1.5}
+.sp-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+.sp-action{display:flex;align-items:center;gap:14px;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;cursor:pointer;touch-action:manipulation;text-align:left;font:inherit;color:inherit;width:100%}
+.sp-action-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sp-action-ico .sp-ico{width:22px;height:22px}
+.sp-action.book .sp-action-ico{background:#fff7ed;color:var(--or)}
+.sp-action.block .sp-action-ico{background:#fef2f2;color:#dc2626}
+.sp-action.amend .sp-action-ico{background:#eff6ff;color:var(--db)}
+.sp-action-text b{display:block;font-size:.9rem;color:var(--db)}
+.sp-action-text span{font-size:.72rem;color:var(--muted);font-weight:500}
+/* Next-appointment banner pinned to the bottom */
+#spNextBar{position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(--db);color:#fff;padding:11px 16px calc(11px + env(safe-area-inset-bottom));display:none;box-shadow:0 -4px 18px rgba(14,56,106,.18)}
+#spNextBar .inner{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px;cursor:pointer}
+#spNextBar .lbl{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+#spNextBar .val{font-size:.86rem;font-weight:700;line-height:1.35}
+#spNextBar .when{font-family:'League Spartan',sans-serif;color:var(--or)}
+#spNextBar .sp-ico{color:var(--or);width:22px;height:22px;flex-shrink:0}
+/* Sheets */
+.sp-modal-bg{position:fixed;inset:0;z-index:700;background:rgba(14,56,106,.5);display:flex;align-items:flex-end;justify-content:center}
+.sp-modal{background:#fff;border-radius:18px 18px 0 0;max-width:520px;width:100%;max-height:92vh;overflow-y:auto;padding:18px 18px calc(20px + env(safe-area-inset-bottom))}
+.sp-modal h3{font-family:'League Spartan',sans-serif;font-size:1.1rem;color:var(--db);margin-bottom:2px}
+.sp-modal .sub{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.45}
+.sp-back{background:none;border:none;color:var(--dg);font-size:.75rem;font-weight:700;cursor:pointer;padding:0 0 10px}
+/* Month calendar */
+.sp-cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sp-cal-head b{font-family:'League Spartan',sans-serif;font-size:1rem;color:var(--db)}
+.sp-cal-nav{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:1rem;color:var(--db)}
+.sp-cal-nav:disabled{opacity:.35;cursor:default}
+.sp-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.sp-cal-dow{font-size:.6rem;font-weight:700;color:var(--muted);text-align:center;text-transform:uppercase;padding-bottom:2px}
+.sp-cal-day{aspect-ratio:1/1;border-radius:10px;border:1.5px solid transparent;background:none;font:inherit;font-size:.82rem;font-weight:600;color:#cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
+.sp-cal-day small{font-size:.5rem;font-weight:700;line-height:1}
+.sp-cal-day.open{background:#f0fdf4;border-color:#bbf7d0;color:var(--dg);cursor:pointer}
+.sp-cal-day.full{background:#eff6ff;border-color:#dbeafe;color:var(--db)}
+.sp-cal-day.blocked{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+.sp-cal-day.blocked.pickable,.sp-cal-day.full.pickable{cursor:pointer}
+.sp-cal-day.sel{outline:2.5px solid var(--or);outline-offset:1px}
+.sp-cal-key{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:.66rem;color:var(--muted);font-weight:600}
+.sp-cal-key i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+/* Time slots */
+.sp-times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 4px}
+.sp-time{padding:12px 4px;border-radius:10px;border:1.5px solid #bbf7d0;background:#f0fdf4;color:var(--dg);font:inherit;font-weight:700;font-size:.88rem;cursor:pointer}
+.sp-time.taken{background:#f8fafc;border-color:var(--border);color:#cbd5e1;cursor:default;text-decoration:line-through}
+.sp-time.current{background:#fff7ed;border-color:#fed7aa;color:var(--or)}
+.sp-pill{display:inline-block;font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:20px}
+.sp-pill.red{background:#fee2e2;color:#991b1b}
+.sp-list-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #f1f5f9;font-size:.8rem}
+.sp-list-row:first-child{border-top:none}
+.sp-btn{border:none;border-radius:9px;padding:8px 13px;font-size:.74rem;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap;font-family:inherit}
+.sp-btn.green{background:var(--dg);color:#fff}
+.sp-btn.ghost{background:#fff;color:var(--muted);border:1.5px solid var(--border)}
+.btn-danger{background:#fff;color:#dc2626;border:1.5px solid #fecaca;border-radius:12px;padding:13px;font-size:.85rem;font-weight:700;cursor:pointer;width:100%;font-family:inherit}
+.sp-summary{background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:11px 13px;font-size:.8rem;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sp-summary b{color:var(--db)}
+.sp-search{width:100%;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border);margin-bottom:10px;font-family:inherit}
+</style>
+</head>
+<body>
+
+<!-- SIGN IN — this page has its own sign-in, completely separate from the
+     H.O.M.E Hub staff app, so a staff login on the same phone never shows here. -->
+<div id="loginScreen">
+  <div class="login-hero">
+    <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="H.O.M.E Hub">
+    <h2>SECH at <span>H.O.M.E</span></h2>
+    <p>Your appointments calendar at H.O.M.E Hub</p>
+  </div>
+  <div class="login-card">
+    <div class="form-wrap">
+      <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+      <div id="loginErrorWrap"></div>
+      <button class="btn-primary" id="loginSubmitBtn" type="button">Sign in</button>
+    </div>
+  </div>
+  <div class="login-help">Forgotten your password or having trouble signing in?<br>Get in touch with the H.O.M.E Hub team at info@homehub-benfleet.co.uk</div>
+</div>
+
+<div id="spScreen">
+  <div class="pr-header">
+    <div class="pr-header-brand">
+      <img src="https://homehub-benfleet.co.uk/wp-content/uploads/2026/03/HOME_HUB_NO_BACKGROUND.png" alt="">
+      <h1 id="spHeaderTitle">H.O.M.E Hub</h1>
+    </div>
+    <button class="pr-signout" id="spSignoutBtn" type="button">Sign out</button>
+  </div>
+  <div class="sp-wrap">
+    <div id="spBanners"></div>
+    <div id="spContent"><div class="sp-empty">Loading your appointments…</div></div>
+  </div>
+  <div id="spNextBar"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   SECH at H.O.M.E — partner page. Only signs in session-partner
+   logins; the database itself limits what those logins can reach.
+   ============================================================ */
+var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
+// Own storage keys — kept apart from the staff app's hh_auth / hh_user.
+// The login lives in sessionStorage, so it ends when the browser or tab is
+// closed, and it also signs out after 30 minutes with no activity.
+var AUTH_KEY = 'sech_auth', USER_KEY = 'sech_user';
+var STORE = window.sessionStorage;
+var IDLE_LIMIT_MS = 30 * 60 * 1000;
+try{ localStorage.removeItem(AUTH_KEY); localStorage.removeItem(USER_KEY); }catch(e){} // clear any older remembered login
+
+function getSessionRaw(){ try{ return JSON.parse(STORE.getItem(AUTH_KEY) || 'null'); }catch(e){ return null; } }
+function saveSession(t){
+  STORE.setItem(AUTH_KEY, JSON.stringify({
+    access_token: t.access_token, refresh_token: t.refresh_token,
+    expires_at: Date.now() + (t.expires_in * 1000) - 60000,
+    auth_user_id: t.user ? t.user.id : null
+  }));
+}
+function clearSession(){ STORE.removeItem(AUTH_KEY); STORE.removeItem(USER_KEY); STORE.removeItem('sech_last_active'); }
+function getUser(){ try{ return JSON.parse(STORE.getItem(USER_KEY) || 'null'); }catch(e){ return null; } }
+function setUser(u){ STORE.setItem(USER_KEY, JSON.stringify(u)); markActive(); }
+function markActive(){ try{ STORE.setItem('sech_last_active', String(Date.now())); }catch(e){} }
+function idleTooLong(){ var t = parseInt(STORE.getItem('sech_last_active') || '0', 10); return !t || (Date.now() - t) > IDLE_LIMIT_MS; }
+['click','keydown','touchstart','scroll'].forEach(function(ev){ document.addEventListener(ev, function(){ if(getUser()) markActive(); }, {passive:true}); });
+setInterval(function(){
+  if(getUser() && idleTooLong()){ clearSession(); showLogin('You were signed out after 30 minutes of no activity.'); }
+}, 30000);
+
+async function authLogin(email, password){
+  var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+    method:'POST', headers:{apikey: SUPABASE_ANON_KEY, 'Content-Type':'application/json'},
+    body: JSON.stringify({email: email, password: password})
+  });
+  var data = await res.json();
+  if(!res.ok) throw new Error(/invalid/i.test(data.error_description || data.msg || '') ? 'That email and password don’t match — please try again.' : (data.error_description || data.msg || 'Couldn’t sign you in.'));
+  return data;
+}
+async function authRefresh(rt){
+  var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+    method:'POST', headers:{apikey: SUPABASE_ANON_KEY, 'Content-Type':'application/json'},
+    body: JSON.stringify({refresh_token: rt})
+  });
+  var data = await res.json();
+  if(!res.ok) throw new Error('Session expired');
+  return data;
+}
+async function ensureSession(){
+  var s = getSessionRaw();
+  if(!s) return null;
+  if(Date.now() < s.expires_at) return s;
+  try{ saveSession(await authRefresh(s.refresh_token)); return getSessionRaw(); }
+  catch(e){ clearSession(); return null; }
+}
+async function SB(path, opts){
+  opts = opts || {};
+  var extra = opts.headers || {}, rest = {};
+  for(var k in opts){ if(k !== 'headers') rest[k] = opts[k]; }
+  var sess = await ensureSession();
+  if(!sess){ showLogin('Your session has ended — please sign in again.'); throw new Error('Signed out'); }
+  var headers = {apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + sess.access_token, 'Content-Type':'application/json'};
+  for(var h in extra){ headers[h] = extra[h]; }
+  var res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, rest, {headers: headers}));
+  if(!res.ok){ var t = ''; try{ t = await res.text(); }catch(e){} throw new Error('Supabase ' + res.status + ': ' + t); }
+  var text = await res.text();
+  return {data: text ? JSON.parse(text) : null};
+}
+
+/* Helpers the calendar uses */
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function toISODate(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function fmtTime(t){ if(!t) return ''; var p = t.split(':'); return p[0] + ':' + p[1]; }
+function timeToMins(t){ if(!t) return 0; var p = t.split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10); }
+function prEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg, isError){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+
+/* Screens */
+function showLogin(msg){
+  if(typeof spState !== 'undefined') clearInterval(spState.timer);
+  if(typeof spCloseModal === 'function') spCloseModal();
+  document.getElementById('spScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginErrorWrap').innerHTML = msg ? '<div class="error-banner">' + prEsc(msg) + '</div>' : '';
+}
+function showPartner(){
+  document.getElementById('loginScreen').style.display = 'none';
+  enterSessionPartnerMode();
+}
+
+async function loadProfile(authUserId){
+  var res = await SB('users_internal?or=(user_id.eq.' + authUserId + ',auth_user_id.eq.' + authUserId + ')&select=id,display_name,role,assigned_sessions&limit=1');
+  return (res.data || [])[0] || null;
+}
+
+document.getElementById('loginSubmitBtn').addEventListener('click', async function(){
+  var err = document.getElementById('loginErrorWrap');
+  err.innerHTML = '';
+  var email = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+  if(!email || !password){ err.innerHTML = '<div class="error-banner">Pop in your email and password to sign in.</div>'; return; }
+  var btn = this; btn.disabled = true; btn.textContent = 'Signing in…';
+  try{
+    var t = await authLogin(email, password);
+    saveSession(t);
+    var profile = await loadProfile(t.user.id);
+    if(!profile || profile.role !== 'session_partner'){
+      clearSession();
+      err.innerHTML = '<div class="error-banner">' + (profile
+        ? 'This page is just for our partner organisations. H.O.M.E Hub team members, please use the main companion app.'
+        : 'That login works, but it isn’t linked to a partner session yet — please let the H.O.M.E Hub team know.') + '</div>';
+      return;
+    }
+    setUser({id: profile.id, display_name: profile.display_name, role: profile.role, assigned_sessions: profile.assigned_sessions || []});
+    document.getElementById('loginPassword').value = '';
+    showPartner();
+  }catch(e){
+    err.innerHTML = '<div class="error-banner">' + prEsc(e.message) + '</div>';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+});
+document.getElementById('loginPassword').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') document.getElementById('loginSubmitBtn').click();
+});
+
+/* ============================================================
+   SECH PARTNER SCREEN — what Holly sees after signing in.
+   • Home: her upcoming appointments (live), then three actions:
+       Book an appointment · Block out a date · Amend a booking
+   • A banner pinned to the bottom always shows the next appointment.
+   • Hub updates (bookings/blocks made by the H.O.M.E Hub team) show
+     as dismissible notices at the top.
+   Everything reads/writes the same session_bookings and
+   bookable_session_exceptions tables Heartwood uses, so nothing is
+   ever entered twice. The database itself stops this login from
+   reaching anything outside its own session. 💚
+   ============================================================ */
+var spState = { sessions:[], session:null, bookings:[], blocks:{}, sessionDays:{}, notices:[], showAllNotices:false, showAllAppts:false, timer:null, loaded:false };
+var SP_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var SP_HORIZON_WEEKS = 26;
+var SP_ICONS = {
+  bell:'<svg class="sp-ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  check:'<svg class="sp-ico" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  plus:'<svg class="sp-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="14" x2="12" y2="20"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+  block:'<svg class="sp-ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="14" x2="15" y2="20"/><line x1="15" y1="14" x2="9" y2="20"/></svg>',
+  edit:'<svg class="sp-ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  clock:'<svg class="sp-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+};
+
+/* ---------- small helpers ---------- */
+function spIso(d){ return toISODate(d); }
+function spAddMins(t, m){ var x = timeToMins(t) + m; return pad(Math.floor(x/60)) + ':' + pad(x%60); }
+function spLongDate(iso){ return new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long'}); }
+function spShortDate(iso){ return new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short', day:'numeric', month:'short'}); }
+function spAgo(ts){
+  var mins = Math.round((Date.now() - new Date(ts).getTime())/60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + ' min ago';
+  var h = Math.round(mins/60); if(h < 24) return h + ' hr' + (h===1?'':'s') + ' ago';
+  return new Date(ts).toLocaleDateString('en-GB',{day:'numeric', month:'short'});
+}
+function spNowMins(){ var n = new Date(); return n.getHours()*60 + n.getMinutes(); }
+function spTodayIso(){ return spIso(new Date()); }
+function spSlotPast(iso, start){ var t = spTodayIso(); return iso < t || (iso === t && timeToMins(start) <= spNowMins()); }
+
+/* ---------- which dates does the session run on? ---------- */
+function spOccurrences(s, fromIso, weeks){
+  var out = [];
+  var from = new Date(fromIso+'T12:00:00');
+  var to = new Date(from); to.setDate(to.getDate() + weeks*7);
+  var dow = SP_DAYS.indexOf(s.day_of_week || '');
+  if(s.recurrence_type === 'one_off' || !s.recurrence_type){
+    if(s.event_date && s.event_date >= fromIso) out.push(s.event_date);
+    return out;
+  }
+  if(dow === -1) return out;
+  var d = new Date(from);
+  while(d.getDay() !== dow) d.setDate(d.getDate()+1);
+  if(s.recurrence_type === 'fortnightly' && s.event_date){
+    var anchor = new Date(s.event_date+'T12:00:00');
+    var diffWeeks = Math.round((d - anchor) / (7*86400000));
+    if(((diffWeeks % 2) + 2) % 2 === 1) d.setDate(d.getDate()+7);
+  }
+  var step = s.recurrence_type === 'fortnightly' ? 14 : 7;
+  for(; d <= to; d.setDate(d.getDate()+step)){
+    if(s.recurrence_type === 'monthly_weekday' && s.weekday_ordinal){
+      var nth = Math.ceil(d.getDate()/7);
+      var last = new Date(d); last.setDate(d.getDate()+7);
+      var isLast = last.getMonth() !== d.getMonth();
+      if(!(s.weekday_ordinal === nth || (s.weekday_ordinal === -1 && isLast))) continue;
+    }
+    out.push(spIso(d));
+  }
+  return out;
+}
+function spSlots(s){
+  var start = (s.window_start_time||'10:00').slice(0,5), end = (s.window_end_time||'16:00').slice(0,5);
+  var len = parseInt(s.slot_duration_mins,10) || (timeToMins(end) - timeToMins(start));
+  var slots = [], t = start;
+  while(timeToMins(t) + len <= timeToMins(end)){ slots.push({start:t, end:spAddMins(t,len)}); t = spAddMins(t,len); }
+  return slots;
+}
+function spCap(){ return parseInt(spState.session.capacity_per_slot,10) || 1; }
+function spBookingsOn(iso, ignoreId){
+  return spState.bookings.filter(function(b){ return b.booking_date === iso && b.id !== ignoreId; });
+}
+function spSlotFree(iso, start, ignoreId){
+  if(spSlotPast(iso, start)) return false;
+  var taken = spBookingsOn(iso, ignoreId).filter(function(b){ return (b.slot_start||'').slice(0,5) === start; }).length;
+  return taken < spCap();
+}
+function spFreeCount(iso, ignoreId){
+  return spSlots(spState.session).filter(function(sl){ return spSlotFree(iso, sl.start, ignoreId); }).length;
+}
+
+/* ---------- start-up ---------- */
+async function enterSessionPartnerMode(){
+  var u = getUser();
+  document.getElementById('spScreen').style.display = 'flex';
+  document.getElementById('spHeaderTitle').textContent = 'Hey, ' + (u.display_name||'').split(' ')[0];
+  var names = (u.assigned_sessions||[]).filter(Boolean);
+  var content = document.getElementById('spContent');
+  if(!names.length){ content.innerHTML = '<div class="sp-empty">No session is linked to your login yet — please let the H.O.M.E Hub team know.</div>'; return; }
+  try{
+    var res = await SB('bookable_sessions?name=in.(' + names.map(function(n){ return '"' + n.replace(/"/g,'') + '"'; }).join(',') + ')&select=*&order=name.asc');
+    spState.sessions = res.data || [];
+  }catch(e){ content.innerHTML = '<div class="sp-empty">Couldn’t load your session — ' + prEsc(e.message) + '</div>'; return; }
+  if(!spState.sessions.length){ content.innerHTML = '<div class="sp-empty">Your session couldn’t be found — please let the H.O.M.E Hub team know.</div>'; return; }
+  spState.session = spState.sessions[0];
+  await spRefresh();
+  clearInterval(spState.timer);
+  spState.timer = setInterval(function(){
+    if(document.getElementById('spScreen').style.display === 'flex' && !document.getElementById('spModalBg')) spRefresh();
+  }, 60000);
+}
+
+async function spRefresh(){
+  await Promise.all([spLoadNotices(), spLoadData()]);
+  spRenderHome();
+}
+
+async function spLoadData(){
+  var s = spState.session, today = spTodayIso();
+  var dates = spOccurrences(s, today, SP_HORIZON_WEEKS);
+  spState.sessionDays = {}; dates.forEach(function(d){ spState.sessionDays[d] = true; });
+  var last = dates.length ? dates[dates.length-1] : today;
+  try{
+    var bRes = await SB('session_bookings?bookable_session_id=eq.' + s.id + '&booking_date=gte.' + today + '&booking_date=lte.' + last + '&status=neq.cancelled&order=booking_date.asc,slot_start.asc&select=id,booking_date,slot_start,slot_end,client_name,client_phone,client_email,notes,booked_by');
+    var xRes = await SB('bookable_session_exceptions?bookable_session_id=eq.' + s.id + '&occurrence_date=gte.' + today + '&status=eq.cancelled&order=occurrence_date.asc&select=id,occurrence_date,reason');
+    spState.bookings = (bRes.data || []).slice().sort(function(x, y){
+      return (x.booking_date + (x.slot_start||'')).localeCompare(y.booking_date + (y.slot_start||''));
+    });
+    spState.blocks = {}; (xRes.data||[]).forEach(function(x){ spState.blocks[x.occurrence_date] = x; });
+    spState.loaded = true; spState.loadError = null;
+  }catch(e){ spState.loadError = e.message; }
+}
+
+/* ---------- notices (top) ---------- */
+async function spLoadNotices(){
+  if(!spState.session) return;
+  try{
+    var res = await SB('partner_notices?bookable_session_id=eq.' + spState.session.id + '&dismissed_at=is.null&order=created_at.desc&limit=20');
+    spState.notices = res.data || [];
+  }catch(e){ spState.notices = []; }
+}
+function spRenderNotices(){
+  var wrap = document.getElementById('spBanners');
+  var list = spState.notices;
+  if(!list.length){ wrap.innerHTML = ''; return; }
+  var shown = spState.showAllNotices ? list : list.slice(0, 2);
+  wrap.innerHTML = shown.map(function(n){
+    var act = n.kind === 'activity';
+    return '<div class="sp-banner' + (act ? ' activity' : '') + '"><div class="sp-banner-icon">' + (act ? SP_ICONS.check : SP_ICONS.bell) + '</div>'
+      + '<div class="sp-banner-text">' + prEsc(n.message) + '<span class="sp-banner-time">' + spAgo(n.created_at) + '</span></div>'
+      + '<button type="button" class="sp-banner-x" data-sp-dismiss="' + n.id + '" aria-label="Dismiss">×</button></div>';
+  }).join('')
+  + (list.length > 2 ? '<button type="button" class="sp-linkbtn" id="spNoticesMore">' + (spState.showAllNotices ? 'Show fewer' : 'Show ' + (list.length-2) + ' more update' + (list.length-2===1?'':'s')) + '</button>' : '')
+  + (list.length > 1 ? '<button type="button" class="sp-linkbtn" id="spNoticesClear" style="color:var(--muted)">Clear all</button>' : '');
+  wrap.querySelectorAll('[data-sp-dismiss]').forEach(function(b){ b.addEventListener('click', function(){ spDismissNotices([b.getAttribute('data-sp-dismiss')]); }); });
+  var more = document.getElementById('spNoticesMore'); if(more) more.addEventListener('click', function(){ spState.showAllNotices = !spState.showAllNotices; spRenderNotices(); });
+  var clear = document.getElementById('spNoticesClear'); if(clear) clear.addEventListener('click', function(){ spDismissNotices(spState.notices.map(function(n){ return n.id; })); });
+}
+async function spDismissNotices(ids){
+  spState.notices = spState.notices.filter(function(n){ return ids.indexOf(n.id) === -1; });
+  spRenderNotices();
+  try{ await SB('partner_notices?id=in.(' + ids.join(',') + ')', { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({ dismissed_at: new Date().toISOString() }) }); }catch(e){}
+}
+
+/* ---------- home ---------- */
+function spUpcoming(){
+  var t = spTodayIso(), nm = spNowMins();
+  return spState.bookings.filter(function(b){
+    return b.booking_date > t || (b.booking_date === t && timeToMins((b.slot_end || b.slot_start || '00:00')) > nm);
+  });
+}
+function spApptRows(list){
+  var html = '', lastDay = '';
+  list.forEach(function(b){
+    if(b.booking_date !== lastDay){
+      lastDay = b.booking_date;
+      var isToday = b.booking_date === spTodayIso();
+      html += '<div class="sp-daylabel">' + (isToday ? 'Today · ' : '') + spLongDate(b.booking_date) + (spState.blocks[b.booking_date] ? ' · <span class="sp-pill red">Day blocked</span>' : '') + '</div>';
+    }
+    html += '<button type="button" class="sp-appt" data-sp-appt="' + b.id + '"><div class="sp-appt-time">' + fmtTime(b.slot_start) + '</div>'
+      + '<div class="sp-appt-who">' + prEsc(b.client_name) + '<span>' + prEsc(b.client_phone || b.client_email || '') + '</span></div>'
+      + '<div class="sp-appt-edit">Amend</div></button>';
+  });
+  return html;
+}
+function spRenderHome(){
+  spRenderNotices();
+  var s = spState.session, content = document.getElementById('spContent');
+  var when = (s.recurrence_type === 'weekly' ? 'Every ' + s.day_of_week : s.recurrence_type === 'fortnightly' ? 'Every other ' + s.day_of_week : '')
+    + (s.window_start_time ? ' · ' + fmtTime(s.window_start_time) + '–' + fmtTime(s.window_end_time) : '')
+    + (s.room_name ? ' · ' + s.room_name : '');
+  var up = spUpcoming();
+  var shown = spState.showAllAppts ? up : up.slice(0, 6);
+  var html = '<div class="sp-intro"><h2>' + prEsc(s.name) + '</h2><p>' + prEsc(when) + '</p></div>';
+  if(spState.loadError) html += '<div class="error-banner" style="margin-bottom:12px">Couldn’t refresh just now — ' + prEsc(spState.loadError) + '</div>';
+  html += '<div class="sp-section-title"><span>Upcoming appointments</span><span>' + up.length + ' booked</span></div>';
+  html += '<div class="sp-card">' + (up.length ? spApptRows(shown) : '<div class="sp-empty">No appointments booked yet.<br>Tap <b>Book an appointment</b> below to add one.</div>') + '</div>';
+  if(up.length > shown.length || spState.showAllAppts && up.length > 6){
+    html += '<button type="button" class="sp-linkbtn" id="spMoreAppts" style="margin:-8px 2px 14px">' + (spState.showAllAppts ? 'Show fewer' : 'Show all ' + up.length + ' appointments') + '</button>';
+  }
+  html += '<div class="sp-section-title"><span>What would you like to do?</span></div>'
+    + '<div class="sp-actions">'
+    +   '<button type="button" class="sp-action book" id="spActBook"><div class="sp-action-ico">' + SP_ICONS.plus + '</div><div class="sp-action-text"><b>Book an appointment</b><span>Pick a date, then an available time</span></div></button>'
+    +   '<button type="button" class="sp-action block" id="spActBlock"><div class="sp-action-ico">' + SP_ICONS.block + '</div><div class="sp-action-text"><b>Block out a date</b><span>Staff holidays, training, closures</span></div></button>'
+    +   '<button type="button" class="sp-action amend" id="spActAmend"><div class="sp-action-ico">' + SP_ICONS.edit + '</div><div class="sp-action-text"><b>Amend a booking</b><span>Change details, move or cancel</span></div></button>'
+    + '</div>';
+  content.innerHTML = html;
+  content.querySelectorAll('[data-sp-appt]').forEach(function(el){
+    el.addEventListener('click', function(){ spOpenAmend(el.getAttribute('data-sp-appt')); });
+  });
+  var more = document.getElementById('spMoreAppts'); if(more) more.addEventListener('click', function(){ spState.showAllAppts = !spState.showAllAppts; spRenderHome(); });
+  document.getElementById('spActBook').addEventListener('click', function(){ spOpenBook(); });
+  document.getElementById('spActBlock').addEventListener('click', function(){ spOpenBlock(); });
+  document.getElementById('spActAmend').addEventListener('click', function(){ spOpenAmendList(); });
+  spRenderNextBar(up);
+}
+function spRenderNextBar(up){
+  var bar = document.getElementById('spNextBar');
+  var next = up[0];
+  bar.style.display = 'block';
+  if(!next){
+    bar.innerHTML = '<div class="inner">' + SP_ICONS.clock + '<div><div class="lbl">Next appointment</div><div class="val">Nothing booked yet</div></div></div>';
+    bar.onclick = null; return;
+  }
+  var isToday = next.booking_date === spTodayIso();
+  bar.innerHTML = '<div class="inner">' + SP_ICONS.clock + '<div style="flex:1;min-width:0"><div class="lbl">Next appointment</div>'
+    + '<div class="val"><span class="when">' + (isToday ? 'Today' : spShortDate(next.booking_date)) + ' · ' + fmtTime(next.slot_start) + '</span> · ' + prEsc(next.client_name) + '</div></div>'
+    + '<div style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.75)">View</div></div>';
+  bar.onclick = function(){ spOpenAmend(next.id); };
+}
+
+/* ---------- sheet helper ---------- */
+function spModal(innerHtml){
+  spCloseModal();
+  var bg = document.createElement('div');
+  bg.className = 'sp-modal-bg'; bg.id = 'spModalBg';
+  bg.addEventListener('click', function(e){ if(e.target === bg) spCloseModal(); });
+  bg.innerHTML = '<div class="sp-modal" id="spModal">' + innerHtml + '</div>';
+  document.body.appendChild(bg);
+  return bg;
+}
+function spSetModal(innerHtml){ var m = document.getElementById('spModal'); if(m){ m.innerHTML = innerHtml; m.scrollTop = 0; } else spModal(innerHtml); }
+function spCloseModal(){ var m = document.getElementById('spModalBg'); if(m) m.remove(); }
+
+/* ---------- month calendar ----------
+   mode 'book'  : open session days with a free time are pickable
+   mode 'block' : any upcoming session day is pickable (blocked ones to re-open) */
+function spCalendarHtml(monthStart, mode, selectedIso, ignoreId){
+  var first = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1, 12);
+  var today = new Date(); today.setHours(12,0,0,0);
+  var thisMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12);
+  var maxMonth = new Date(thisMonth); maxMonth.setMonth(maxMonth.getMonth() + 5);
+  var title = first.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+  var html = '<div class="sp-cal-head"><button type="button" class="sp-cal-nav" data-sp-cal-nav="-1"' + (first <= thisMonth ? ' disabled' : '') + ' aria-label="Previous month">‹</button>'
+    + '<b>' + title + '</b><button type="button" class="sp-cal-nav" data-sp-cal-nav="1"' + (first >= maxMonth ? ' disabled' : '') + ' aria-label="Next month">›</button></div>';
+  html += '<div class="sp-cal">' + ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(d){ return '<div class="sp-cal-dow">' + d + '</div>'; }).join('');
+  var lead = (first.getDay() + 6) % 7;
+  for(var i = 0; i < lead; i++) html += '<div></div>';
+  var d = new Date(first);
+  while(d.getMonth() === first.getMonth()){
+    var iso = spIso(d), cls = 'sp-cal-day', tag = '', pick = false;
+    if(spState.sessionDays[iso] && iso >= spTodayIso()){
+      if(spState.blocks[iso]){ cls += ' blocked'; tag = 'Off'; pick = mode === 'block'; }
+      else {
+        var free = spFreeCount(iso, ignoreId);
+        if(free > 0){ cls += ' open'; tag = free + ' free'; pick = true; }
+        else { cls += ' full'; tag = (iso === spTodayIso() && spBookingsOn(iso).length === 0) ? 'Done' : 'Full'; pick = mode === 'block'; }
+      }
+      if(pick) cls += ' pickable';
+    }
+    if(iso === selectedIso) cls += ' sel';
+    html += pick
+      ? '<button type="button" class="' + cls + '" data-sp-cal-day="' + iso + '">' + d.getDate() + (tag ? '<small>' + tag + '</small>' : '') + '</button>'
+      : '<div class="' + cls + '">' + d.getDate() + (tag ? '<small>' + tag + '</small>' : '') + '</div>';
+    d.setDate(d.getDate() + 1);
+  }
+  html += '</div><div class="sp-cal-key"><span><i style="background:#bbf7d0"></i>Times free</span><span><i style="background:#dbeafe"></i>Fully booked</span><span><i style="background:#fecaca"></i>Not available</span></div>';
+  return html;
+}
+function spWireCalendar(state, rerender, onPick){
+  var m = document.getElementById('spModal');
+  m.querySelectorAll('[data-sp-cal-nav]').forEach(function(b){
+    b.addEventListener('click', function(){ state.month.setMonth(state.month.getMonth() + parseInt(b.getAttribute('data-sp-cal-nav'),10)); rerender(); });
+  });
+  m.querySelectorAll('[data-sp-cal-day]').forEach(function(b){
+    b.addEventListener('click', function(){ onPick(b.getAttribute('data-sp-cal-day')); });
+  });
+}
+function spMonthOf(iso){ var d = iso ? new Date(iso+'T12:00:00') : new Date(); return new Date(d.getFullYear(), d.getMonth(), 1, 12); }
+function spFirstOpenDay(ignoreId){
+  var days = Object.keys(spState.sessionDays).sort();
+  for(var i = 0; i < days.length; i++){ if(!spState.blocks[days[i]] && spFreeCount(days[i], ignoreId) > 0) return days[i]; }
+  return null;
+}
+
+/* ---------- time picker ---------- */
+function spTimesHtml(iso, ignoreId, currentStart){
+  var slots = spSlots(spState.session);
+  return '<div class="sp-times">' + slots.map(function(sl){
+    var isCurrent = currentStart && sl.start === currentStart;
+    var free = spSlotFree(iso, sl.start, ignoreId);
+    if(isCurrent) return '<button type="button" class="sp-time current" data-sp-time="' + sl.start + '|' + sl.end + '">' + sl.start + '<br><small style="font-size:.6rem">Current</small></button>';
+    return free ? '<button type="button" class="sp-time" data-sp-time="' + sl.start + '|' + sl.end + '">' + sl.start + '</button>'
+                : '<div class="sp-time taken">' + sl.start + '</div>';
+  }).join('') + '</div>';
+}
+
+/* ---------- 1) BOOK ---------- */
+function spOpenBook(){
+  var st = { month: spMonthOf(spFirstOpenDay(null)), date: null, start: null, end: null };
+  spModal('');
+  spBookStepDate(st);
+}
+function spBookStepDate(st){
+  var render = function(){
+    spSetModal('<h3>Book an appointment</h3><div class="sub">Choose a date — green days have times free.</div>'
+      + spCalendarHtml(st.month, 'book', st.date, null)
+      + '<button type="button" class="sheet-cancel" id="spX">Close</button>');
+    spWireCalendar(st, render, function(iso){ st.date = iso; spBookStepTime(st); });
+    document.getElementById('spX').addEventListener('click', spCloseModal);
+  };
+  render();
+}
+function spBookStepTime(st){
+  spSetModal('<button type="button" class="sp-back" id="spBack">‹ Change date</button>'
+    + '<h3>' + spLongDate(st.date) + '</h3><div class="sub">Pick a time — crossed-out times are already booked.</div>'
+    + spTimesHtml(st.date, null, null)
+    + '<button type="button" class="sheet-cancel" id="spX">Close</button>');
+  document.getElementById('spBack').addEventListener('click', function(){ spBookStepDate(st); });
+  document.getElementById('spX').addEventListener('click', spCloseModal);
+  document.querySelectorAll('[data-sp-time]').forEach(function(b){
+    b.addEventListener('click', function(){ var p = b.getAttribute('data-sp-time').split('|'); st.start = p[0]; st.end = p[1]; spBookStepDetails(st); });
+  });
+}
+function spDetailsFields(b){
+  b = b || {};
+  return '<div class="field"><label>Name</label><input type="text" id="spFName" value="' + prEsc(b.client_name||'') + '" placeholder="Who’s coming"></div>'
+    + '<div class="field"><label>Phone</label><input type="tel" id="spFPhone" value="' + prEsc(b.client_phone||'') + '"></div>'
+    + '<div class="field"><label>Email</label><input type="email" id="spFEmail" value="' + prEsc(b.client_email||'') + '"></div>'
+    + '<div class="helper-text" style="margin-top:-4px">A phone number or an email is needed, so the Hub can reach them if anything changes.</div>'
+    + '<div class="field"><label>Notes (optional)</label><textarea id="spFNotes">' + prEsc(b.notes||'') + '</textarea></div>';
+}
+function spReadDetails(){
+  return {
+    name: document.getElementById('spFName').value.trim(),
+    phone: document.getElementById('spFPhone').value.trim(),
+    email: document.getElementById('spFEmail').value.trim(),
+    notes: document.getElementById('spFNotes').value.trim()
+  };
+}
+function spBookStepDetails(st){
+  var s = spState.session;
+  spSetModal('<button type="button" class="sp-back" id="spBack">‹ Change time</button>'
+    + '<h3>Who’s coming?</h3>'
+    + '<div class="sp-summary"><span><b>' + spShortDate(st.date) + '</b> · ' + st.start + '–' + st.end + '</span><span style="color:var(--muted);font-size:.72rem">' + prEsc(s.room_name || '') + '</span></div>'
+    + '<div class="form-wrap">' + spDetailsFields(null)
+    + '<div id="spErr"></div>'
+    + '<button type="button" class="btn-primary" id="spSave">Confirm booking</button>'
+    + '<button type="button" class="sheet-cancel" id="spX">Cancel</button></div>');
+  document.getElementById('spBack').addEventListener('click', function(){ spBookStepTime(st); });
+  document.getElementById('spX').addEventListener('click', spCloseModal);
+  setTimeout(function(){ var n = document.getElementById('spFName'); if(n) n.focus(); }, 60);
+  document.getElementById('spSave').addEventListener('click', async function(){
+    var btn = this, err = document.getElementById('spErr'), f = spReadDetails();
+    err.innerHTML = '';
+    if(!f.name){ err.innerHTML = '<div class="error-banner">Add the person’s name.</div>'; return; }
+    if(!f.phone && !f.email){ err.innerHTML = '<div class="error-banner">Add a phone number or an email.</div>'; return; }
+    btn.disabled = true; btn.textContent = 'Booking…';
+    try{
+      var u = getUser();
+      await SB('session_bookings', { method:'POST', headers:{Prefer:'return=minimal'}, body: JSON.stringify({
+        bookable_session_id: s.id, booking_date: st.date, slot_start: st.start, slot_end: st.end,
+        client_name: f.name, client_phone: f.phone || null, client_email: f.email || null, notes: f.notes || null,
+        booked_by: u ? u.display_name : s.name, status: 'confirmed',
+        payment_status: (s.is_free || !parseFloat(s.price)) ? 'not_required' : 'pending'
+      })});
+      spCloseModal();
+      showToast(f.name.split(' ')[0] + ' booked · ' + spShortDate(st.date) + ' ' + st.start + ' ✓');
+      spRefresh();
+    }catch(e){
+      var msg = /SESSION_FULL|capacity/i.test(e.message) ? 'That time has just been taken — please pick another.' : 'Couldn’t book — ' + e.message;
+      err.innerHTML = '<div class="error-banner">' + prEsc(msg) + '</div>';
+      btn.disabled = false; btn.textContent = 'Confirm booking';
+      if(/SESSION_FULL|capacity/i.test(e.message)) spLoadData();
+    }
+  });
+}
+
+/* ---------- 2) BLOCK ---------- */
+function spOpenBlock(){
+  var st = { month: spMonthOf(null), date: null };
+  spModal('');
+  spBlockStepDate(st);
+}
+function spBlockStepDate(st){
+  var render = function(){
+    var blocked = Object.keys(spState.blocks).sort();
+    spSetModal('<h3>Block out a date</h3><div class="sub">Tap a ' + prEsc(spState.session.day_of_week || 'session') + ' you can’t do. Red days are already blocked — tap one to make it available again.</div>'
+      + spCalendarHtml(st.month, 'block', st.date, null)
+      + '<div class="sp-section-title" style="margin-top:18px"><span>Days you’re not available</span></div>'
+      + (blocked.length ? '<div>' + blocked.map(function(iso){
+          var x = spState.blocks[iso];
+          return '<div class="sp-list-row"><span><b style="color:var(--db)">' + spShortDate(iso) + '</b>' + (x.reason ? ' · <span style="color:var(--muted)">' + prEsc(x.reason) + '</span>' : '') + '</span>'
+            + '<button type="button" class="sp-btn green" data-sp-reopen="' + iso + '">Make available</button></div>';
+        }).join('') + '</div>' : '<div class="helper-text">None — every upcoming date is open.</div>')
+      + '<button type="button" class="sheet-cancel" id="spX">Close</button>');
+    spWireCalendar(st, render, function(iso){ st.date = iso; spBlockStepConfirm(st); });
+    document.querySelectorAll('[data-sp-reopen]').forEach(function(b){
+      b.addEventListener('click', function(){ st.date = b.getAttribute('data-sp-reopen'); spBlockStepConfirm(st); });
+    });
+    document.getElementById('spX').addEventListener('click', spCloseModal);
+  };
+  st.rerender = render;
+  render();
+}
+function spBlockStepConfirm(st){
+  var iso = st.date, existing = spState.blocks[iso];
+  var booked = spBookingsOn(iso, null);
+  if(existing){
+    spSetModal('<button type="button" class="sp-back" id="spBack">‹ Back to calendar</button>'
+      + '<h3>Make ' + spShortDate(iso) + ' available again?</h3>'
+      + '<div class="sub">This day is currently blocked' + (existing.reason ? ' (' + prEsc(existing.reason) + ')' : '') + '. Re-opening it lets people be booked in again, and the Hub is told straight away.</div>'
+      + '<div id="spErr"></div><button type="button" class="btn-primary" id="spSave" style="background:var(--dg)">Make available again</button>'
+      + '<button type="button" class="sheet-cancel" id="spX">Keep it blocked</button>');
+    document.getElementById('spSave').addEventListener('click', async function(){
+      var btn = this; btn.disabled = true; btn.textContent = 'Opening…';
+      try{
+        await SB('bookable_session_exceptions?id=eq.' + existing.id, { method:'DELETE', headers:{Prefer:'return=minimal'} });
+        showToast(spShortDate(iso) + ' is open for booking again ✓');
+        await spLoadData(); spRenderHome(); st.date = null; spBlockStepDate(st);
+      }catch(e){ document.getElementById('spErr').innerHTML = '<div class="error-banner">Couldn’t reopen — ' + prEsc(e.message) + '</div>'; btn.disabled = false; btn.textContent = 'Make available again'; }
+    });
+  } else {
+    spSetModal('<button type="button" class="sp-back" id="spBack">‹ Back to calendar</button>'
+      + '<h3>Not available on ' + spLongDate(iso) + '?</h3><div class="sub">This day stops being offered for booking, and the Hub is told straight away.</div>'
+      + (booked.length ? '<div class="error-banner" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-bottom:12px">' + booked.length + ' appointment' + (booked.length===1?' is':'s are') + ' already booked that day: '
+          + booked.map(function(b){ return prEsc(b.client_name) + ' (' + fmtTime(b.slot_start) + ')'; }).join(', ')
+          + '. ' + (booked.length===1?'It stays':'They stay') + ' in place — please let ' + (booked.length===1?'them':'them') + ' know, or move ' + (booked.length===1?'it':'them') + ' using <b>Amend a booking</b>.</div>' : '')
+      + '<div class="form-wrap"><div class="field"><label>Reason (optional)</label><input type="text" id="spReason" placeholder="e.g. Staff holiday, training"></div>'
+      + '<div id="spErr"></div><button type="button" class="btn-primary" id="spSave" style="background:#dc2626">Block this date</button>'
+      + '<button type="button" class="sheet-cancel" id="spX">Cancel</button></div>');
+    document.getElementById('spSave').addEventListener('click', async function(){
+      var btn = this; btn.disabled = true; btn.textContent = 'Saving…';
+      try{
+        var u = getUser();
+        await SB('bookable_session_exceptions', { method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=minimal'}, body: JSON.stringify({
+          bookable_session_id: spState.session.id, occurrence_date: iso, status: 'cancelled',
+          reason: document.getElementById('spReason').value.trim() || null, cancelled_by: u ? u.display_name : null
+        })});
+        showToast(spShortDate(iso) + ' blocked out');
+        await spLoadData(); spRenderHome(); st.date = null; spBlockStepDate(st);
+      }catch(e){ document.getElementById('spErr').innerHTML = '<div class="error-banner">Couldn’t save — ' + prEsc(e.message) + '</div>'; btn.disabled = false; btn.textContent = 'Block this date'; }
+    });
+  }
+  document.getElementById('spBack').addEventListener('click', function(){ st.date = null; spBlockStepDate(st); });
+  document.getElementById('spX').addEventListener('click', spCloseModal);
+}
+
+/* ---------- 3) AMEND ---------- */
+function spOpenAmendList(){
+  var up = spUpcoming();
+  var render = function(q){
+    q = (q || '').toLowerCase();
+    var list = up.filter(function(b){ return !q || (b.client_name||'').toLowerCase().indexOf(q) !== -1 || (b.client_phone||'').indexOf(q) !== -1; });
+    var box = document.getElementById('spAmendList');
+    box.innerHTML = list.length ? '<div class="sp-card" style="margin:0">' + spApptRows(list) + '</div>' : '<div class="sp-empty">' + (up.length ? 'No bookings match that.' : 'No upcoming bookings to amend.') + '</div>';
+    box.querySelectorAll('[data-sp-appt]').forEach(function(el){ el.addEventListener('click', function(){ spOpenAmend(el.getAttribute('data-sp-appt')); }); });
+  };
+  spModal('<h3>Amend a booking</h3><div class="sub">Tap a booking to change the details, move it to another date or time, or cancel it.</div>'
+    + (up.length > 5 ? '<input type="search" class="sp-search" id="spAmendSearch" placeholder="Search by name or phone">' : '')
+    + '<div id="spAmendList"></div><button type="button" class="sheet-cancel" id="spX">Close</button>');
+  render('');
+  var srch = document.getElementById('spAmendSearch'); if(srch) srch.addEventListener('input', function(){ render(this.value); });
+  document.getElementById('spX').addEventListener('click', spCloseModal);
+}
+function spOpenAmend(id){
+  var b = spState.bookings.find(function(x){ return x.id === id; });
+  if(!b){ showToast('That booking has changed — refreshing', true); spRefresh(); return; }
+  var st = { id: id, date: b.booking_date, start: fmtTime(b.slot_start), end: fmtTime(b.slot_end), month: spMonthOf(b.booking_date), draft: null };
+  if(!document.getElementById('spModalBg')) spModal('');
+  spAmendForm(st, b);
+}
+function spAmendForm(st, b){
+  var moved = st.date !== b.booking_date || st.start !== fmtTime(b.slot_start);
+  var d = st.draft || {name: b.client_name, phone: b.client_phone, email: b.client_email, notes: b.notes};
+  spSetModal('<h3>Amend booking</h3><div class="sub">Booked by ' + prEsc(b.booked_by || 'H.O.M.E Hub') + '</div>'
+    + '<div class="sp-summary"><span><b>' + spShortDate(st.date) + '</b> · ' + st.start + '–' + st.end + (moved ? ' <span class="sp-pill" style="background:#fff7ed;color:var(--or)">New time</span>' : '') + '</span>'
+    + '<button type="button" class="sp-btn ghost" id="spMove">Change date &amp; time</button></div>'
+    + '<div class="form-wrap">' + spDetailsFields({client_name: d.name, client_phone: d.phone, client_email: d.email, notes: d.notes})
+    + '<div id="spErr"></div><button type="button" class="btn-primary" id="spSave">Save changes</button>'
+    + '<button type="button" class="btn-danger" id="spCancelBk">Cancel this booking</button>'
+    + '<button type="button" class="sheet-cancel" id="spX">Close without saving</button></div>');
+  var keepDraft = function(){ var f = spReadDetails(); st.draft = {name: f.name, phone: f.phone, email: f.email, notes: f.notes}; };
+  document.getElementById('spX').addEventListener('click', spCloseModal);
+  document.getElementById('spMove').addEventListener('click', function(){ keepDraft(); spAmendMoveDate(st, b); });
+  document.getElementById('spSave').addEventListener('click', async function(){
+    var btn = this, err = document.getElementById('spErr'), f = spReadDetails();
+    err.innerHTML = '';
+    if(!f.name){ err.innerHTML = '<div class="error-banner">Add the person’s name.</div>'; return; }
+    if(!f.phone && !f.email){ err.innerHTML = '<div class="error-banner">Add a phone number or an email.</div>'; return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    var patch = { client_name: f.name, client_phone: f.phone || null, client_email: f.email || null, notes: f.notes || null };
+    if(moved){ patch.booking_date = st.date; patch.slot_start = st.start; patch.slot_end = st.end; }
+    try{
+      await SB('session_bookings?id=eq.' + b.id, { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify(patch) });
+      spCloseModal();
+      showToast(moved ? 'Moved to ' + spShortDate(st.date) + ' ' + st.start + ' ✓' : 'Booking updated ✓');
+      spRefresh();
+    }catch(e){
+      var msg = /SESSION_FULL|capacity/i.test(e.message) ? 'That new time has just been taken — please pick another.' : 'Couldn’t save — ' + e.message;
+      err.innerHTML = '<div class="error-banner">' + prEsc(msg) + '</div>';
+      btn.disabled = false; btn.textContent = 'Save changes';
+    }
+  });
+  document.getElementById('spCancelBk').addEventListener('click', function(){ keepDraft(); spAmendCancel(st, b); });
+}
+function spAmendMoveDate(st, b){
+  var render = function(){
+    spSetModal('<button type="button" class="sp-back" id="spBack">‹ Back to booking</button>'
+      + '<h3>Move ' + prEsc(b.client_name) + '</h3><div class="sub">Choose a new date.</div>'
+      + spCalendarHtml(st.month, 'book', st.date, b.id)
+      + '<button type="button" class="sheet-cancel" id="spX">Close</button>');
+    spWireCalendar(st, render, function(iso){ spAmendMoveTime(st, b, iso); });
+    document.getElementById('spBack').addEventListener('click', function(){ spAmendForm(st, b); });
+    document.getElementById('spX').addEventListener('click', spCloseModal);
+  };
+  render();
+}
+function spAmendMoveTime(st, b, iso){
+  var current = iso === b.booking_date ? fmtTime(b.slot_start) : null;
+  spSetModal('<button type="button" class="sp-back" id="spBack">‹ Change date</button>'
+    + '<h3>' + spLongDate(iso) + '</h3><div class="sub">Pick the new time.</div>'
+    + spTimesHtml(iso, b.id, current)
+    + '<button type="button" class="sheet-cancel" id="spX">Close</button>');
+  document.getElementById('spBack').addEventListener('click', function(){ spAmendMoveDate(st, b); });
+  document.getElementById('spX').addEventListener('click', spCloseModal);
+  document.querySelectorAll('[data-sp-time]').forEach(function(el){
+    el.addEventListener('click', function(){ var p = el.getAttribute('data-sp-time').split('|'); st.date = iso; st.start = p[0]; st.end = p[1]; spAmendForm(st, b); });
+  });
+}
+function spAmendCancel(st, b){
+  spSetModal('<button type="button" class="sp-back" id="spBack">‹ Back to booking</button>'
+    + '<h3>Cancel ' + prEsc(b.client_name) + '’s booking?</h3><div class="sub">' + spLongDate(b.booking_date) + ' · ' + fmtTime(b.slot_start) + '–' + fmtTime(b.slot_end) + '. The time becomes free again and the Hub is told.</div>'
+    + '<div class="form-wrap"><div class="field"><label>Reason (optional)</label><input type="text" id="spReason"></div>'
+    + '<div id="spErr"></div><button type="button" class="btn-primary" id="spSave" style="background:#dc2626">Yes, cancel the booking</button>'
+    + '<button type="button" class="sheet-cancel" id="spBack2">Keep the booking</button></div>');
+  var back = function(){ spAmendForm(st, b); };
+  document.getElementById('spBack').addEventListener('click', back);
+  document.getElementById('spBack2').addEventListener('click', back);
+  document.getElementById('spSave').addEventListener('click', async function(){
+    var btn = this; btn.disabled = true; btn.textContent = 'Cancelling…';
+    try{
+      var u = getUser();
+      await SB('session_bookings?id=eq.' + b.id, { method:'PATCH', headers:{Prefer:'return=minimal'}, body: JSON.stringify({
+        status: 'cancelled', cancelled_at: new Date().toISOString(), cancelled_by: u ? u.display_name : null,
+        cancel_reason_notes: document.getElementById('spReason').value.trim() || null
+      })});
+      spCloseModal(); showToast('Booking cancelled'); spRefresh();
+    }catch(e){
+      document.getElementById('spErr').innerHTML = '<div class="error-banner">Couldn’t cancel — ' + prEsc(e.message) + '</div>';
+      btn.disabled = false; btn.textContent = 'Yes, cancel the booking';
+    }
+  });
+}
+
+document.getElementById('spSignoutBtn').addEventListener('click', function(){
+  spCloseModal();
+  clearSession();
+  showLogin();
+  showToast('Signed out');
+});
+
+/* Start-up: straight to the calendar if already signed in, otherwise sign-in */
+(async function(){
+  var sess = await ensureSession();
+  var u = getUser();
+  if(sess && u && u.role === 'session_partner' && !idleTooLong()){ markActive(); showPartner(); }
+  else { var timedOut = !!(sess && u); clearSession(); showLogin(timedOut ? 'You were signed out after 30 minutes of no activity.' : ''); }
+})();
+</script>
+</body>
+</html>

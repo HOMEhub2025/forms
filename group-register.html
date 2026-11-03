@@ -72,6 +72,136 @@ input,select,button{font-family:'Montserrat',sans-serif;font-size:16px}
 <div class="footnote">H.O.M.E Hub CIC · Bringing unity back to the Community</div>
 
 <script>
+/* ═══ KIOSK PRIVACY GUARD ═══
+   Public kiosk pages used to read the whole visitors and sign_ins lists
+   straight from the database. This guard quietly re-routes those
+   logged-out requests to narrow database functions that answer only the
+   question being asked (e.g. "does anyone match this name?") and never
+   hand back contact details. The page itself works exactly as before.
+   Signed-in staff requests are left completely alone. 💚 */
+(function(){
+  if(window.__hwKioskGuard) return; window.__hwKioskGuard = true;
+  var realFetch = window.fetch.bind(window);
+  function hdr(h, name){
+    if(!h) return null;
+    if(typeof Headers !== 'undefined' && h instanceof Headers) return h.get(name);
+    for(var k in h){ if(Object.prototype.hasOwnProperty.call(h,k) && k.toLowerCase() === name) return h[k]; }
+    return null;
+  }
+  function json(body, status){ return new Response(JSON.stringify(body), {status: status || 200, headers: {'content-type':'application/json'}}); }
+  function empty(status){ return new Response(null, {status: status || 204}); }
+  window.fetch = async function(input, init){
+    var url = typeof input === 'string' ? input : ((input && input.url) || '');
+    var m = url.match(/^(https:\/\/[^\/]+)\/rest\/v1\/(visitors|sign_ins|volunteer_shifts)(\?.*)?$/);
+    if(!m) return realFetch(input, init);
+    init = init || {};
+    var headers = init.headers || (typeof input !== 'string' && input.headers) || {};
+    var apikey = hdr(headers, 'apikey');
+    var auth = hdr(headers, 'authorization') || '';
+    if(!apikey || (auth && auth !== 'Bearer ' + apikey)) return realFetch(input, init); // signed-in: untouched
+    try{
+      var base = m[1], table = m[2], qs = new URLSearchParams((m[3] || '').slice(1));
+      var method = String(init.method || 'GET').toUpperCase();
+      var prefer = hdr(headers, 'prefer') || '';
+      var rpc = function(fn, args){
+        return realFetch(base + '/rest/v1/rpc/' + fn, {method:'POST',
+          headers:{apikey: apikey, Authorization: 'Bearer ' + apikey, 'Content-Type':'application/json'},
+          body: JSON.stringify(args)}).then(function(r){
+            return r.text().then(function(t){
+              var d = t ? JSON.parse(t) : null;
+              if(!r.ok) throw new Error((d && d.message) || ('error ' + r.status));
+              return d;
+            });
+          });
+      };
+      var filt = function(key, op){
+        var all = qs.getAll(key);
+        for(var i = 0; i < all.length; i++){ if(all[i].indexOf(op + '.') === 0) return all[i].slice(op.length + 1); }
+        return null;
+      };
+      var body = null;
+      if(init.body){ try{ body = JSON.parse(init.body); }catch(e){ body = null; } }
+      var firstRow = Array.isArray(body) ? body[0] : body;
+
+      if(table === 'visitors'){
+        if(method === 'GET'){
+          var name = filt('full_name', 'ilike') || '';
+          var partial = /^\*.*\*$/.test(name);
+          var rows = await rpc('kiosk_search_visitors', {p_q: name.replace(/^\*|\*$/g, ''), p_exact: !partial});
+          return json((rows || []).map(function(v){
+            return {id: v.id, full_name: v.full_name, is_co_creator: v.is_co_creator,
+                    email: null, mobile: null, _has_email: v.has_email, _has_mobile: v.has_mobile};
+          }));
+        }
+        if(method === 'POST'){
+          var created = await rpc('kiosk_create_visitor', {p: firstRow || {}});
+          return /representation/.test(prefer) || !prefer ? json(created || [], 201) : empty(201);
+        }
+        if(method === 'PATCH'){
+          await rpc('kiosk_fill_visitor', {p_id: filt('id', 'eq'), p: firstRow || {}});
+          return /representation/.test(prefer) ? json([], 200) : empty(204);
+        }
+        return json({message: 'Not allowed'}, 403);
+      }
+
+      if(table === 'sign_ins'){
+        if(method === 'POST'){
+          // Save it, but never ask for rows back (logged-out visitors can't read sign-ins).
+          var h2 = {};
+          if(typeof Headers !== 'undefined' && headers instanceof Headers){ headers.forEach(function(v, k){ h2[k] = v; }); }
+          else { for(var k in headers){ h2[k] = headers[k]; } }
+          for(var k2 in h2){ if(k2.toLowerCase() === 'prefer') delete h2[k2]; }
+          h2.Prefer = 'return=minimal';
+          var r = await realFetch(base + '/rest/v1/sign_ins', Object.assign({}, init, {headers: h2}));
+          if(!r.ok) return r;
+          return /representation/.test(prefer) || !prefer ? json(Array.isArray(body) ? body : [body], 201) : empty(201);
+        }
+        if(method !== 'GET') return json({message: 'Not allowed'}, 403);
+        var sel = qs.get('select') || '*';
+        var vid = filt('visitor_id', 'eq'), vname = filt('visitor_name', 'ilike');
+        var sess = filt('session_name', 'eq'), sessLike = filt('session_name', 'ilike');
+        var gte = filt('signed_in_at', 'gte'), lte = filt('signed_in_at', 'lte');
+        var dayStart = new Date(); dayStart.setHours(0,0,0,0);
+        if(sel === 'id' && (vid || vname)){
+          var yes = await rpc('kiosk_signed_in_check', {p_visitor: vid || null, p_name: vname ? vname.replace(/^\*|\*$/g,'') : null,
+            p_session: sess || null, p_from: gte || dayStart.toISOString(), p_to: lte || new Date().toISOString()});
+          return json(yes ? [{id: 'existing'}] : []);
+        }
+        if(sel === 'id'){
+          var n = await rpc('kiosk_signin_count', {p_from: gte || dayStart.toISOString(), p_to: lte || new Date().toISOString()});
+          var out = []; for(var i = 0; i < (n || 0); i++) out.push({id: i});
+          return json(out);
+        }
+        if(vid && /session_name/.test(sel)){
+          return json(await rpc('kiosk_visitor_history', {p_visitor: vid, p_since: gte || '1970-01-01T00:00:00Z'}) || []);
+        }
+        if(/visitor_name/.test(sel) && sess && !gte){
+          return json(await rpc('kiosk_group_members', {p_session: sess}) || []);
+        }
+        if(sel === 'visitor_name' && gte){
+          return json(await rpc('kiosk_names_signed_in', {p_from: gte, p_to: lte || gte,
+            p_session_like: sessLike ? sessLike.replace(/^\*|\*$/g, '') : null}) || []);
+        }
+        if(/session_name/.test(sel) && /reason_for_attending/.test(sel) && gte){
+          var agg = await rpc('kiosk_signin_popularity', {p_since: gte}) || [], expanded = [];
+          agg.forEach(function(a){ for(var j = 0; j < Math.min(a.n || 0, 500); j++) expanded.push({session_name: a.session_name, reason_for_attending: a.reason_for_attending}); });
+          return json(expanded);
+        }
+        return json([]);
+      }
+
+      if(table === 'volunteer_shifts'){
+        if(method !== 'GET') return json({message: 'Not allowed'}, 403);
+        return json(await rpc('kiosk_volunteer_shift', {p_visitor: filt('volunteer_id', 'eq'), p_day: filt('day_of_week', 'ilike') || ''}) || []);
+      }
+    }catch(e){
+      return json({message: e.message || 'Kiosk lookup failed'}, 500);
+    }
+    return realFetch(input, init);
+  };
+})();
+</script>
+<script>
 var SUPABASE_URL = 'https://tdwxyzjwktdwhszugkah.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkd3h5emp3a3Rkd2hzenVna2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDI1MjMsImV4cCI6MjA5NDU3ODUyM30.66D9iFNhJ-vXhFIUnUoSru_NpoGtSdKiSMjChLfCKXo';
 
