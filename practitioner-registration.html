@@ -111,6 +111,58 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .success-sub{font-size:13px;color:var(--mut);line-height:1.8;max-width:420px;margin:0 auto}
 
 .divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ── Your Community listing (same page, second path) ── */
+#cl{--dg:#006837;--db:#0e386a;--or:#f58221;--cream:#f7f3d8;--ink:#111827;--mid:#374151;--mut:#6b7280;--border:#e5e7eb;--red:#b91c1c;--sh:0 1px 3px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.06)}
+#cl .card{background:#fff;border-radius:16px;border:1.5px solid var(--border);box-shadow:var(--sh);padding:22px 18px;margin-bottom:16px}
+#cl .ch{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+#cl .cn{width:32px;height:32px;background:var(--dg);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'League Spartan',sans-serif;font-weight:900;font-size:15px;flex-shrink:0}
+#cl .ct{font-family:'League Spartan',sans-serif;font-size:18px;font-weight:800;color:var(--db)}
+#cl .field{margin-bottom:15px}
+#cl .lbl{display:block;font-size:12.5px;font-weight:700;color:var(--db);margin-bottom:6px}
+#cl .lbl .req{color:var(--red);margin-left:2px}
+#cl .lbl .hint{font-weight:500;color:var(--mut);font-size:11px;display:block;margin-top:2px}
+#cl .priv{font-size:10px;font-weight:700;color:var(--mut);background:#f3f4f6;border-radius:999px;padding:1px 7px;margin-left:6px;text-transform:uppercase;letter-spacing:.05em}
+#cl .pub{font-size:10px;font-weight:700;color:var(--dg);background:#e8f5ee;border-radius:999px;padding:1px 7px;margin-left:6px;text-transform:uppercase;letter-spacing:.05em}
+#cl input[type=text],#cl input[type=email],#cl input[type=tel],#cl input[type=date],#cl input[type=url],#cl select,#cl textarea{width:100%;min-height:46px;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:16px;color:var(--ink);background:#fff;outline:none;-webkit-appearance:none;appearance:none}
+#cl input:focus,#cl select:focus,#cl textarea:focus{border-color:var(--dg)}
+#cl textarea{resize:vertical;min-height:96px;line-height:1.5}
+#cl .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){#cl .row{grid-template-columns:1fr}}
+#cl .count{font-size:11px;color:var(--mut);text-align:right;margin-top:4px}
+#cl .count.bad{color:var(--red)}
+#cl .opts{display:flex;flex-direction:column;gap:8px}
+#cl .opt{display:flex;align-items:center;gap:12px;min-height:48px;padding:10px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;color:var(--mid);background:#fff}
+#cl .opt input{width:20px;height:20px;accent-color:var(--dg);flex-shrink:0}
+#cl .opt.on{border-color:var(--dg);background:#f0faf4;color:var(--dg)}
+#cl .chips{display:flex;flex-wrap:wrap;gap:8px}
+#cl .chip{display:inline-flex;align-items:center;min-height:44px;padding:8px 14px;border:1.5px solid var(--border);border-radius:999px;font-size:13px;font-weight:600;color:var(--mid);background:#fff;cursor:pointer;user-select:none}
+#cl .chip input{display:none}
+#cl .chip.on{border-color:var(--dg);background:var(--dg);color:#fff}
+#cl .tick{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer;font-size:13.5px;color:var(--mid);line-height:1.5;margin-bottom:10px;background:#fff}
+#cl .tick input{width:22px;height:22px;accent-color:var(--dg);flex-shrink:0;margin-top:1px}
+#cl .tick b{color:var(--ink)}
+#cl .cream{background:var(--cream);border-radius:14px;padding:16px 14px;margin:6px 0 4px}
+#cl .cream h3{font-family:'League Spartan',sans-serif;font-size:16px;font-weight:800;color:var(--db);margin-bottom:12px}
+#cl .small{font-size:11.5px;color:var(--mut);line-height:1.6}
+#cl .pledge{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+#cl .pledge li{background:#f9faf8;border-left:4px solid var(--dg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--mid);line-height:1.55}
+#cl .pledge li b{color:var(--db);display:block;margin-bottom:2px}
+#cl .hide{display:none!important}
+#cl .err{display:none;background:#fef2f2;border:1.5px solid #fecaca;color:var(--red);border-radius:12px;padding:12px 14px;font-size:13.5px;font-weight:600;margin-bottom:12px;line-height:1.5}
+#cl .err.show{display:block}
+#cl .btn{width:100%;min-height:54px;border:none;border-radius:14px;background:var(--dg);color:#fff;font-family:'League Spartan',sans-serif;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,104,55,.25)}
+#cl .btn:disabled{opacity:.6;cursor:wait}
+#cl .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+#cl .thanks{text-align:center;padding:40px 22px}
+#cl .thanks h2{font-family:'League Spartan',sans-serif;font-size:28px;font-weight:900;color:var(--dg);margin-bottom:12px}
+#cl .thanks p{font-size:14.5px;color:var(--mid);line-height:1.7;margin-bottom:10px}
+#cl .thanks .sig{font-weight:700;color:var(--db);margin-top:16px}
+#cl-chooser .opt2{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1.5px solid #e5e7eb;border-radius:12px;cursor:pointer;background:#fff;margin-bottom:10px;min-height:56px}
+#cl-chooser .opt2.on{border-color:#006837;background:#f0faf4}
+#cl-chooser .opt2 input{width:22px;height:22px;accent-color:#006837;flex-shrink:0;margin-top:2px}
+#cl-chooser .t{font-weight:700;color:#0e386a;font-size:14px}
+#cl-chooser .d{font-size:12px;color:#6b7280;margin-top:3px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -129,6 +181,11 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 <main>
+<div class="card" id="cl-chooser">
+  <div class="card-header"><div class="card-num">&#9825;</div><div><div class="card-title">How would you like to join us?</div><div class="card-sub">Choose one &mdash; the form changes to match.</div></div></div>
+  <label class="opt2 on" id="path-hub"><input type="radio" name="cl_path" value="hub" checked><span><span class="t">Running sessions or groups at the H.O.M.E Hub</span><span class="d" style="display:block">Practitioners and facilitators working here with us. You&rsquo;re also listed in Your Community once approved.</span></span></label>
+  <label class="opt2" id="path-community"><input type="radio" name="cl_path" value="community"><span><span class="t">List what I offer in Your Community</span><span class="d" style="display:block">Therapists, practitioners, groups, projects, services and wellbeing shops across Castle Point and nearby &mdash; free of charge. About five minutes.</span></span></label>
+</div>
 <div id="form-section">
   <div class="error-msg" id="error-msg"></div>
 
@@ -536,6 +593,105 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="success-sub">Thank you for registering with H.O.M.E Hub. A member of our team will be in touch shortly to complete your onboarding and confirm your first session.<br><br>Questions? Email us at <strong>info@homehub-benfleet.co.uk</strong></div>
 </div>
 
+<div id="cl" style="display:none">
+<div id="cl-form-wrap">
+<div style="background:#eef3f8;border-radius:12px;padding:12px 14px;font-size:12.5px;color:#0e386a;line-height:1.6;margin-bottom:16px"><b>Your Community</b> is a free, one-stop guide to wellbeing support in Castle Point. If your work supports wellbeing or personal growth, we&rsquo;d love to list you, free of charge. We&rsquo;ll read every one personally and be in touch before your listing goes live.</div>
+<form id="cl_f" novalidate autocomplete="on">
+<div class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="website" id="cl_website" tabindex="-1" autocomplete="off"></label></div>
+
+<!-- 1. About you -->
+<div class="card">
+  <div class="ch"><div class="cn">1</div><div class="ct">About you</div></div>
+  <div class="field">
+    <span class="lbl">Which best describes you?<span class="req">*</span></span>
+    <div class="opts" id="cl_kinds"></div>
+  </div>
+  <div class="field"><label class="lbl" for="cl_name">Name to show on your listing<span class="req">*</span><span class="pub">Shown</span></label><input type="text" id="cl_name" maxlength="120"></div>
+  <div class="field"><label class="lbl" for="cl_contact_name">Your name<span class="req">*</span><span class="priv">Private</span></label><input type="text" id="cl_contact_name" maxlength="120" autocomplete="name"></div>
+  <div class="row">
+    <div class="field"><label class="lbl" for="cl_email">Email<span class="req">*</span><span class="priv">Private</span></label><input type="email" id="cl_email" maxlength="200" autocomplete="email"></div>
+    <div class="field"><label class="lbl" for="cl_phone">Phone<span class="priv">Private</span></label><input type="tel" id="cl_phone" maxlength="40" autocomplete="tel"></div>
+  </div>
+</div>
+
+<!-- 2. What you offer -->
+<div class="card">
+  <div class="ch"><div class="cn">2</div><div class="ct">What you offer</div></div>
+  <div class="field"><label class="lbl" for="cl_summary">In a sentence or two, what do you offer and who is it for?<span class="req">*</span><span class="pub">Shown</span></label>
+    <textarea id="cl_summary" maxlength="600"></textarea><div class="count" id="cl_sum-count">0 / 600</div></div>
+  <div class="field"><span class="lbl">Topics<span class="hint">Choose up to 8</span></span><div class="chips" id="cl_topics"></div></div>
+  <div class="field"><span class="lbl">Who it's for</span><div class="chips" id="cl_who_for"></div></div>
+  <div class="row">
+    <div class="field"><label class="lbl" for="cl_delivery">In person or online?</label>
+      <select id="cl_delivery"><option value="in_person">In person</option><option value="online">Online</option><option value="both">Both</option></select></div>
+    <div class="field"><label class="lbl" for="cl_area">Area</label><input type="text" id="cl_area" maxlength="120" placeholder="e.g. Benfleet, Canvey, or Basildon"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label class="lbl" for="cl_cost">Cost</label>
+      <select id="cl_cost"><option value="free">Free</option><option value="low_cost">Low cost or sliding scale</option><option value="donation">By donation</option><option value="paid">Paid</option></select></div>
+    <div class="field"><label class="lbl" for="cl_cost_note">Cost details<span class="hint">Optional</span></label><input type="text" id="cl_cost_note" maxlength="160" placeholder="e.g. £40, concessions available"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label class="lbl" for="cl_website_url">Website<span class="pub">Shown</span></label><input type="url" id="cl_website_url" maxlength="300" placeholder="yourwebsite.co.uk" inputmode="url"></div>
+    <div class="field"><label class="lbl" for="cl_social_url">Social media page<span class="pub">Shown</span></label><input type="url" id="cl_social_url" maxlength="300" placeholder="facebook.com/…" inputmode="url"></div>
+  </div>
+  <div class="row">
+    <div class="field"><label class="lbl" for="cl_public_email">Public email<span class="pub">Shown</span></label><input type="email" id="cl_public_email" maxlength="200"></div>
+    <div class="field"><label class="lbl" for="cl_public_phone">Public phone<span class="pub">Shown</span></label><input type="tel" id="cl_public_phone" maxlength="40"></div>
+  </div>
+
+  <div class="cream hide" id="cl_biz">
+    <h3>For shops and local businesses</h3>
+    <div class="field"><label class="lbl" for="cl_address">Shop address<span class="req">*</span><span class="pub">Shown</span></label><input type="text" id="cl_address" maxlength="200" autocomplete="street-address"></div>
+    <div class="field"><label class="lbl" for="cl_opening_hours">Opening hours<span class="hint">Optional</span></label><input type="text" id="cl_opening_hours" maxlength="160" placeholder="e.g. Mon to Sat, 9am to 5pm"></div>
+    <div class="field" style="margin-bottom:0"><label class="lbl" for="cl_community_offer">A kindness for our community<span class="hint">Optional</span></label><input type="text" id="cl_community_offer" maxlength="200" placeholder="e.g. 10% off if you mention the H.O.M.E Hub"></div>
+  </div>
+</div>
+
+<!-- 3. Keeping people safe -->
+<div class="card">
+  <div class="ch"><div class="cn">3</div><div class="ct">Keeping people safe</div></div>
+  <div class="field"><label class="lbl" for="cl_works_with_children">Do you work with children or young people?</label>
+    <select id="cl_works_with_children"><option value="no">No</option><option value="yes">Yes</option><option value="sometimes">Sometimes, mixed ages</option></select></div>
+  <div class="row" id="cl_prof">
+    <div class="field"><label class="lbl" for="cl_professional_body">Professional body<span class="req hide" id="cl_pb-req">*</span></label><input type="text" id="cl_professional_body" maxlength="120" placeholder="e.g. BACP, UKCP, NCS"></div>
+    <div class="field"><label class="lbl" for="cl_membership_number">Membership number</label><input type="text" id="cl_membership_number" maxlength="60"></div>
+  </div>
+  <label class="tick"><input type="checkbox" id="cl_insured"><span>I hold valid insurance for what I offer</span></label>
+  <div class="field hide" id="cl_ins-wrap"><label class="lbl" for="cl_insurance_expiry">Insurance expiry</label><input type="date" id="cl_insurance_expiry"></div>
+  <label class="tick"><input type="checkbox" id="cl_has_dbs"><span>I have a valid DBS check</span></label>
+  <div class="field hide" id="cl_dbs-wrap"><label class="lbl" for="cl_dbs_expiry">DBS renewal date</label><input type="date" id="cl_dbs_expiry"></div>
+  <label class="tick"><input type="checkbox" id="cl_safeguarding_trained"><span>I have completed safeguarding training</span></label>
+  <p class="small">We may ask to see certificates before your listing goes live. Only what we've seen shows as a badge.</p>
+</div>
+
+<!-- 4. Our pledge -->
+<div class="card">
+  <div class="ch"><div class="cn">4</div><div class="ct">Our pledge</div></div>
+  <ul class="pledge">
+    <li><b>Kindness and respect.</b>I will treat every person with kindness and respect, whatever their faith, belief, politics or background.</li>
+    <li><b>Keeping people safe.</b>I will work within my training and experience, keep people safe, and point people elsewhere when I am not the right fit.</li>
+    <li><b>Giving back.</b>I will give back to my community in my own way.</li>
+    <li><b>Honesty.</b>My listing is accurate. I will tell the H.O.M.E Hub if anything changes, and check in once a year.</li>
+  </ul>
+  <div class="field"><label class="lbl" for="cl_giving_back">How will you give back to your community?<span class="req">*</span><span class="pub">Shown</span></label>
+    <textarea id="cl_giving_back" maxlength="400" placeholder="e.g. one free session a month, a talk at the Hub, volunteering, a sliding scale for people on low incomes"></textarea></div>
+  <label class="tick hide" id="cl_pp-wrap"><input type="checkbox" id="cl_product_pledge"><span><b>Our product promise.</b> I won’t claim that any product treats, cures or prevents an illness, and I’ll gently suggest people check with their GP or pharmacist first, especially if they’re pregnant, taking medication or living with a health condition.</span></label>
+  <label class="tick"><input type="checkbox" id="cl_pledge_agreed"><span>I share the heart of the H.O.M.E Hub and agree to the pledge above.</span></label>
+  <label class="tick"><input type="checkbox" id="cl_public_consent"><span>I’m happy for the details marked as shown on my listing to appear on the H.O.M.E Hub website.</span></label>
+</div>
+
+<div class="err" id="cl_err" role="alert"></div>
+<button type="submit" class="btn" id="cl_send">Send my listing</button>
+</form>
+</div>
+<div class="card thanks hide" id="cl_thanks">
+  <h2>Thank you, we’ve got it.</h2>
+  <p>We’ll read your listing personally and be in touch before it goes live. Thank you for sharing your heart with our community.</p>
+  <p class="sig">Honour &amp; Love, the H.O.M.E Hub team</p>
+</div>
+</div>
+
 </main>
 
 <script>
@@ -637,6 +793,35 @@ document.querySelectorAll('.agreement-opt').forEach(function(opt) {
 });
 
 loadFormTemplate();
+
+// ── Two paths on one page: Hub practitioner, or a Your Community listing.
+// ?form=community (or /community-listing) opens straight on the listing. 💚
+var HERO_HUB = null;
+function clSetPath(path){
+  var com = path==='community';
+  document.getElementById('form-section').style.display = com ? 'none' : '';
+  document.getElementById('cl').style.display = com ? 'block' : 'none';
+  document.getElementById('path-hub').classList.toggle('on', !com);
+  document.getElementById('path-community').classList.toggle('on', com);
+  var h = document.querySelector('.hero');
+  if(h){
+    if(!HERO_HUB) HERO_HUB = h.innerHTML;
+    h.innerHTML = com
+      ? '<div class="hero-label">Your Community</div><div class="hero-title">List what you offer in <span>Your Community</span></div><div class="hero-sub">A free, one-stop guide to wellbeing support in Castle Point. It takes about five minutes.</div>'
+      : HERO_HUB;
+  }
+  var nb = document.querySelector('.nav-brand-sub'); if(nb) nb.textContent = com ? 'Your Community' : 'Practitioner Registration';
+  document.title = com ? 'List what you offer \u2014 Your Community \u2014 H.O.M.E Hub' : 'Practitioner & Facilitator Registration \u2014 H.O.M.E Hub';
+}
+document.querySelectorAll('input[name=cl_path]').forEach(function(r){ r.addEventListener('change', function(){ clSetPath(this.value); }); });
+(function(){
+  var q = new URLSearchParams(location.search);
+  if(q.get('form')==='community' || q.get('path')==='community' || /community-listing/.test(location.pathname)){
+    document.querySelector('input[name=cl_path][value=community]').checked = true; clSetPath('community');
+  }
+  // A tailored Hub form link (?form=<slug>) is only for Hub practitioners.
+  else if(q.get('form')) document.getElementById('cl-chooser').style.display = 'none';
+})();
 
 
 // ── SUBMIT ──
@@ -770,6 +955,96 @@ document.getElementById('submit-btn').addEventListener('click', async function()
     this.textContent = 'Complete My Registration';
   }
 });
+</script>
+<script>
+
+(function(){
+  var ENDPOINT = 'https://tdwxyzjwktdwhszugkah.supabase.co/functions/v1/public-resources';
+  var PLEDGE_TEXT = 'Kindness and respect: I will treat every person with kindness and respect, whatever their faith, belief, politics or background. Keeping people safe: I will work within my training and experience, keep people safe, and point people elsewhere when I am not the right fit. Giving back: I will give back to my community in my own way. Honesty: My listing is accurate. I will tell the H.O.M.E Hub if anything changes, and check in once a year.';
+  var KINDS = [['therapist','Therapist or counsellor'],['practitioner','Practitioner'],['group','Support group'],['project','Community project or programme'],['service','Service or charity'],['business','Wellbeing shop or local business']];
+  var TOPICS = ['Mental health & emotional support','Anxiety & stress','Grief & loss','Relationships & family','Parenting','SEN & neurodiversity','Young people','Men’s support','Women’s support','Addiction & recovery','Trauma & healing','Movement & physical wellbeing','Holistic & energy therapies','Creative & arts','Nature & outdoors','Connection & loneliness','Practical help & advice'];
+  var WHO = ['Everyone','Adults','Young people','Children','Families','Parents & carers','Older people','Men','Women'];
+  var $ = function(id){ return document.getElementById('cl_'+id); };
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  $('kinds').innerHTML = KINDS.map(function(k){ return '<label class="opt"><input type="radio" name="kind" value="'+k[0]+'">'+esc(k[1])+'</label>'; }).join('');
+  function chips(id, list){ $(id).innerHTML = list.map(function(t){ return '<label class="chip"><input type="checkbox" value="'+esc(t)+'">'+esc(t)+'</label>'; }).join(''); }
+  chips('topics', TOPICS); chips('who_for', WHO);
+
+  function kind(){ var k = document.querySelector('#cl input[name=kind]:checked'); return k ? k.value : ''; }
+  function syncKind(){
+    var k = kind(), biz = k==='business';
+    document.querySelectorAll('#cl .opt').forEach(function(o){ o.classList.toggle('on', o.querySelector('input').checked); });
+    $('biz').classList.toggle('hide', !biz);
+    $('pp-wrap').classList.toggle('hide', !biz);
+    $('prof').classList.toggle('hide', biz);
+    $('pb-req').classList.toggle('hide', k!=='therapist');
+  }
+  $('kinds').addEventListener('change', syncKind);
+
+  function chipClick(id, max){
+    $(id).addEventListener('change', function(e){
+      var boxes = $(id).querySelectorAll('input'), on = $(id).querySelectorAll('input:checked');
+      if(max && on.length > max){ e.target.checked = false; showErr('You can choose up to '+max+' topics.'); }
+      boxes.forEach(function(b){ b.parentNode.classList.toggle('on', b.checked); });
+    });
+  }
+  chipClick('topics', 8); chipClick('who_for', 0);
+
+  $('summary').addEventListener('input', function(){ var n = this.value.length, c = $('sum-count'); c.textContent = n+' / 600'; c.classList.toggle('bad', n>0 && n<20); });
+  $('insured').addEventListener('change', function(){ $('ins-wrap').classList.toggle('hide', !this.checked); });
+  $('has_dbs').addEventListener('change', function(){ $('dbs-wrap').classList.toggle('hide', !this.checked); });
+
+  function showErr(m){ var e = $('err'); e.textContent = m; e.classList.add('show'); e.scrollIntoView({behavior:'smooth', block:'center'}); }
+  function clearErr(){ $('err').classList.remove('show'); }
+  function v(id){ return ($(id).value||'').trim(); }
+  function url(u){ u = (u||'').trim(); if(!u) return ''; return /^https?:\/\//i.test(u) ? u.replace(/^http:\/\//i,'https://') : 'https://'+u; }
+  function picked(id){ return Array.prototype.map.call($(id).querySelectorAll('input:checked'), function(b){ return b.value; }); }
+
+  $('f').addEventListener('submit', async function(ev){
+    ev.preventDefault(); clearErr();
+    var k = kind(), biz = k==='business';
+    if(!k) return showErr('Please choose what best describes you.');
+    if(!v('name') || !v('contact_name')) return showErr('Please add the name for your listing and your own name.');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('email'))) return showErr('Please add a valid email address so we can reach you.');
+    if(v('summary').length < 20) return showErr('Please tell people a little more about what you offer (a sentence or two).');
+    if(k==='therapist' && !v('professional_body')) return showErr('Please add the professional body you’re registered with.');
+    if(biz && !v('address')) return showErr('Please add your shop address so people can find you.');
+    if(biz && !$('product_pledge').checked) return showErr('Please tick our product promise for shops and businesses.');
+    if(!v('giving_back')) return showErr('Please tell us how you give back to your community.');
+    if(!$('pledge_agreed').checked || !$('public_consent').checked) return showErr('Please tick the pledge and the listing consent to join.');
+
+    var payload = {
+      action:'join', kind:k, name:v('name'), contact_name:v('contact_name'), email:v('email'), phone:v('phone'),
+      summary:v('summary'), topics:picked('topics'), who_for:picked('who_for'),
+      delivery:$('delivery').value, area:v('area'), cost:$('cost').value, cost_note:v('cost_note'),
+      website_url:url(v('website_url')), social_url:url(v('social_url')), public_email:v('public_email'), public_phone:v('public_phone'),
+      address: biz ? v('address') : '', opening_hours: biz ? v('opening_hours') : '', community_offer: biz ? v('community_offer') : '',
+      product_pledge: biz ? $('product_pledge').checked : false,
+      works_with_children:$('works_with_children').value,
+      professional_body: biz ? '' : v('professional_body'), membership_number: biz ? '' : v('membership_number'),
+      insured:$('insured').checked, insurance_expiry: $('insured').checked ? ($('insurance_expiry').value||'') : '',
+      has_dbs:$('has_dbs').checked, dbs_expiry: $('has_dbs').checked ? ($('dbs_expiry').value||'') : '',
+      safeguarding_trained:$('safeguarding_trained').checked,
+      giving_back:v('giving_back'), pledge_agreed:true, public_consent:true, pledge_text:PLEDGE_TEXT,
+      website:$('website').value
+    };
+    var btn = $('send'); btn.disabled = true; btn.textContent = 'Sending…';
+    try{
+      var r = await fetch(ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      var j = {}; try{ j = await r.json(); }catch(e){}
+      if(r.ok && j.ok){
+        document.getElementById('cl-form-wrap').classList.add('hide'); $('thanks').classList.remove('hide');
+        document.getElementById('cl').scrollIntoView({behavior:'smooth'}); return;
+      }
+      showErr(j.error || (r.status===429 ? 'Thank you — please try again in a few minutes.' : 'Sorry, something went wrong. Please try again in a moment.'));
+    }catch(e){
+      showErr('Sorry, we couldn’t send that just now. Please check your connection and try again.');
+    }
+    btn.disabled = false; btn.textContent = 'Send my listing';
+  });
+})();
+
 </script>
 </body>
 </html>
