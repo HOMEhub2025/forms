@@ -550,8 +550,16 @@ function restoreDraft() {
 // ── EVENTS ─────────────────────────────────────────────────────────────────
 
 function loadEvents() {
-  sb.from('public_events').select('*').eq('is_active', true).order('event_date', { ascending: true }).then(function(result) {
+  // ?event=<id> (from the stallholder poll in Heartwood) opens the form for that
+  // one event, even while it's hidden from the public list. 💚
+  var onlyEvent = new URLSearchParams(location.search).get('event');
+  var q = sb.from('public_events').select('*');
+  q = onlyEvent ? q.eq('id', onlyEvent).gte('event_date', new Date().toISOString().slice(0,10)) : q.eq('is_active', true);
+  q.order('event_date', { ascending: true }).then(function(result) {
     var sel = document.getElementById('event_id');
+    if (onlyEvent && !result.error && result.data && result.data.length === 1) {
+      setTimeout(function(){ sel.value = result.data[0].id; sel.dispatchEvent(new Event('change')); }, 0);
+    }
     if (result.error || !result.data || !result.data.length) {
       sel.innerHTML = '<option value="">No upcoming events available</option>';
       return;
