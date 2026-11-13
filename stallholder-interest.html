@@ -547,6 +547,19 @@ function restoreDraft() {
   } catch(e) {}
 }
 
+// Pitch fee comes from the chosen event in Heartwood (stall price, or food
+// pitch price for food & drink vendors), never typed into this page. 💚
+function updatePitchFee() {
+  var el = document.getElementById('pitch-fee-amount');
+  if (!el || !vendorType) return;
+  var money = function(n){ n = Number(n); return '\u00a3' + (n % 1 ? n.toFixed(2) : String(n)); };
+  var isFood = /food/i.test(String(vendorType));
+  if (!eventData) { el.textContent = 'Choose your event to see the pitch fee'; return; }
+  var food = Number(eventData.foodPrice), stall = Number(eventData.stallPrice);
+  el.textContent = (isFood && food > 0) ? money(food) + ' pitch fee (Food & Drink Vendor)'
+    : (stall > 0 ? money(stall) + ' pitch fee' : 'Pitch fee to be confirmed');
+}
+
 // ── EVENTS ─────────────────────────────────────────────────────────────────
 
 function loadEvents() {
@@ -573,6 +586,7 @@ function loadEvents() {
       opt.dataset.name = ev.name;
       opt.dataset.date = ev.event_date;
       opt.dataset.price = ev.stall_price;
+      opt.dataset.food = ev.food_pitch_price || '';
       opt.dataset.table = ev.table_hire_price;
       opt.dataset.description = ev.description || '';
       opt.textContent = lbl;
@@ -728,8 +742,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var o = this.options[this.selectedIndex];
     if (!o.value) { document.getElementById('event-banner').style.display = 'none'; eventId = ''; eventData = null; return; }
     eventId = o.value;
-    eventData = { name: o.dataset.name, date: o.dataset.date, stallPrice: o.dataset.price, tablePrice: o.dataset.table, description: o.dataset.description };
+    eventData = { name: o.dataset.name, date: o.dataset.date, stallPrice: o.dataset.price, foodPrice: o.dataset.food, tablePrice: o.dataset.table, description: o.dataset.description };
     showBanner(eventData);
+    updatePitchFee();
     saveDraft();
   });
 
@@ -772,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('err-vendor_type').classList.remove('show');
     var isFood = vendorType === 'Food &amp; Drink Vendor';
     document.getElementById('pitch-info').style.display = 'block';
-    document.getElementById('pitch-fee-amount').textContent = isFood ? '\u00a360 pitch fee (Food &amp; Drink Vendor)' : '\u00a320 pitch fee';
+    updatePitchFee();
     saveDraft();
   });
 
