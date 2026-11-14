@@ -430,6 +430,11 @@ footer a{color:rgba(255,255,255,.65);text-decoration:none}
         <li>H.O.M.E Hub reserves the right to decline any application</li>
       </ul>
     </div>
+    <div id="next-year-box" style="display:none;background:#f3faf4;border:1.5px solid #cfe9d3;border-radius:14px;padding:16px 18px;margin:0 0 18px">
+      <div style="font-weight:700;color:var(--db,#0e386a);font-size:16px;margin-bottom:4px">Would you like to register your interest for our events next year? &#128154;</div>
+      <div style="font-size:14px;color:#4a5753;margin-bottom:10px">Tick any you'd like to come to. We'll keep your details and be in touch nearer the time &mdash; there's nothing to pay now.</div>
+      <div id="next-year-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
     <div class="terms-check">
       <input type="checkbox" id="agreed_to_terms">
       <span>I have read and agree to the
@@ -595,6 +600,35 @@ function loadEvents() {
   });
 }
 
+// ── NEXT YEAR'S EVENTS ─────────────────────────────────────────────────────
+// A gentle "would you like to come next year too?" on the last step. Each
+// event ticked becomes its own application in Heartwood, waiting for
+// approval like any other. 💚
+var nextYearEvents = [];
+function loadNextYearEvents() {
+  var from = (new Date().getFullYear() + 1) + '-01-01';
+  sb.from('public_events').select('id,name,event_date').eq('is_active', true).gte('event_date', from)
+    .order('event_date', { ascending: true }).then(function(r) {
+      nextYearEvents = (r && !r.error && r.data) ? r.data : [];
+      renderNextYear();
+    });
+}
+function renderNextYear() {
+  var box = document.getElementById('next-year-box'), list = document.getElementById('next-year-list');
+  if (!box || !list) return;
+  var shown = nextYearEvents.filter(function(ev) { return ev.id !== eventId; });
+  if (!shown.length) { box.style.display = 'none'; list.innerHTML = ''; return; }
+  var was = {};
+  Array.prototype.forEach.call(list.querySelectorAll('input:checked'), function(i) { was[i.value] = true; });
+  list.innerHTML = shown.map(function(ev) {
+    var d = new Date(ev.event_date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+    return '<label style="display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;cursor:pointer;font-size:15px">'
+      + '<input type="checkbox" value="' + ev.id + '"' + (was[ev.id] ? ' checked' : '') + ' style="width:20px;height:20px;flex-shrink:0">'
+      + '<span><b>' + String(ev.name).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }) + '</b><br><span style="color:#4a5753;font-size:13px">' + d + '</span></span></label>';
+  }).join('');
+  box.style.display = 'block';
+}
+
 function showBanner(ev) {
   var d = new Date(ev.date);
   var fmt = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -712,7 +746,12 @@ async function submitApp() {
       status: 'pending',
       source: 'online_form'
     };
-    var result = await sb.from('stall_applications').insert(payload);
+    var extra = Array.prototype.map.call(document.querySelectorAll('#next-year-list input:checked'), function(i) { return i.value; })
+      .filter(function(id) { return id && id !== eventId; });
+    var rows = [payload].concat(extra.map(function(id) {
+      return Object.assign({}, payload, { event_id: id, special_requirements: ((payload.special_requirements ? payload.special_requirements + ' \u2014 ' : '') + 'Registered interest from the ' + ((eventData && eventData.name) || 'stall') + ' form') });
+    }));
+    var result = await sb.from('stall_applications').insert(rows);
     if (result.error) {
       var detail = result.error.message || result.error.hint || result.error.code || 'unknown error';
       throw new Error('[Supabase] ' + detail);
@@ -735,6 +774,7 @@ async function submitApp() {
 document.addEventListener('DOMContentLoaded', function() {
 
   loadEvents();
+  loadNextYearEvents();
   restoreDraft();
 
   // Event select
@@ -745,6 +785,7 @@ document.addEventListener('DOMContentLoaded', function() {
     eventData = { name: o.dataset.name, date: o.dataset.date, stallPrice: o.dataset.price, foodPrice: o.dataset.food, tablePrice: o.dataset.table, description: o.dataset.description };
     showBanner(eventData);
     updatePitchFee();
+    renderNextYear();
     saveDraft();
   });
 
